@@ -1,2 +1,2 @@
-# bazoon
-pure p2p distributed micro blog system on NAT transparent overlay network implemented in Golang
+# Bazoon
+Pure p2p distributed microblog system on NAT transparent overlay network implemented in Golang
