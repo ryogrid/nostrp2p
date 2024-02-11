@@ -29,11 +29,11 @@ Usage:
 
 Flags:
   -h, --help                         Help for server
-  -l, --listen-addr-port    string   Address and port to bind (default: 127.0.0.1:20000)
+  -l, --listen-addr-port    string   Address and port to bind to (default: 127.0.0.1:20000)
   -b, --boot-peer-addr-port string   Address and port of a server which already joined buzzoon network (optional)
   -p, --public-key          string   Your public key (required)
-  -n, --nickname            string   Your nickname (required) [TEMPORAL]
-  -d, --debug               bool     Debug log is outputed to stderr (default false)
+  -n, --nickname            string   Your nickname on Buzzoon (required) [TEMPORAL]
+  -d, --debug               bool     If true, debug log is output to stderr (default: false)
 ```
 
 ## Examples
