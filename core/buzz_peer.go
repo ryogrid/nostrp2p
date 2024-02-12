@@ -24,12 +24,12 @@ type BuzzPeer struct {
 var _ mesh.Gossiper = &BuzzPeer{}
 
 // Construct a BuzzPeer with empty state.
-// Be sure to register a channel, later,
+// Be sure to Register a channel, later,
 // so we can make outbound communication.
-func newPeer(self mesh.PeerName, logger *log.Logger) *BuzzPeer {
+func NewPeer(self mesh.PeerName, logger *log.Logger) *BuzzPeer {
 	actions := make(chan func())
 	p := &BuzzPeer{
-		send:        nil, // must .register() later
+		send:        nil, // must .Register() later
 		actions:     actions,
 		quit:        make(chan struct{}),
 		logger:      logger,
@@ -50,8 +50,8 @@ func (p *BuzzPeer) loop(actions <-chan func()) {
 	}
 }
 
-// register the result of a mesh.Router.NewGossip.
-func (p *BuzzPeer) register(send mesh.Gossip) {
+// Register the result of a mesh.Router.NewGossip.
+func (p *BuzzPeer) Register(send mesh.Gossip) {
 	p.actions <- func() { p.send = send }
 }
 

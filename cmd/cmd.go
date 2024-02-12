@@ -3,8 +3,14 @@ package cmd
 import (
 	"fmt"
 	"github.com/ryogrid/buzzoon/buzz_util"
+	"github.com/ryogrid/buzzoon/core"
 	"github.com/spf13/cobra"
+	"github.com/weaveworks/mesh"
+	"io/ioutil"
+	"log"
+	"net"
 	"os"
+	"strconv"
 )
 
 var listenAddrPort = "127.0.0.1:20000"
@@ -29,18 +35,63 @@ var serverCmd = &cobra.Command{
 		}
 
 		peers := &buzz_util.Stringset{}
-		peers.Set("xxxxxxx:yyyyy")
+		if bootPeerAddrPort != "" {
+			peers.Set(bootPeerAddrPort)
+		}
 
-		//peer, err := overlay.NewOverlayPeer(selfPeerId, &forwardAddress, int(listenPort+1000), peers, false)
-		//if err != nil {
-		//	log.Fatalln(err)
-		//}
+		logger := log.New(os.Stderr, nickname+"> ", log.LstdFlags)
 
-		// TODO: need to implement and create server instance (cmd.go)
+		host, portStr, err := net.SplitHostPort(listenAddrPort)
+		if err != nil {
+			logger.Fatalf("mesh address: %s: %v", listenAddrPort, err)
+		}
+		port, err := strconv.Atoi(portStr)
+		if err != nil {
+			logger.Fatalf("mesh address: %s: %v", listenAddrPort, err)
+		}
+
+		// TODO: need to use big int (cmd.go)
+		name, err := strconv.ParseUint(publicKey, 16, 64)
+		if err != nil {
+			panic(err)
+		}
+
+		router, err := mesh.NewRouter(mesh.Config{
+			Host:               host,
+			Port:               port,
+			ProtocolMinVersion: mesh.ProtocolMinVersion,
+			Password:           []byte(""),
+			ConnLimit:          64,
+			PeerDiscovery:      true,
+			TrustedSubnets:     []*net.IPNet{},
+		}, mesh.PeerName(name), nickname, mesh.NullOverlay{}, log.New(ioutil.Discard, "", 0))
+
+		if err != nil {
+			logger.Fatalf("Could not create router: %v", err)
+		}
+
+		peer := core.NewPeer(mesh.PeerName(name), logger)
+		gossip, err := router.NewGossip("bazzoon", peer)
+		if err != nil {
+			logger.Fatalf("Could not create gossip: %v", err)
+		}
+
+		peer.Register(gossip)
+
+		func() {
+			logger.Printf("mesh router starting (%s)", listenAddrPort)
+			router.Start()
+		}()
+		defer func() {
+			logger.Printf("mesh router stopping")
+			router.Stop()
+		}()
+
+		router.ConnectionMaker.InitiateConnections(peers.Slice(), true)
+
+		// TODO: need to implement classes handle message sending and receiving (cmd.go)
 
 		// TODO: need to implemnt and create temporal post request receiver I/f manager (cmd.go)
-
-		//s := server.New(....)
 
 		buzz_util.OSInterrupt()
 	},

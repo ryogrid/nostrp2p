@@ -21,10 +21,10 @@ func (ss Stringset) Set(value string) error {
 }
 
 func (ss Stringset) String() string {
-	return strings.Join(ss.slice(), ",")
+	return strings.Join(ss.Slice(), ",")
 }
 
-func (ss Stringset) slice() []string {
+func (ss Stringset) Slice() []string {
 	slice := make([]string, 0, len(ss))
 	for k := range ss {
 		slice = append(slice, k)
