@@ -33,9 +33,9 @@ func TestBuzzPacket_Encode(t *testing.T) {
 	}
 
 	pkt := BuzzPacket{
-		Event: event,
-		Req:   nil,
-		Resp:  nil,
+		Events: []*BuzzEvent{event},
+		Req:    nil,
+		Resp:   nil,
 	}
 
 	encodedPkt := pkt.Encode()[0]
@@ -43,5 +43,5 @@ func TestBuzzPacket_Encode(t *testing.T) {
 	decodedPkt, err := newBuzzPacketFromBytes(encodedPkt)
 	buzz_util.Assert(t, err == nil, "decode error")
 
-	fmt.Println(*decodedPkt.Event)
+	fmt.Println(*decodedPkt.Events[0])
 }

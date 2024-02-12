@@ -6,11 +6,11 @@ import (
 	"github.com/weaveworks/mesh"
 )
 
-// BuzzPacket is an implementation of a G-counter.
+// BuzzPacket is an implementation of GossipData
 type BuzzPacket struct {
-	Event *BuzzEvent
-	Req   *BuzzReq
-	Resp  *BuzzResp
+	Events []*BuzzEvent
+	Req    *BuzzReq
+	Resp   *BuzzResp
 }
 
 // BuzzPacket implements GossipData.
@@ -19,11 +19,12 @@ var _ mesh.GossipData = &BuzzPacket{}
 // Construct an empty BuzzPacket object, ready to receive updates.
 // This is suitable to use at program start.
 // Other peers will populate us with data.
-func newBuzzPacket(event *BuzzEvent, req *BuzzReq, resp *BuzzResp) *BuzzPacket {
+func NewBuzzPacket(event *BuzzEvent, req *BuzzReq, resp *BuzzResp) *BuzzPacket {
+	events := make([]*BuzzEvent, 0)
 	return &BuzzPacket{
-		Event: event,
-		Req:   req,
-		Resp:  resp,
+		Events: append(events, event),
+		Req:    req,
+		Resp:   resp,
 	}
 }
 
@@ -50,5 +51,6 @@ func (pkt *BuzzPacket) Encode() [][]byte {
 // Merge merges the other GossipData into this one,
 // and returns our resulting, complete BuzzPacket.
 func (st *BuzzPacket) Merge(other mesh.GossipData) (complete mesh.GossipData) {
-	return other
+	st.Events = append(st.Events, other.(*BuzzPacket).Events...)
+	return st
 }

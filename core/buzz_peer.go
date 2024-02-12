@@ -61,15 +61,13 @@ func (p *BuzzPeer) stop() {
 
 // Return a copy of our complete state.
 func (p *BuzzPeer) Gossip() (complete mesh.GossipData) {
-	//TODO: need to return empty data or nil (BuzzPeer::Gossip)
-	panic("not implemented yet")
+	return &schema.BuzzPacket{}
 }
 
 // Merge the gossiped data represented by buf into our state.
 // Return the state information that was modified.
 func (p *BuzzPeer) OnGossip(buf []byte) (delta mesh.GossipData, err error) {
-	//TODO: need to return empty data or nil (BuzzPeer::OnGossip)
-	panic("not implemented yet")
+	return &schema.BuzzPacket{}, nil
 }
 
 // Merge the gossiped data represented by buf into our state.
@@ -89,7 +87,7 @@ func (p *BuzzPeer) OnGossipBroadcast(src mesh.PeerName, buf []byte) (received me
 	//} else {
 	//	p.logger.Printf("OnGossipBroadcast %s %v => delta %v", src, set, received.(*state).set)
 	//}
-	return received, nil
+	return &pkt, nil
 }
 
 // Merge the gossiped data represented by buf into our state.
