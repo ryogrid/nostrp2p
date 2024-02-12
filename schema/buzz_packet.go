@@ -1,6 +1,8 @@
 package schema
 
 import (
+	"bytes"
+	"encoding/gob"
 	"github.com/weaveworks/mesh"
 )
 
@@ -17,20 +19,36 @@ var _ mesh.GossipData = &BuzzPacket{}
 // Construct an empty BuzzPacket object, ready to receive updates.
 // This is suitable to use at program start.
 // Other peers will populate us with data.
-func newPacket() *BuzzPacket {
-	// TODO: need to implement (newPacket func in packet.go)
-	panic("not implemented yet")
+func newBuzzPacket(event *BuzzEvent, req *BuzzReq, resp *BuzzResp) *BuzzPacket {
+	return &BuzzPacket{
+		Event: event,
+		Req:   req,
+		Resp:  resp,
+	}
+}
+
+func newBuzzPacketFromBytes(data []byte) (*BuzzPacket, error) {
+	var bp BuzzPacket
+	decBuf := bytes.NewBuffer(data)
+	if err := gob.NewDecoder(decBuf).Decode(&bp); err != nil {
+		return nil, err
+	}
+
+	return &bp, nil
 }
 
 // Encode serializes BuzzPacket to a slice of byte-slices.
-func (st *BuzzPacket) Encode() [][]byte {
-	// TODO: need to implement (BuzzPacket::Encode)
-	panic("not implemented yet")
+func (pkt *BuzzPacket) Encode() [][]byte {
+	buf := bytes.NewBuffer(nil)
+	if err := gob.NewEncoder(buf).Encode(pkt); err != nil {
+		panic(err)
+	}
+
+	return [][]byte{buf.Bytes()}
 }
 
 // Merge merges the other GossipData into this one,
 // and returns our resulting, complete BuzzPacket.
 func (st *BuzzPacket) Merge(other mesh.GossipData) (complete mesh.GossipData) {
-	// TODO: need to implement (BuzzPacket::Merge)
-	panic("not implemented yet")
+	return other
 }

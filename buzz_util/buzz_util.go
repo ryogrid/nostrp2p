@@ -1,11 +1,14 @@
-package buz_util
+package buzz_util
 
 import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
+	"testing"
 )
 
 var DebugMode = false
@@ -39,6 +42,15 @@ func OSInterrupt() {
 
 func BuzzDbgPrintln(a ...interface{}) {
 	if DebugMode {
-		fmt.Fprintln(os.Stderr, a)
+		fmt.Fprintln(os.Stderr, a...)
+	}
+}
+
+// Assert fails the test if the condition is false.
+func Assert(tb testing.TB, condition bool, msg string, v ...interface{}) {
+	if !condition {
+		_, file, line, _ := runtime.Caller(1)
+		tb.Errorf("\033[31m%s:%d: "+msg+"\033[39m\n\n", append([]interface{}{filepath.Base(file), line}, v...)...)
+		tb.FailNow()
 	}
 }

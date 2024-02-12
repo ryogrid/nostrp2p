@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="go test buzzoon" type="GoTestRunConfiguration" factoryName="Go Test" nameIsGenerated="true">
+    <module name="buzzoon" />
+    <working_directory value="$PROJECT_DIR$" />
+    <go_parameters value="./... -v" />
+    <kind value="DIRECTORY" />
+    <package value="github.com/ryogrid/buzzoon" />
+    <directory value="$PROJECT_DIR$" />
+    <filePath value="$PROJECT_DIR$" />
+    <framework value="gotest" />
+    <method v="2" />
+  </configuration>
+</component>

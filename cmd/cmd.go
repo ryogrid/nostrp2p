@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/ryogrid/buzzoon/buz_util"
+	"github.com/ryogrid/buzzoon/buzz_util"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -25,10 +25,10 @@ var serverCmd = &cobra.Command{
 	Short: "Startup server.",
 	Run: func(cmd *cobra.Command, args []string) {
 		if debug {
-			buz_util.DebugMode = true
+			buzz_util.DebugMode = true
 		}
 
-		peers := &buz_util.Stringset{}
+		peers := &buzz_util.Stringset{}
 		peers.Set("xxxxxxx:yyyyy")
 
 		//peer, err := overlay.NewOverlayPeer(selfPeerId, &forwardAddress, int(listenPort+1000), peers, false)
@@ -42,7 +42,7 @@ var serverCmd = &cobra.Command{
 
 		//s := server.New(....)
 
-		buz_util.OSInterrupt()
+		buzz_util.OSInterrupt()
 	},
 }
 
