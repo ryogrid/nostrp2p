@@ -39,10 +39,10 @@ Flags:
 ## Examples
 ```bash
 # 4 servers network on local network (4 shells are needed...)
-./buzzoon server  -l 127.0.0.1:20000 -p <public key in hex> -n origin
-./buzzoon server -l 127.0.0.1:20002 -p <public key in hex> -n alice -b 127.0.0.1:20000 
-./buzzoon server -l 127.0.0.1:20004 -p <public key in hex> -n bob -b 127.0.0.1:20002
-./buzzoon server -l 127.0.0.1:20006 -p <public key in hex> -n tom -b 127.0.0.1:20000
+./buzzoon server  -l 0.0.0.0:20000 -p <public key in hex> -n origin
+./buzzoon server -l 0.0.0.0:20002 -p <public key in hex> -n alice -b 127.0.0.1:20000 
+./buzzoon server -l 0.0.0.0:20004 -p <public key in hex> -n bob -b 127.0.0.1:20002
+./buzzoon server -l 0.0.0.0:20006 -p <public key in hex> -n tom -b 127.0.0.1:20000
 ```
 
 ```bash
@@ -55,10 +55,10 @@ Flags:
 ./buzzoon server -l 0.0.0.0:20000 -p <public key in hex> -n alice -b ryogrid.net:20000 
 
 # on network A (bind to address/port which is NOT internet accessible)
-./buzzoon server -l 127.0.0.1:20000 -p <public key in hex> -n bob -b ryogrid.net:20000
+./buzzoon server -l 0.0.0.0:20000 -p <public key in hex> -n bob -b ryogrid.net:20000
 
 # on network B (bind to address/port which is NOT internet accessible)
-./buzzoon server -l 127.0.0.1:20000 -p <public key in hex> -n tom -b redsky.social:20000
+./buzzoon server -l 0.0.0.0:20000 -p <public key in hex> -n tom -b redsky.social:20000
 ```
 
 ### Generate key pair
