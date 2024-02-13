@@ -97,7 +97,8 @@ func (p *BuzzPeer) OnGossipBroadcast(src mesh.PeerName, buf []byte) (received me
 		panic(err_)
 	}
 
-	return &pkt, nil
+	//return &pkt, nil
+	return &schema.BuzzPacket{}, nil
 }
 
 // Merge the gossiped data represented by buf into our state.

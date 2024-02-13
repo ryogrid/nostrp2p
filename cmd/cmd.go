@@ -109,10 +109,10 @@ var serverCmd = &cobra.Command{
 				Sig:        [64]byte{},
 			}
 			events := []*schema.BuzzEvent{&event}
-			peer.MessageMan.SendMsgUnicast(1, &schema.BuzzPacket{events, nil, nil})
-			peer.MessageMan.SendMsgUnicast(2, &schema.BuzzPacket{events, nil, nil})
-			//peer.MessageMan.SendMsgBroadcast(&schema.BuzzPacket{events, nil, nil})
-			//peer.MessageMan.SendMsgBroadcast(&schema.BuzzPacket{events, nil, nil})
+			//peer.MessageMan.SendMsgUnicast(1, &schema.BuzzPacket{events, nil, nil})
+			//peer.MessageMan.SendMsgUnicast(2, &schema.BuzzPacket{events, nil, nil})
+			peer.MessageMan.SendMsgBroadcast(&schema.BuzzPacket{events, nil, nil})
+			peer.MessageMan.SendMsgBroadcast(&schema.BuzzPacket{events, nil, nil})
 		}
 
 		buzz_util.OSInterrupt()
