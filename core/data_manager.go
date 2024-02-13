@@ -1,12 +1,17 @@
 package core
 
-import "github.com/ryogrid/buzzoon/schema"
+import (
+	"fmt"
+	"github.com/ryogrid/buzzoon/schema"
+)
 
 type DataManager struct {
 	// TODO: need to implement (DataManager)
 }
 
-func (dman *DataManager) mergeReceived(pkt *schema.BuzzPacket) error {
+func (dman *DataManager) storeReceived(pkt *schema.BuzzPacket) error {
 	// TODO: need to implement (DataManager::mergeReceived)
-	panic("not implemented yet")
+	fmt.Println(pkt.Events[0].Content)
+
+	return nil
 }

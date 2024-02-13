@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/ryogrid/buzzoon/buzz_util"
 	"github.com/ryogrid/buzzoon/core"
+	"github.com/ryogrid/buzzoon/schema"
 	"github.com/spf13/cobra"
 	"github.com/weaveworks/mesh"
 	"io/ioutil"
@@ -11,6 +12,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"time"
 )
 
 var listenAddrPort = "127.0.0.1:20000"
@@ -53,8 +55,9 @@ var serverCmd = &cobra.Command{
 		// TODO: need to use big int (cmd.go)
 		name, err := strconv.ParseUint(publicKey, 16, 64)
 		if err != nil {
-			panic(err)
+			logger.Fatalf("public key: %s: %v", listenAddrPort, err)
 		}
+		// TODO: need to print boot message with hex public key string
 
 		router, err := mesh.NewRouter(mesh.Config{
 			Host:               host,
@@ -92,6 +95,25 @@ var serverCmd = &cobra.Command{
 		// TODO: need to implement classes handle message sending and receiving (cmd.go)
 
 		// TODO: need to implemnt and create temporal post request receiver I/f manager (cmd.go)
+
+		if name == 3 {
+			time.Sleep(5 * time.Second)
+			buzz_util.BuzzDbgPrintln("send hello buzzon")
+			event := schema.BuzzEvent{
+				Id:         0,
+				Pubkey:     [32]byte{},
+				Created_at: 0,
+				Kind:       0,
+				Tags:       nil,
+				Content:    "hello buzzon",
+				Sig:        [64]byte{},
+			}
+			events := []*schema.BuzzEvent{&event}
+			//peer.MessageMan.SendMsgUnicast(1, &schema.BuzzPacket{events, nil, nil})
+			//peer.MessageMan.SendMsgUnicast(2, &schema.BuzzPacket{events, nil, nil})
+			peer.MessageMan.SendMsgBroadcast(&schema.BuzzPacket{events, nil, nil})
+			peer.MessageMan.SendMsgBroadcast(&schema.BuzzPacket{events, nil, nil})
+		}
 
 		buzz_util.OSInterrupt()
 	},
