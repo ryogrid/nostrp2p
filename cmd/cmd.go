@@ -62,8 +62,8 @@ var serverCmd = &cobra.Command{
 		router, err := mesh.NewRouter(mesh.Config{
 			Host:               host,
 			Port:               port,
-			ProtocolMinVersion: mesh.ProtocolMinVersion,
-			Password:           []byte(""),
+			ProtocolMinVersion: mesh.ProtocolMaxVersion,
+			Password:           nil,
 			ConnLimit:          64,
 			PeerDiscovery:      true,
 			TrustedSubnets:     []*net.IPNet{},
@@ -74,14 +74,14 @@ var serverCmd = &cobra.Command{
 		}
 
 		peer := core.NewPeer(mesh.PeerName(name), logger)
-		gossip, err := router.NewGossip("bazzoon", peer)
+		gossip, err := router.NewGossip("buzzoon", peer)
 		if err != nil {
 			logger.Fatalf("Could not create gossip: %v", err)
 		}
 
 		peer.Register(gossip)
 
-		func() {
+		go func() {
 			logger.Printf("mesh router starting (%s)", listenAddrPort)
 			router.Start()
 		}()
@@ -109,10 +109,10 @@ var serverCmd = &cobra.Command{
 				Sig:        [64]byte{},
 			}
 			events := []*schema.BuzzEvent{&event}
-			//peer.MessageMan.SendMsgUnicast(1, &schema.BuzzPacket{events, nil, nil})
-			//peer.MessageMan.SendMsgUnicast(2, &schema.BuzzPacket{events, nil, nil})
-			peer.MessageMan.SendMsgBroadcast(&schema.BuzzPacket{events, nil, nil})
-			peer.MessageMan.SendMsgBroadcast(&schema.BuzzPacket{events, nil, nil})
+			peer.MessageMan.SendMsgUnicast(1, &schema.BuzzPacket{events, nil, nil})
+			peer.MessageMan.SendMsgUnicast(2, &schema.BuzzPacket{events, nil, nil})
+			//peer.MessageMan.SendMsgBroadcast(&schema.BuzzPacket{events, nil, nil})
+			//peer.MessageMan.SendMsgBroadcast(&schema.BuzzPacket{events, nil, nil})
 		}
 
 		buzz_util.OSInterrupt()
