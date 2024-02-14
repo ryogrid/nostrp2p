@@ -14,7 +14,7 @@ import (
 // and the resulting Gossip registered in turn,
 // before calling mesh.Router.Start.
 type BuzzPeer struct {
-	send       *mesh.Gossip
+	Send       *mesh.Gossip
 	actions    chan<- func()
 	quit       chan struct{}
 	logger     *log.Logger
@@ -22,6 +22,7 @@ type BuzzPeer struct {
 	MessageMan *MessageManager
 	SelfId     mesh.PeerName
 	Nickname   *string
+	Router     *mesh.Router
 }
 
 // BuzzPeer implements mesh.Gossiper.
@@ -35,7 +36,7 @@ func NewPeer(self mesh.PeerName, nickname *string, logger *log.Logger) *BuzzPeer
 	dataMan := &DataManager{}
 	msgMan := &MessageManager{dataManager: dataMan}
 	p := &BuzzPeer{
-		send:       nil, // must .Register() later
+		Send:       nil, // must .Register() later
 		actions:    actions,
 		quit:       make(chan struct{}),
 		logger:     logger,
@@ -62,7 +63,7 @@ func (p *BuzzPeer) loop(actions <-chan func()) {
 // Register the result of a mesh.Router.NewGossip.
 func (p *BuzzPeer) Register(send mesh.Gossip) {
 	p.actions <- func() {
-		p.send = &send
+		p.Send = &send
 		p.MessageMan.send = send
 	}
 }
@@ -117,4 +118,13 @@ func (p *BuzzPeer) OnGossipUnicast(src mesh.PeerName, buf []byte) error {
 	}
 
 	return nil
+}
+
+func (p *BuzzPeer) GetPeerList() []mesh.PeerName {
+	tmpMap := p.Router.Routes.PeerNames()
+	retArr := make([]mesh.PeerName, 0)
+	for k, _ := range tmpMap {
+		retArr = append(retArr, k)
+	}
+	return retArr
 }

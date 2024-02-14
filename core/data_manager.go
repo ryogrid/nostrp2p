@@ -11,7 +11,10 @@ type DataManager struct {
 
 func (dman *DataManager) storeReceived(pkt *schema.BuzzPacket) error {
 	// TODO: need to implement (DataManager::mergeReceived)
-	fmt.Println(pkt.Events[0].Tags["nickname"][0] + "> " + pkt.Events[0].Content)
-
+	if pkt.Events != nil {
+		fmt.Println(pkt.Events[0].Tags["nickname"][0] + "> " + pkt.Events[0].Content)
+	} else {
+		fmt.Println("pkt.Events is nil")
+	}
 	return nil
 }

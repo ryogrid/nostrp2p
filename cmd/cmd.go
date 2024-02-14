@@ -94,9 +94,13 @@ var serverCmd = &cobra.Command{
 		}()
 
 		router.ConnectionMaker.InitiateConnections(peers.Slice(), true)
+		peer.Router = router
 
-		apiServ := api_server.NewApiServer(peer)
-		go apiServ.LaunchAPIServer(host + ":" + strconv.Itoa(port+1))
+		if !buzz_util.DenyWriteMode {
+			apiServ := api_server.NewApiServer(peer)
+			go apiServ.LaunchAPIServer(host + ":" + strconv.Itoa(port+1))
+		}
+
 		// TODO: need to implement classes handle message sending and receiving (cmd.go)
 
 		// TODO: need to implemnt and create temporal post request receiver I/f manager (cmd.go)

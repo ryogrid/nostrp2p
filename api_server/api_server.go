@@ -60,7 +60,10 @@ func (s *ApiServer) postEvent(w rest.ResponseWriter, req *rest.Request) {
 		Sig:        sigBytes,
 	}
 	events := []*schema.BuzzEvent{&event}
-	s.buzzPeer.MessageMan.SendMsgBroadcast(&schema.BuzzPacket{events, nil, nil})
+	for _, peerId := range s.buzzPeer.GetPeerList() {
+		s.buzzPeer.MessageMan.SendMsgUnicast(peerId, &schema.BuzzPacket{events, nil, nil})
+	}
+	//s.buzzPeer.MessageMan.SendMsgBroadcast(&schema.BuzzPacket{events, nil, nil})
 
 	w.WriteJson(&PostEventResp{
 		"SUCCESS",
