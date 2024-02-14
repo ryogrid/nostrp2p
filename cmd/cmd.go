@@ -101,29 +101,6 @@ var serverCmd = &cobra.Command{
 			go apiServ.LaunchAPIServer(host + ":" + strconv.Itoa(port+1))
 		}
 
-		// TODO: need to implement classes handle message sending and receiving (cmd.go)
-
-		// TODO: need to implemnt and create temporal post request receiver I/f manager (cmd.go)
-		/*
-			if name == 3 {
-				time.Sleep(5 * time.Second)
-				buzz_util.BuzzDbgPrintln("send hello buzzon")
-				event := schema.BuzzEvent{
-					Id:         0,
-					Pubkey:     [32]byte{},
-					Created_at: 0,
-					Kind:       0,
-					Tags:       nil,
-					Content:    "hello buzzon",
-					Sig:        [64]byte{},
-				}
-				events := []*schema.BuzzEvent{&event}
-				//peer.MessageMan.SendMsgUnicast(1, &schema.BuzzPacket{events, nil, nil})
-				//peer.MessageMan.SendMsgUnicast(2, &schema.BuzzPacket{events, nil, nil})
-				peer.MessageMan.SendMsgBroadcast(&schema.BuzzPacket{events, nil, nil})
-				peer.MessageMan.SendMsgBroadcast(&schema.BuzzPacket{events, nil, nil})
-			}
-		*/
 		buzz_util.OSInterrupt()
 	},
 }
