@@ -20,7 +20,8 @@ type BuzzPeer struct {
 	logger     *log.Logger
 	dataMan    *DataManager
 	MessageMan *MessageManager
-	selfId     mesh.PeerName
+	SelfId     mesh.PeerName
+	Nickname   *string
 }
 
 // BuzzPeer implements mesh.Gossiper.
@@ -29,7 +30,7 @@ var _ mesh.Gossiper = &BuzzPeer{}
 // Construct a BuzzPeer with empty state.
 // Be sure to Register a channel, later,
 // so we can make outbound communication.
-func NewPeer(self mesh.PeerName, logger *log.Logger) *BuzzPeer {
+func NewPeer(self mesh.PeerName, nickname *string, logger *log.Logger) *BuzzPeer {
 	actions := make(chan func())
 	dataMan := &DataManager{}
 	msgMan := &MessageManager{dataManager: dataMan}
@@ -40,7 +41,8 @@ func NewPeer(self mesh.PeerName, logger *log.Logger) *BuzzPeer {
 		logger:     logger,
 		dataMan:    dataMan,
 		MessageMan: msgMan,
-		selfId:     self,
+		SelfId:     self,
+		Nickname:   nickname,
 	}
 	go p.loop(actions)
 	return p

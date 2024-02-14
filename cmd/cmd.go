@@ -2,9 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/ryogrid/buzzoon/api_server"
 	"github.com/ryogrid/buzzoon/buzz_util"
 	"github.com/ryogrid/buzzoon/core"
-	"github.com/ryogrid/buzzoon/schema"
 	"github.com/spf13/cobra"
 	"github.com/weaveworks/mesh"
 	"io/ioutil"
@@ -12,13 +12,13 @@ import (
 	"net"
 	"os"
 	"strconv"
-	"time"
 )
 
 var listenAddrPort = "127.0.0.1:20000"
 var bootPeerAddrPort = ""
 var publicKey = ""
 var nickname = ""
+var writable = true
 var debug = false
 
 var rootCmd = &cobra.Command{
@@ -32,6 +32,9 @@ var serverCmd = &cobra.Command{
 	Use:   "server",
 	Short: "Startup server.",
 	Run: func(cmd *cobra.Command, args []string) {
+		if !writable {
+			buzz_util.DenyWriteMode = true
+		}
 		if debug {
 			buzz_util.DebugMode = true
 		}
@@ -73,7 +76,7 @@ var serverCmd = &cobra.Command{
 			logger.Fatalf("Could not create router: %v", err)
 		}
 
-		peer := core.NewPeer(mesh.PeerName(name), logger)
+		peer := core.NewPeer(mesh.PeerName(name), &nickname, logger)
 		gossip, err := router.NewGossip("buzzoon", peer)
 		if err != nil {
 			logger.Fatalf("Could not create gossip: %v", err)
@@ -92,29 +95,31 @@ var serverCmd = &cobra.Command{
 
 		router.ConnectionMaker.InitiateConnections(peers.Slice(), true)
 
+		apiServ := api_server.NewApiServer(peer)
+		go apiServ.LaunchAPIServer(host + ":" + strconv.Itoa(port+1))
 		// TODO: need to implement classes handle message sending and receiving (cmd.go)
 
 		// TODO: need to implemnt and create temporal post request receiver I/f manager (cmd.go)
-
-		if name == 3 {
-			time.Sleep(5 * time.Second)
-			buzz_util.BuzzDbgPrintln("send hello buzzon")
-			event := schema.BuzzEvent{
-				Id:         0,
-				Pubkey:     [32]byte{},
-				Created_at: 0,
-				Kind:       0,
-				Tags:       nil,
-				Content:    "hello buzzon",
-				Sig:        [64]byte{},
+		/*
+			if name == 3 {
+				time.Sleep(5 * time.Second)
+				buzz_util.BuzzDbgPrintln("send hello buzzon")
+				event := schema.BuzzEvent{
+					Id:         0,
+					Pubkey:     [32]byte{},
+					Created_at: 0,
+					Kind:       0,
+					Tags:       nil,
+					Content:    "hello buzzon",
+					Sig:        [64]byte{},
+				}
+				events := []*schema.BuzzEvent{&event}
+				//peer.MessageMan.SendMsgUnicast(1, &schema.BuzzPacket{events, nil, nil})
+				//peer.MessageMan.SendMsgUnicast(2, &schema.BuzzPacket{events, nil, nil})
+				peer.MessageMan.SendMsgBroadcast(&schema.BuzzPacket{events, nil, nil})
+				peer.MessageMan.SendMsgBroadcast(&schema.BuzzPacket{events, nil, nil})
 			}
-			events := []*schema.BuzzEvent{&event}
-			//peer.MessageMan.SendMsgUnicast(1, &schema.BuzzPacket{events, nil, nil})
-			//peer.MessageMan.SendMsgUnicast(2, &schema.BuzzPacket{events, nil, nil})
-			peer.MessageMan.SendMsgBroadcast(&schema.BuzzPacket{events, nil, nil})
-			peer.MessageMan.SendMsgBroadcast(&schema.BuzzPacket{events, nil, nil})
-		}
-
+		*/
 		buzz_util.OSInterrupt()
 	},
 }
@@ -163,6 +168,13 @@ func init() {
 	)
 	serverCmd.MarkFlagRequired("nickname")
 
+	serverCmd.Flags().BoolVarP(
+		&writable,
+		"writable",
+		"w",
+		true,
+		"Whether handle write request (default: true)",
+	)
 	serverCmd.Flags().BoolVarP(
 		&debug,
 		"debug",
