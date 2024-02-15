@@ -1,8 +1,8 @@
 package api_server
 
 import (
-	"encoding/binary"
 	"fmt"
+	"github.com/ryogrid/buzzoon/buzz_util"
 	"log"
 	"net/http"
 	"time"
@@ -43,17 +43,14 @@ func (s *ApiServer) postEvent(w rest.ResponseWriter, req *rest.Request) {
 		return
 	}
 
-	buf := make([]byte, binary.MaxVarintLen64)
-	binary.PutUvarint(buf, uint64(s.buzzPeer.SelfId))
-	var pubkeyBytes [32]byte
-	copy(pubkeyBytes[:], buf)
+	pubSlice := s.buzzPeer.Pubkey[:]
 	var sigBytes [64]byte
-	copy(sigBytes[:], buf)
+	copy(sigBytes[:], pubSlice)
 	tagsMap := make(map[string][]string)
 	tagsMap["nickname"] = []string{*s.buzzPeer.Nickname}
 	event := schema.BuzzEvent{
-		Id:         0,
-		Pubkey:     pubkeyBytes,
+		Id:         buzz_util.GetRandUint64(),
+		Pubkey:     s.buzzPeer.Pubkey,
 		Created_at: time.Now().Unix(),
 		Kind:       1,
 		Tags:       tagsMap,
@@ -61,12 +58,10 @@ func (s *ApiServer) postEvent(w rest.ResponseWriter, req *rest.Request) {
 		Sig:        sigBytes,
 	}
 	events := []*schema.BuzzEvent{&event}
-	for _, peerId := range s.buzzPeer.GetPeerList() {
-		s.buzzPeer.MessageMan.SendMsgUnicast(peerId, &schema.BuzzPacket{events, nil, nil})
-	}
-	// display for myself
-	fmt.Println(event.Tags["nickname"][0] + "> " + event.Content)
-	//s.buzzPeer.MessageMan.SendMsgBroadcast(&schema.BuzzPacket{events, nil, nil})
+	//for _, peerId := range s.buzzPeer.GetPeerList() {
+	//	s.buzzPeer.MessageMan.SendMsgUnicast(peerId, schema.NewBuzzPacket(&events, nil, nil))
+	//}
+	s.buzzPeer.MessageMan.SendMsgBroadcast(schema.NewBuzzPacket(&events, nil, nil))
 
 	// display for myself
 	fmt.Println(event.Tags["nickname"][0] + "> " + event.Content)

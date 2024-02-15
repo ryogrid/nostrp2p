@@ -19,10 +19,9 @@ var _ mesh.GossipData = &BuzzPacket{}
 // Construct an empty BuzzPacket object, ready to receive updates.
 // This is suitable to use at program start.
 // Other peers will populate us with data.
-func NewBuzzPacket(event *BuzzEvent, req *BuzzReq, resp *BuzzResp) *BuzzPacket {
-	events := make([]*BuzzEvent, 0)
+func NewBuzzPacket(events *[]*BuzzEvent, req *BuzzReq, resp *BuzzResp) *BuzzPacket {
 	return &BuzzPacket{
-		Events: append(events, event),
+		Events: *events,
 		Req:    req,
 		Resp:   resp,
 	}

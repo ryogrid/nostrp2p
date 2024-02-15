@@ -2,6 +2,7 @@ package core
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/gob"
 	"github.com/ryogrid/buzzoon/buzz_util"
 	"github.com/ryogrid/buzzoon/schema"
@@ -14,15 +15,17 @@ import (
 // and the resulting Gossip registered in turn,
 // before calling mesh.Router.Start.
 type BuzzPeer struct {
-	Send       *mesh.Gossip
-	actions    chan<- func()
-	quit       chan struct{}
-	logger     *log.Logger
-	dataMan    *DataManager
-	MessageMan *MessageManager
-	SelfId     mesh.PeerName
-	Nickname   *string
-	Router     *mesh.Router
+	Send         *mesh.Gossip
+	actions      chan<- func()
+	quit         chan struct{}
+	logger       *log.Logger
+	dataMan      *DataManager
+	MessageMan   *MessageManager
+	SelfId       mesh.PeerName
+	Pubkey       [32]byte
+	Nickname     *string
+	Router       *mesh.Router
+	recvedEvtMap map[uint64]struct{}
 }
 
 // BuzzPeer implements mesh.Gossiper.
@@ -32,18 +35,26 @@ var _ mesh.Gossiper = &BuzzPeer{}
 // Be sure to Register a channel, later,
 // so we can make outbound communication.
 func NewPeer(self mesh.PeerName, nickname *string, logger *log.Logger) *BuzzPeer {
+	buf := make([]byte, binary.MaxVarintLen64)
+	binary.PutUvarint(buf, uint64(self))
+	var pubkeyBytes [32]byte
+	copy(pubkeyBytes[:], buf)
+
 	actions := make(chan func())
-	dataMan := &DataManager{}
+	dataMan := &DataManager{SelfPubkey: pubkeyBytes}
 	msgMan := &MessageManager{dataManager: dataMan}
+
 	p := &BuzzPeer{
-		Send:       nil, // must .Register() later
-		actions:    actions,
-		quit:       make(chan struct{}),
-		logger:     logger,
-		dataMan:    dataMan,
-		MessageMan: msgMan,
-		SelfId:     self,
-		Nickname:   nickname,
+		Send:         nil, // must .Register() later
+		actions:      actions,
+		quit:         make(chan struct{}),
+		logger:       logger,
+		dataMan:      dataMan,
+		MessageMan:   msgMan,
+		SelfId:       self,
+		Nickname:     nickname,
+		recvedEvtMap: make(map[uint64]struct{}),
+		Pubkey:       pubkeyBytes,
 	}
 	go p.loop(actions)
 	return p
@@ -95,13 +106,34 @@ func (p *BuzzPeer) OnGossipBroadcast(src mesh.PeerName, buf []byte) (received me
 		return nil, err_
 	}
 
-	err_ := p.MessageMan.handleRecvMsgBcast(&pkt)
-	if err_ != nil {
-		panic(err_)
+	tmp := make([]*schema.BuzzEvent, 0)
+	retPkt := schema.NewBuzzPacket(&tmp, nil, nil)
+	if pkt.Events != nil {
+		for _, evt := range pkt.Events {
+			if _, ok := p.recvedEvtMap[evt.Id]; !ok {
+				err_ := p.MessageMan.handleRecvMsgBcast(&pkt)
+				if err_ != nil {
+					panic(err_)
+				}
+
+				p.recvedEvtMap[evt.Id] = struct{}{}
+				retPkt.Events = append(retPkt.Events, evt)
+			} else {
+				continue
+			}
+		}
+	} else {
+		return &pkt, nil
+	}
+
+	if len(retPkt.Events) == 0 {
+		return nil, nil
+	} else {
+		return retPkt, nil
 	}
 
 	//return &pkt, nil
-	return &schema.BuzzPacket{}, nil
+	//return &schema.BuzzPacket{}, nil
 }
 
 // Merge the gossiped data represented by buf into our state.

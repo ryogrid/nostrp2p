@@ -2,6 +2,7 @@ package buzz_util
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -9,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 )
 
 var DebugMode = false
@@ -54,4 +56,15 @@ func Assert(tb testing.TB, condition bool, msg string, v ...interface{}) {
 		tb.Errorf("\033[31m%s:%d: "+msg+"\033[39m\n\n", append([]interface{}{filepath.Base(file), line}, v...)...)
 		tb.FailNow()
 	}
+}
+
+var randGen *rand.Rand
+
+func InitializeRandGen(seed int64) {
+	seed_ := seed + time.Now().UnixNano()
+	randGen = rand.New(rand.NewSource(seed_))
+}
+
+func GetRandUint64() uint64 {
+	return randGen.Uint64()
 }

@@ -63,6 +63,9 @@ var serverCmd = &cobra.Command{
 		}
 		// TODO: need to print boot message with hex public key string
 
+		// initializa rand generator
+		buzz_util.InitializeRandGen(int64(name))
+
 		router, err := mesh.NewRouter(mesh.Config{
 			Host:               host,
 			Port:               port,
