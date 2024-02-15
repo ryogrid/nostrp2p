@@ -3,12 +3,13 @@ package api_server
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/ant0ine/go-json-rest/rest"
-	"github.com/ryogrid/buzzoon/core"
-	"github.com/ryogrid/buzzoon/schema"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/ant0ine/go-json-rest/rest"
+	"github.com/ryogrid/buzzoon/core"
+	"github.com/ryogrid/buzzoon/schema"
 )
 
 type PostEventReq struct {
@@ -65,6 +66,9 @@ func (s *ApiServer) postEvent(w rest.ResponseWriter, req *rest.Request) {
 	}
 	//s.buzzPeer.MessageMan.SendMsgBroadcast(&schema.BuzzPacket{events, nil, nil})
 
+	// display for myself
+	fmt.Println(event.Tags["nickname"][0] + "> " + event.Content)
+
 	w.WriteJson(&PostEventResp{
 		"SUCCESS",
 	})
@@ -74,7 +78,18 @@ func (s *ApiServer) LaunchAPIServer(addrStr string) {
 	api := rest.NewApi()
 
 	// the Middleware stack
-	api.Use(rest.DefaultDevStack...)
+	//api.Use(rest.DefaultDevStack...)
+	api.Use(
+		//&rest.AccessLogApacheMiddleware{},
+		&rest.TimerMiddleware{},
+		&rest.RecorderMiddleware{},
+		&rest.PoweredByMiddleware{},
+		&rest.RecoverMiddleware{
+			EnableResponseStackTrace: true,
+		},
+		&rest.JsonIndentMiddleware{},
+		&rest.ContentTypeCheckerMiddleware{},
+	)
 	api.Use(&rest.JsonpMiddleware{
 		CallbackNameKey: "cb",
 	})
