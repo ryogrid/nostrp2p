@@ -48,16 +48,16 @@ Flags:
 ```bash
 # 4 servers distributed on different networks
 
-# on network ryogrid.net (bind to address/port which is internet accessible)
+# on network ryogrid.net (bind to address/port which is accessible from The Internet)
 ./buzzoon server  -l 0.0.0.0:20000 -p <public key in hex> -n ryo
 
-# on network redsky.social (bind to address/port which is internet accessible)
+# on network redsky.social (bind to address/port which accessible from The Internet)
 ./buzzoon server -l 0.0.0.0:20000 -p <public key in hex> -n alice -b ryogrid.net:20000 
 
-# on network A (bind to address/port which is NOT internet accessible)
+# on network A (bind to address/port which is NOT accessible from The Internet)
 ./buzzoon server -l 0.0.0.0:20000 -p <public key in hex> -n bob -b ryogrid.net:20000
 
-# on network B (bind to address/port which is NOT internet accessible)
+# on network B (bind to address/port which is NOT accessible from The Internet)
 ./buzzoon server -l 0.0.0.0:20000 -p <public key in hex> -n tom -b redsky.social:20000
 ```
 
