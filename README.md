@@ -1,12 +1,15 @@
 # What is Buzzoon?
-Pure peer-to-peer distributed microblog system on NAT transparent overlay network implemented in Golang
+Pure peer-to-peer distributed microblog system on NAT transparent overlay network implemented in Golang inspired by [Nostr](https://en.wikipedia.org/wiki/Nostr)
+
+## Design Note
+[here (Japanese)](https://gist.github.com/ryogrid/0ba0d825c3bb840dffa519c5ab91d4ff)
 
 ## Build
 ```bash
 $ go build -o buzzoon main.go
 ```
 
-## Usage
+## Buzoon command usage
 ```
 Usage:
   buzzoon [flags]
@@ -21,8 +24,6 @@ Flags:
   -h, --help   Help for buzzoon
 ```
 
-### Server
-
 ```
 Usage:
   buzzoon server [flags]
@@ -36,7 +37,10 @@ Flags:
   -d, --debug               bool     If true, debug log is output to stderr (default: false)
 ```
 
-## Examples
+## Examples (Generate key pair)
+- Under construction
+
+## Examples (Server lauch)
 ```bash
 # 4 servers network on local network (4 shells are needed...)
 ./buzzoon server  -l 0.0.0.0:20000 -p <public key in hex> -n origin
@@ -61,8 +65,16 @@ Flags:
 ./buzzoon server -l 0.0.0.0:20000 -p <public key in hex> -n tom -b redsky.social:20000
 ```
 
-### Generate key pair
+## Examples (Client usage)
 - Under construction
 
-## Design Note
-[here (Japanese)](https://gist.github.com/ryogrid/0ba0d825c3bb840dffa519c5ab91d4ff)
+## About ultra simple prototype system
+- [here (Japanese)](https://ryogrid.hatenablog.com/entry/2024/02/14/225619)
+  - No signature validation
+  - No follow feature (global TL only)
+  - No data replication
+  - No persistence
+  - No client
+    - Posts are outputed to stdout of server
+    - Posting text via REST I/F which accept POST of JSON text
+
