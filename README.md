@@ -70,11 +70,12 @@ Flags:
 
 ## About ultra simple prototype system
 - [here (Japanese)](https://ryogrid.hatenablog.com/entry/2024/02/14/225619)
+  - NAT transparent overlay has been implented
   - No signature validation
   - No follow feature (global TL only)
   - No data replication
   - No persistence
-  - No client
+  - (Almost) No client
     - Posts are outputed to stdout of server
-    - Posting text via REST I/F which accept POST of JSON text
+    - Posting text via REST I/F which accepts HTTP POST of JSON text
 
