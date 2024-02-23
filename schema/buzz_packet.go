@@ -34,6 +34,10 @@ func NewBuzzPacket(events *[]*BuzzEvent, req *BuzzReq) *BuzzPacket {
 
 func newBuzzPacketFromBytes(data []byte) (*BuzzPacket, error) {
 	var bp BuzzPacket
+	//copiedData := make([]byte, len(data))
+	//copy(copiedData, data)
+	//copiedData = buzz_util.GzipDecompless(copiedData)
+	//decBuf := bytes.NewBuffer(copiedData)
 	decBuf := bytes.NewBuffer(data)
 	if err := gob.NewDecoder(decBuf).Decode(&bp); err != nil {
 		return nil, err
@@ -49,6 +53,7 @@ func (pkt *BuzzPacket) Encode() [][]byte {
 		panic(err)
 	}
 
+	//return [][]byte{buzz_util.GzipCompless(buf.Bytes())}
 	return [][]byte{buf.Bytes()}
 }
 
@@ -58,3 +63,59 @@ func (st *BuzzPacket) Merge(other mesh.GossipData) (complete mesh.GossipData) {
 	st.Events = append(st.Events, other.(*BuzzPacket).Events...)
 	return st
 }
+
+//func (st *BuzzPacket) GobEncode() ([]byte, error) {
+//	buf := make([]byte, 0)
+//	buf = binary.LittleEndian.AppendUint16(buf, st.SrvVer)
+//	buf = binary.LittleEndian.AppendUint16(buf, st.PktVer)
+//
+//	if st.Events != nil {
+//		eventsBuf := bytes.NewBuffer(nil)
+//		_ = gob.NewEncoder(eventsBuf).Encode(st.Events)
+//		eventsBytes := eventsBuf.Bytes()
+//		buf = binary.LittleEndian.AppendUint16(buf, uint16(len(eventsBytes)))
+//		buf = append(buf, eventsBytes...)
+//	} else {
+//		buf = binary.LittleEndian.AppendUint16(buf, 0)
+//	}
+//
+//	if st.Req != nil {
+//		reqBuf := bytes.NewBuffer(nil)
+//		_ = gob.NewEncoder(reqBuf).Encode(st.Req)
+//		reqBytes := reqBuf.Bytes()
+//		buf = binary.LittleEndian.AppendUint16(buf, uint16(len(reqBytes)))
+//		buf = append(buf, reqBytes...)
+//	} else {
+//		buf = binary.LittleEndian.AppendUint16(buf, 0)
+//	}
+//
+//	return buzz_util.GzipCompless(buf), nil
+//}
+//
+//func (st *BuzzPacket) GobDecode(data []byte) error {
+//	decomped := buzz_util.GzipDecompless(data)
+//	st.SrvVer = binary.LittleEndian.Uint16(decomped[:2])
+//	st.PktVer = binary.LittleEndian.Uint16(decomped[2:4])
+//	eventsLen := binary.LittleEndian.Uint16(decomped[4:6])
+//	var offset = 6
+//	if eventsLen != 0 {
+//		offset = 6 + int(eventsLen)
+//		decoder := gob.NewDecoder(bytes.NewBuffer(decomped[6:offset]))
+//		err := decoder.Decode(&st.Events)
+//		if err != nil {
+//			panic(err)
+//		}
+//	} else {
+//		st.Events = nil
+//	}
+//	reqLen := binary.LittleEndian.Uint16(decomped[offset : offset+2])
+//	if reqLen != 0 {
+//		offset = offset + 2
+//		offset2 := offset + int(reqLen)
+//		gob.NewDecoder(bytes.NewBuffer(decomped[offset:offset2])).Decode(st.Req)
+//	} else {
+//		st.Req = nil
+//	}
+//
+//	return nil
+//}

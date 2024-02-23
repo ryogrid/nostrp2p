@@ -48,7 +48,7 @@ func (s *ApiServer) postEvent(w rest.ResponseWriter, req *rest.Request) {
 
 	evt := s.buzzPeer.MessageMan.BrodcastOwnPost(input.Content)
 	// display for myself
-	s.buzzPeer.MessageMan.DataMan.DispPostAtStdout(evt)
+	s.buzzPeer.MessageMan.DispPostAtStdout(evt)
 
 	w.WriteJson(&GeneralResp{
 		"SUCCESS",

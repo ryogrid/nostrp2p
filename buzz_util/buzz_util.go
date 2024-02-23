@@ -1,20 +1,27 @@
 package buzz_util
 
 import (
+	"bytes"
+	"compress/gzip"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"math/rand"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 )
 
 const ServerImplVersion uint16 = 1
+
+// ratio of post event attached profile update time
+const AttachProfileUpdateProb = 0.2 // 1post / 5posts
 
 var DebugMode = false
 var DenyWriteMode = false
@@ -72,6 +79,46 @@ func GetRandUint64() uint64 {
 	return randGen.Uint64()
 }
 
+// return true with given probability
+func IsHit(prob float64) bool {
+	return randGen.Float64() < prob
+}
+
 func GetLower64bitUint(bytes [32]byte) uint64 {
 	return binary.LittleEndian.Uint64(bytes[:8])
+}
+
+func GzipCompless(data []byte) []byte {
+	fmt.Println("GzipCompless:" + strconv.Itoa(len(data)))
+	var buf bytes.Buffer
+	zw := gzip.NewWriter(&buf)
+	_, err := zw.Write(data)
+	if err != nil {
+		panic(err)
+	}
+
+	if err2 := zw.Close(); err2 != nil {
+		panic(err2)
+	}
+
+	retBuf := buf.Bytes()
+	fmt.Println("GzipCompless:" + strconv.Itoa(len(retBuf)))
+	return retBuf
+}
+
+func GzipDecompless(data []byte) []byte {
+	buf := bytes.NewBuffer(data)
+	zr, err := gzip.NewReader(buf)
+	if err != nil {
+		panic(err)
+	}
+
+	buf2 := new(bytes.Buffer)
+	io.Copy(buf2, zr)
+	if err2 := zr.Close(); err2 != nil {
+		panic(err2)
+	}
+
+	retBuf := buf2.Bytes()
+	return retBuf
 }
