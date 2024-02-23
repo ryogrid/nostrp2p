@@ -2,24 +2,53 @@ package core
 
 import (
 	"fmt"
+	"github.com/chenjiandongx/mandodb/pkg/sortedlist"
 	"github.com/ryogrid/buzzoon/schema"
+	"sync"
 )
 
 type DataManager struct {
-	SelfPubkey [32]byte
-	// TODO: need to implement (DataManager)
+	SelfPubkey   [32]byte
+	EventList    sortedlist.List // timestamp(int64) -> *schema.BuzzEvent
+	EventListMtx *sync.Mutex
 }
 
-func (dman *DataManager) storeReceived(pkt *schema.BuzzPacket) error {
-	// TODO: need to implement (DataManager::mergeReceived)
+func NewDataManager(pubkey [32]byte) *DataManager {
+	return &DataManager{
+		SelfPubkey:   pubkey,
+		EventList:    sortedlist.NewTree(),
+		EventListMtx: &sync.Mutex{},
+	}
+}
+
+func (dman *DataManager) handleReceived(pkt *schema.BuzzPacket) error {
+	// TODO: need to use on-disk DB (DataManager::mergeReceived)
 	if pkt.Events != nil {
 		for _, evt := range pkt.Events {
 			if evt.Pubkey != dman.SelfPubkey {
-				fmt.Println(evt.Tags["nickname"][0] + "> " + evt.Content)
+				// store received event data (on memory)
+				tmpEvt := *evt
+				dman.storeEvent(&tmpEvt)
+
+				switch evt.Kind {
+				case 1: // post
+					// display (TEMPORAL IMPL)
+					dman.dispPostAtStdout(evt)
+				}
 			}
 		}
 	} else {
 		fmt.Println("pkt.Events is nil")
 	}
 	return nil
+}
+
+func (dman *DataManager) storeEvent(evt *schema.BuzzEvent) {
+	dman.EventListMtx.Lock()
+	dman.EventList.Add(evt.Created_at, evt)
+	dman.EventListMtx.Unlock()
+}
+
+func (dman *DataManager) dispPostAtStdout(evt *schema.BuzzEvent) {
+	fmt.Println(evt.Tags["nickname"][0] + "> " + evt.Content)
 }

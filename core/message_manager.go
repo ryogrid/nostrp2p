@@ -11,13 +11,13 @@ type MessageManager struct {
 }
 
 func (mm *MessageManager) handleRecvMsgBcast(pkt *schema.BuzzPacket) error {
-	mm.dataManager.storeReceived(pkt)
+	mm.dataManager.handleReceived(pkt)
 
 	return nil
 }
 
 func (mm *MessageManager) handleRecvMsgUnicast(src mesh.PeerName, pkt *schema.BuzzPacket) error {
-	mm.dataManager.storeReceived(pkt)
+	mm.dataManager.handleReceived(pkt)
 
 	return nil
 }

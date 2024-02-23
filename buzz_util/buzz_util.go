@@ -13,6 +13,8 @@ import (
 	"time"
 )
 
+const ServerImplVersion uint16 = 1
+
 var DebugMode = false
 var DenyWriteMode = false
 

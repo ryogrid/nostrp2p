@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/gob"
+	"errors"
+	"fmt"
 	"github.com/ryogrid/buzzoon/buzz_util"
 	"github.com/ryogrid/buzzoon/schema"
 	"github.com/weaveworks/mesh"
@@ -41,7 +43,7 @@ func NewPeer(self mesh.PeerName, nickname *string, logger *log.Logger) *BuzzPeer
 	copy(pubkeyBytes[:], buf)
 
 	actions := make(chan func())
-	dataMan := &DataManager{SelfPubkey: pubkeyBytes}
+	dataMan := NewDataManager(pubkeyBytes)
 	msgMan := &MessageManager{dataManager: dataMan}
 
 	p := &BuzzPeer{
@@ -105,9 +107,15 @@ func (p *BuzzPeer) OnGossipBroadcast(src mesh.PeerName, buf []byte) (received me
 	if err_ := gob.NewDecoder(bytes.NewReader(buf)).Decode(&pkt); err_ != nil {
 		return nil, err_
 	}
+	if pkt.PktVer != schema.PacketStructureVersion {
+		return nil, errors.New("Invalid packet version")
+	}
+	if pkt.SrvVer != buzz_util.ServerImplVersion {
+		fmt.Println("received packat from newer version of server")
+	}
 
 	tmp := make([]*schema.BuzzEvent, 0)
-	retPkt := schema.NewBuzzPacket(&tmp, nil, nil)
+	retPkt := schema.NewBuzzPacket(&tmp, nil)
 	if pkt.Events != nil {
 		for _, evt := range pkt.Events {
 			if _, ok := p.recvedEvtMap[evt.Id]; !ok {
@@ -142,6 +150,12 @@ func (p *BuzzPeer) OnGossipUnicast(src mesh.PeerName, buf []byte) error {
 	var pkt schema.BuzzPacket
 	if err_ := gob.NewDecoder(bytes.NewReader(buf)).Decode(&pkt); err_ != nil {
 		return err_
+	}
+	if pkt.PktVer != schema.PacketStructureVersion {
+		return errors.New("Invalid packet version")
+	}
+	if pkt.SrvVer != buzz_util.ServerImplVersion {
+		fmt.Println("received packat from newer version of server")
 	}
 
 	err_ := p.MessageMan.handleRecvMsgUnicast(src, &pkt)

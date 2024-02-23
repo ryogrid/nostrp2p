@@ -61,7 +61,7 @@ func (s *ApiServer) postEvent(w rest.ResponseWriter, req *rest.Request) {
 	//for _, peerId := range s.buzzPeer.GetPeerList() {
 	//	s.buzzPeer.MessageMan.SendMsgUnicast(peerId, schema.NewBuzzPacket(&events, nil, nil))
 	//}
-	s.buzzPeer.MessageMan.SendMsgBroadcast(schema.NewBuzzPacket(&events, nil, nil))
+	s.buzzPeer.MessageMan.SendMsgBroadcast(schema.NewBuzzPacket(&events, nil))
 
 	// display for myself
 	fmt.Println(event.Tags["nickname"][0] + "> " + event.Content)

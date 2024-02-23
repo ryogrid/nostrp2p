@@ -3,14 +3,18 @@ package schema
 import (
 	"bytes"
 	"encoding/gob"
+	"github.com/ryogrid/buzzoon/buzz_util"
 	"github.com/weaveworks/mesh"
 )
 
+const PacketStructureVersion uint16 = 1
+
 // BuzzPacket is an implementation of GossipData
 type BuzzPacket struct {
+	SrvVer uint16 // version of buzzoon server implementation
+	PktVer uint16 // BuzzPacket data structure version for compatibility
 	Events []*BuzzEvent
 	Req    *BuzzReq
-	Resp   *BuzzResp
 }
 
 // BuzzPacket implements GossipData.
@@ -19,11 +23,12 @@ var _ mesh.GossipData = &BuzzPacket{}
 // Construct an empty BuzzPacket object, ready to receive updates.
 // This is suitable to use at program start.
 // Other peers will populate us with data.
-func NewBuzzPacket(events *[]*BuzzEvent, req *BuzzReq, resp *BuzzResp) *BuzzPacket {
+func NewBuzzPacket(events *[]*BuzzEvent, req *BuzzReq) *BuzzPacket {
 	return &BuzzPacket{
+		SrvVer: buzz_util.ServerImplVersion,
+		PktVer: PacketStructureVersion,
 		Events: *events,
 		Req:    req,
-		Resp:   resp,
 	}
 }
 
