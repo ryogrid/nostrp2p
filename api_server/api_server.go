@@ -3,6 +3,7 @@ package api_server
 import (
 	"fmt"
 	"github.com/ryogrid/buzzoon/buzz_util"
+	"github.com/ryogrid/buzzoon/glo_val"
 	"log"
 	"net/http"
 	"time"
@@ -43,19 +44,19 @@ func (s *ApiServer) postEvent(w rest.ResponseWriter, req *rest.Request) {
 		return
 	}
 
-	pubSlice := s.buzzPeer.Pubkey[:]
+	pubSlice := glo_val.SelfPubkey[:]
 	var sigBytes [64]byte
 	copy(sigBytes[:], pubSlice)
 	tagsMap := make(map[string][]string)
 	tagsMap["nickname"] = []string{*s.buzzPeer.Nickname}
 	event := schema.BuzzEvent{
 		Id:         buzz_util.GetRandUint64(),
-		Pubkey:     s.buzzPeer.Pubkey,
+		Pubkey:     *glo_val.SelfPubkey,
 		Created_at: time.Now().Unix(),
 		Kind:       1,
 		Tags:       tagsMap,
 		Content:    input.Content,
-		Sig:        sigBytes,
+		Sig:        &sigBytes,
 	}
 	events := []*schema.BuzzEvent{&event}
 	//for _, peerId := range s.buzzPeer.GetPeerList() {

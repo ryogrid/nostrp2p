@@ -12,7 +12,7 @@ type BuzzEvent struct {
 	Kind       uint16              // integer between 0 and 65535
 	Tags       map[string][]string // Key: tag string, Value: other strings
 	Content    string
-	Sig        [64]byte // 64-bytes integr of the signature of the sha256 hash of the serialized event data
+	Sig        *[64]byte // 64-bytes integr of the signature of the sha256 hash of the serialized event data
 }
 
 func (e *BuzzEvent) GetPubkey() *big.Int {

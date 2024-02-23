@@ -3,21 +3,22 @@ package core
 import (
 	"fmt"
 	"github.com/chenjiandongx/mandodb/pkg/sortedlist"
+	"github.com/ryogrid/buzzoon/glo_val"
 	"github.com/ryogrid/buzzoon/schema"
 	"sync"
 )
 
 type DataManager struct {
-	SelfPubkey   [32]byte
-	EventList    sortedlist.List // timestamp(int64) -> *schema.BuzzEvent
-	EventListMtx *sync.Mutex
+	EvtListTimeKey    sortedlist.List // timestamp(int64) -> *schema.BuzzEvent
+	EvtListTimeKeyMtx *sync.Mutex
+	EvtMapIdKey       sync.Map // event id(uint64) -> *schema.BuzzEvent
 }
 
-func NewDataManager(pubkey [32]byte) *DataManager {
+func NewDataManager() *DataManager {
 	return &DataManager{
-		SelfPubkey:   pubkey,
-		EventList:    sortedlist.NewTree(),
-		EventListMtx: &sync.Mutex{},
+		EvtListTimeKey:    sortedlist.NewTree(),
+		EvtListTimeKeyMtx: &sync.Mutex{},
+		EvtMapIdKey:       sync.Map{},
 	}
 }
 
@@ -25,7 +26,7 @@ func (dman *DataManager) handleReceived(pkt *schema.BuzzPacket) error {
 	// TODO: need to use on-disk DB (DataManager::mergeReceived)
 	if pkt.Events != nil {
 		for _, evt := range pkt.Events {
-			if evt.Pubkey != dman.SelfPubkey {
+			if evt.Pubkey != *glo_val.SelfPubkey {
 				// store received event data (on memory)
 				tmpEvt := *evt
 				dman.StoreEvent(&tmpEvt)
@@ -44,10 +45,12 @@ func (dman *DataManager) handleReceived(pkt *schema.BuzzPacket) error {
 }
 
 func (dman *DataManager) StoreEvent(evt *schema.BuzzEvent) {
-	// TODO: current impl overwrites the same timestamp event (DataManager::StoreEvent)
-	dman.EventListMtx.Lock()
-	dman.EventList.Add(evt.Created_at, evt)
-	dman.EventListMtx.Unlock()
+	// TODO: current impl overwrites the same timestamp event on EvtListTimeKey (DataManager::StoreEvent)
+	dman.EvtListTimeKeyMtx.Lock()
+	evt.Sig = nil // set nil because already verified
+	dman.EvtListTimeKey.Add(evt.Created_at, evt)
+	dman.EvtListTimeKeyMtx.Unlock()
+	dman.EvtMapIdKey.Store(evt.Id, evt)
 }
 
 // TODO: TEMPORAL IMPL

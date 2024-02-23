@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ryogrid/buzzoon/buzz_util"
+	"github.com/ryogrid/buzzoon/glo_val"
 	"github.com/ryogrid/buzzoon/schema"
 	"github.com/weaveworks/mesh"
 	"log"
@@ -24,7 +25,7 @@ type BuzzPeer struct {
 	dataMan      *DataManager
 	MessageMan   *MessageManager
 	SelfId       mesh.PeerName
-	Pubkey       [32]byte
+	SelfPubkey   [32]byte
 	Nickname     *string
 	Router       *mesh.Router
 	recvedEvtMap map[uint64]struct{}
@@ -38,12 +39,15 @@ var _ mesh.Gossiper = &BuzzPeer{}
 // so we can make outbound communication.
 func NewPeer(self mesh.PeerName, nickname *string, logger *log.Logger) *BuzzPeer {
 	buf := make([]byte, binary.MaxVarintLen64)
+	// TODO: need to set correct pubkey
 	binary.PutUvarint(buf, uint64(self))
 	var pubkeyBytes [32]byte
 	copy(pubkeyBytes[:], buf)
+	glo_val.SelfPubkey = &pubkeyBytes
+	glo_val.SelfPubkey64bit = uint64(self)
 
 	actions := make(chan func())
-	dataMan := NewDataManager(pubkeyBytes)
+	dataMan := NewDataManager()
 	msgMan := &MessageManager{DataMan: dataMan}
 
 	p := &BuzzPeer{
@@ -56,7 +60,6 @@ func NewPeer(self mesh.PeerName, nickname *string, logger *log.Logger) *BuzzPeer
 		SelfId:       self,
 		Nickname:     nickname,
 		recvedEvtMap: make(map[uint64]struct{}),
-		Pubkey:       pubkeyBytes,
 	}
 	go p.loop(actions)
 	return p

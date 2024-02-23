@@ -19,10 +19,10 @@ func TestBuzzPacket_Encode(t *testing.T) {
 		Kind:       777,
 		Tags:       tagMap,
 		Content:    "こんにちは世界",
-		Sig:        [64]byte{},
+		Sig:        &[64]byte{},
 	}
 
-	// set value to Pubkey and Sig field
+	// set value to SelfPubkey and Sig field
 	hf := sha256.New()
 	hf.Write([]byte("test"))
 	pubkey := hf.Sum(nil)[:32]
@@ -35,7 +35,6 @@ func TestBuzzPacket_Encode(t *testing.T) {
 	pkt := BuzzPacket{
 		Events: []*BuzzEvent{event},
 		Req:    nil,
-		Resp:   nil,
 	}
 
 	encodedPkt := pkt.Encode()[0]
