@@ -28,12 +28,12 @@ func (dman *DataManager) handleReceived(pkt *schema.BuzzPacket) error {
 			if evt.Pubkey != dman.SelfPubkey {
 				// store received event data (on memory)
 				tmpEvt := *evt
-				dman.storeEvent(&tmpEvt)
+				dman.StoreEvent(&tmpEvt)
 
 				switch evt.Kind {
 				case 1: // post
 					// display (TEMPORAL IMPL)
-					dman.dispPostAtStdout(evt)
+					dman.DispPostAtStdout(evt)
 				}
 			}
 		}
@@ -43,12 +43,14 @@ func (dman *DataManager) handleReceived(pkt *schema.BuzzPacket) error {
 	return nil
 }
 
-func (dman *DataManager) storeEvent(evt *schema.BuzzEvent) {
+func (dman *DataManager) StoreEvent(evt *schema.BuzzEvent) {
+	// TODO: current impl overwrites the same timestamp event (DataManager::StoreEvent)
 	dman.EventListMtx.Lock()
 	dman.EventList.Add(evt.Created_at, evt)
 	dman.EventListMtx.Unlock()
 }
 
-func (dman *DataManager) dispPostAtStdout(evt *schema.BuzzEvent) {
+// TODO: TEMPORAL IMPL
+func (dman *DataManager) DispPostAtStdout(evt *schema.BuzzEvent) {
 	fmt.Println(evt.Tags["nickname"][0] + "> " + evt.Content)
 }

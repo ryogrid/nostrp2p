@@ -44,7 +44,7 @@ func NewPeer(self mesh.PeerName, nickname *string, logger *log.Logger) *BuzzPeer
 
 	actions := make(chan func())
 	dataMan := NewDataManager(pubkeyBytes)
-	msgMan := &MessageManager{dataManager: dataMan}
+	msgMan := &MessageManager{DataMan: dataMan}
 
 	p := &BuzzPeer{
 		Send:         nil, // must .Register() later

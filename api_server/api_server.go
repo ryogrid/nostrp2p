@@ -62,9 +62,12 @@ func (s *ApiServer) postEvent(w rest.ResponseWriter, req *rest.Request) {
 	//	s.buzzPeer.MessageMan.SendMsgUnicast(peerId, schema.NewBuzzPacket(&events, nil, nil))
 	//}
 	s.buzzPeer.MessageMan.SendMsgBroadcast(schema.NewBuzzPacket(&events, nil))
+	// store own issued event
+	s.buzzPeer.MessageMan.DataMan.StoreEvent(&event)
 
 	// display for myself
-	fmt.Println(event.Tags["nickname"][0] + "> " + event.Content)
+	s.buzzPeer.MessageMan.DataMan.DispPostAtStdout(&event)
+	//fmt.Println(event.Tags["nickname"][0] + "> " + event.Content)
 
 	w.WriteJson(&PostEventResp{
 		"SUCCESS",

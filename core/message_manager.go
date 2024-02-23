@@ -6,18 +6,18 @@ import (
 )
 
 type MessageManager struct {
-	dataManager *DataManager
-	send        mesh.Gossip // set by BuzzPeer.Register
+	DataMan *DataManager
+	send    mesh.Gossip // set by BuzzPeer.Register
 }
 
 func (mm *MessageManager) handleRecvMsgBcast(pkt *schema.BuzzPacket) error {
-	mm.dataManager.handleReceived(pkt)
+	mm.DataMan.handleReceived(pkt)
 
 	return nil
 }
 
 func (mm *MessageManager) handleRecvMsgUnicast(src mesh.PeerName, pkt *schema.BuzzPacket) error {
-	mm.dataManager.handleReceived(pkt)
+	mm.DataMan.handleReceived(pkt)
 
 	return nil
 }
