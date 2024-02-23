@@ -34,9 +34,14 @@ func (dman *DataManager) handleReceived(pkt *schema.BuzzPacket) error {
 				dman.StoreEvent(&tmpEvt)
 
 				switch evt.Kind {
+				case 0: // profile
+					// store received profile data
+					dman.StoreProfile(GenProfileFromEvent(evt))
 				case 1: // post
 					// display (TEMPORAL IMPL)
 					dman.DispPostAtStdout(evt)
+				default:
+					fmt.Println("received unknown kind event: " + string(evt.Kind))
 				}
 			}
 		}
@@ -57,6 +62,13 @@ func (dman *DataManager) StoreEvent(evt *schema.BuzzEvent) {
 
 func (dman *DataManager) StoreProfile(prof *schema.BuzzProfile) {
 	dman.ProfileMap.Store(prof.Pubkey64bit, prof)
+}
+
+func (dman *DataManager) GetProfile(pubkey64bit uint64) *schema.BuzzProfile {
+	if val, ok := dman.ProfileMap.Load(pubkey64bit); ok {
+		return val.(*schema.BuzzProfile)
+	}
+	return nil
 }
 
 // TODO: TEMPORAL IMPL

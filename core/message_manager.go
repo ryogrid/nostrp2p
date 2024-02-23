@@ -81,14 +81,18 @@ func (mm *MessageManager) BrodcastOwnProfile(name *string, about *string, pictur
 	mm.SendMsgBroadcast(schema.NewBuzzPacket(&events, nil))
 	mm.DataMan.StoreEvent(&event)
 
-	storeProf := &schema.BuzzProfile{
-		Pubkey64bit: buzz_util.GetLower64bitUint(event.Pubkey),
-		Name:        event.Tags["name"][0],
-		About:       event.Tags["about"][0],
-		Picture:     event.Tags["picture"][0],
-		UpdatedAt:   event.Created_at,
-	}
+	storeProf := GenProfileFromEvent(&event)
 	mm.DataMan.StoreProfile(storeProf)
 
 	return storeProf
+}
+
+func GenProfileFromEvent(evt *schema.BuzzEvent) *schema.BuzzProfile {
+	return &schema.BuzzProfile{
+		Pubkey64bit: buzz_util.GetLower64bitUint(evt.Pubkey),
+		Name:        evt.Tags["name"][0],
+		About:       evt.Tags["about"][0],
+		Picture:     evt.Tags["picture"][0],
+		UpdatedAt:   evt.Created_at,
+	}
 }
