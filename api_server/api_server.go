@@ -2,22 +2,24 @@ package api_server
 
 import (
 	"fmt"
-	"github.com/ryogrid/buzzoon/buzz_util"
+	"github.com/ant0ine/go-json-rest/rest"
+	"github.com/ryogrid/buzzoon/core"
 	"github.com/ryogrid/buzzoon/glo_val"
 	"log"
 	"net/http"
-	"time"
-
-	"github.com/ant0ine/go-json-rest/rest"
-	"github.com/ryogrid/buzzoon/core"
-	"github.com/ryogrid/buzzoon/schema"
 )
 
 type PostEventReq struct {
 	Content string
 }
 
-type PostEventResp struct {
+type UpdateProfileReq struct {
+	Name    string
+	About   string
+	Picture string
+}
+
+type GeneralResp struct {
 	Status string
 }
 
@@ -44,33 +46,35 @@ func (s *ApiServer) postEvent(w rest.ResponseWriter, req *rest.Request) {
 		return
 	}
 
-	pubSlice := glo_val.SelfPubkey[:]
-	var sigBytes [64]byte
-	copy(sigBytes[:], pubSlice)
-	tagsMap := make(map[string][]string)
-	tagsMap["nickname"] = []string{*s.buzzPeer.Nickname}
-	event := schema.BuzzEvent{
-		Id:         buzz_util.GetRandUint64(),
-		Pubkey:     *glo_val.SelfPubkey,
-		Created_at: time.Now().Unix(),
-		Kind:       1,
-		Tags:       tagsMap,
-		Content:    input.Content,
-		Sig:        &sigBytes,
-	}
-	events := []*schema.BuzzEvent{&event}
-	//for _, peerId := range s.buzzPeer.GetPeerList() {
-	//	s.buzzPeer.MessageMan.SendMsgUnicast(peerId, schema.NewBuzzPacket(&events, nil, nil))
-	//}
-	s.buzzPeer.MessageMan.SendMsgBroadcast(schema.NewBuzzPacket(&events, nil))
-	// store own issued event
-	s.buzzPeer.MessageMan.DataMan.StoreEvent(&event)
-
+	evt := s.buzzPeer.MessageMan.BrodcastOwnPost(input.Content)
 	// display for myself
-	s.buzzPeer.MessageMan.DataMan.DispPostAtStdout(&event)
-	//fmt.Println(event.Tags["nickname"][0] + "> " + event.Content)
+	s.buzzPeer.MessageMan.DataMan.DispPostAtStdout(evt)
 
-	w.WriteJson(&PostEventResp{
+	w.WriteJson(&GeneralResp{
+		"SUCCESS",
+	})
+}
+
+func (s *ApiServer) updateProfile(w rest.ResponseWriter, req *rest.Request) {
+	input := UpdateProfileReq{}
+	err := req.DecodeJsonPayload(&input)
+
+	if err != nil {
+		fmt.Println(err)
+		rest.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if input.Name == "" {
+		rest.Error(w, "Name is required", 400)
+		return
+	}
+
+	prof := s.buzzPeer.MessageMan.BrodcastOwnProfile(&input.Name, &input.About, &input.Picture)
+	// update local profile
+	glo_val.ProfileMyOwn = prof
+
+	w.WriteJson(&GeneralResp{
 		"SUCCESS",
 	})
 }
@@ -107,6 +111,7 @@ func (s *ApiServer) LaunchAPIServer(addrStr string) {
 
 	router, err := rest.MakeRouter(
 		&rest.Route{"POST", "/postEvent", s.postEvent},
+		&rest.Route{"POST", "/updateProfile", s.updateProfile},
 	)
 	if err != nil {
 		log.Fatal(err)

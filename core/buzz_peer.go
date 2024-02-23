@@ -26,7 +26,6 @@ type BuzzPeer struct {
 	MessageMan   *MessageManager
 	SelfId       mesh.PeerName
 	SelfPubkey   [32]byte
-	Nickname     *string
 	Router       *mesh.Router
 	recvedEvtMap map[uint64]struct{}
 }
@@ -37,7 +36,7 @@ var _ mesh.Gossiper = &BuzzPeer{}
 // Construct a BuzzPeer with empty state.
 // Be sure to Register a channel, later,
 // so we can make outbound communication.
-func NewPeer(self mesh.PeerName, nickname *string, logger *log.Logger) *BuzzPeer {
+func NewPeer(self mesh.PeerName, logger *log.Logger) *BuzzPeer {
 	buf := make([]byte, binary.MaxVarintLen64)
 	// TODO: need to set correct pubkey
 	binary.PutUvarint(buf, uint64(self))
@@ -58,7 +57,6 @@ func NewPeer(self mesh.PeerName, nickname *string, logger *log.Logger) *BuzzPeer
 		dataMan:      dataMan,
 		MessageMan:   msgMan,
 		SelfId:       self,
-		Nickname:     nickname,
 		recvedEvtMap: make(map[uint64]struct{}),
 	}
 	go p.loop(actions)

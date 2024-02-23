@@ -12,6 +12,8 @@ type DataManager struct {
 	EvtListTimeKey    sortedlist.List // timestamp(int64) -> *schema.BuzzEvent
 	EvtListTimeKeyMtx *sync.Mutex
 	EvtMapIdKey       sync.Map // event id(uint64) -> *schema.BuzzEvent
+	// latest profile only stored
+	ProfileMap sync.Map // pubkey lower 64bit (uint64) -> *schema.BuzzProfile
 }
 
 func NewDataManager() *DataManager {
@@ -51,6 +53,10 @@ func (dman *DataManager) StoreEvent(evt *schema.BuzzEvent) {
 	dman.EvtListTimeKey.Add(evt.Created_at, evt)
 	dman.EvtListTimeKeyMtx.Unlock()
 	dman.EvtMapIdKey.Store(evt.Id, evt)
+}
+
+func (dman *DataManager) StoreProfile(prof *schema.BuzzProfile) {
+	dman.ProfileMap.Store(prof.Pubkey64bit, prof)
 }
 
 // TODO: TEMPORAL IMPL

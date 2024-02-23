@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/ryogrid/buzzoon/glo_val"
+	"github.com/ryogrid/buzzoon/schema"
 	"io/ioutil"
 	"log"
 	"net"
@@ -49,11 +51,11 @@ var serverCmd = &cobra.Command{
 
 		host, portStr, err := net.SplitHostPort(listenAddrPort)
 		if err != nil {
-			logger.Fatalf("mesh address: %s: %v", listenAddrPort, err)
+			logger.Fatalf("SplitHostPort error: %s: %v", listenAddrPort, err)
 		}
 		port, err := strconv.Atoi(portStr)
 		if err != nil {
-			logger.Fatalf("mesh address: %s: %v", listenAddrPort, err)
+			logger.Fatalf("port sting coversion error: %s: %v", listenAddrPort, err)
 		}
 
 		// TODO: need to use big int (cmd.go)
@@ -80,7 +82,16 @@ var serverCmd = &cobra.Command{
 			logger.Fatalf("Could not create router: %v", err)
 		}
 
-		peer := core.NewPeer(mesh.PeerName(name), &nickname, logger)
+		glo_val.Nickname = &nickname
+		glo_val.ProfileMyOwn = &schema.BuzzProfile{
+			Pubkey64bit: uint64(name),
+			Name:        nickname,
+			About:       "brank yet",
+			Picture:     "http://robohash.com/" + strconv.Itoa(int(name)) + ".png?size=200x200",
+			UpdatedAt:   0,
+		} // initialized at server restart or update request
+
+		peer := core.NewPeer(mesh.PeerName(name), logger)
 		gossip, err := router.NewGossip("buzzoon", peer)
 		if err != nil {
 			logger.Fatalf("Could not create gossip: %v", err)

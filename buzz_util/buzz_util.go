@@ -1,6 +1,7 @@
 package buzz_util
 
 import (
+	"encoding/binary"
 	"fmt"
 	"math/rand"
 	"os"
@@ -69,4 +70,8 @@ func InitializeRandGen(seed int64) {
 
 func GetRandUint64() uint64 {
 	return randGen.Uint64()
+}
+
+func GetLower64bitUint(bytes [32]byte) uint64 {
+	return binary.LittleEndian.Uint64(bytes[:8])
 }
