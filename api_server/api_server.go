@@ -70,7 +70,7 @@ func (s *ApiServer) postEvent(w rest.ResponseWriter, req *rest.Request) {
 func (s *ApiServer) getProfile(w rest.ResponseWriter, req *rest.Request) {
 	input := GetProfileReq{}
 	err := req.DecodeJsonPayload(&input)
-	
+
 	if err != nil {
 		fmt.Println(err)
 		rest.Error(w, err.Error(), http.StatusBadRequest)

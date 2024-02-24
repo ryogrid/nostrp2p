@@ -1,13 +1,12 @@
 package schema
 
 import (
-	"bytes"
-	"encoding/gob"
 	"github.com/ryogrid/buzzoon/buzz_util"
+	"github.com/vmihailenco/msgpack/v5"
 	"github.com/weaveworks/mesh"
 )
 
-const PacketStructureVersion uint16 = 1
+const PacketStructureVersion uint16 = 2
 
 // BuzzPacket is an implementation of GossipData
 type BuzzPacket struct {
@@ -32,14 +31,18 @@ func NewBuzzPacket(events *[]*BuzzEvent, req *BuzzReq) *BuzzPacket {
 	}
 }
 
-func newBuzzPacketFromBytes(data []byte) (*BuzzPacket, error) {
+func NewBuzzPacketFromBytes(data []byte) (*BuzzPacket, error) {
 	var bp BuzzPacket
 	//copiedData := make([]byte, len(data))
 	//copy(copiedData, data)
 	//copiedData = buzz_util.GzipDecompless(copiedData)
 	//decBuf := bytes.NewBuffer(copiedData)
-	decBuf := bytes.NewBuffer(data)
-	if err := gob.NewDecoder(decBuf).Decode(&bp); err != nil {
+	//decBuf := bytes.NewBuffer(data)
+	//if err := gob.NewDecoder(decBuf).Decode(&bp); err != nil {
+	//	return nil, err
+	//}
+	err := msgpack.Unmarshal(data, &bp)
+	if err != nil {
 		return nil, err
 	}
 
@@ -48,13 +51,18 @@ func newBuzzPacketFromBytes(data []byte) (*BuzzPacket, error) {
 
 // Encode serializes BuzzPacket to a slice of byte-slices.
 func (pkt *BuzzPacket) Encode() [][]byte {
-	buf := bytes.NewBuffer(nil)
-	if err := gob.NewEncoder(buf).Encode(pkt); err != nil {
+	//buf := bytes.NewBuffer(nil)
+	//if err := gob.NewEncoder(buf).Encode(pkt); err != nil {
+	//	panic(err)
+	//}
+	//
+	////return [][]byte{buzz_util.GzipCompless(buf.Bytes())}
+	//return [][]byte{buf.Bytes()}
+	b, err := msgpack.Marshal(pkt)
+	if err != nil {
 		panic(err)
 	}
-
-	//return [][]byte{buzz_util.GzipCompless(buf.Bytes())}
-	return [][]byte{buf.Bytes()}
+	return [][]byte{b}
 }
 
 // Merge merges the other GossipData into this one,

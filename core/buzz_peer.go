@@ -1,9 +1,7 @@
 package core
 
 import (
-	"bytes"
 	"encoding/binary"
-	"encoding/gob"
 	"errors"
 	"fmt"
 	"github.com/ryogrid/buzzoon/buzz_util"
@@ -104,8 +102,10 @@ func (p *BuzzPeer) OnGossip(buf []byte) (delta mesh.GossipData, err error) {
 // Return the state information that was modified.
 func (p *BuzzPeer) OnGossipBroadcast(src mesh.PeerName, buf []byte) (received mesh.GossipData, err error) {
 	buzz_util.BuzzDbgPrintln("OnGossipBroadcast called")
-	var pkt schema.BuzzPacket
-	if err_ := gob.NewDecoder(bytes.NewReader(buf)).Decode(&pkt); err_ != nil {
+	//var pkt schema.BuzzPacket
+	///if err_ := gob.NewDecoder(bytes.NewReader(buf)).Decode(&pkt); err_ != nil {
+	pkt, err_ := schema.NewBuzzPacketFromBytes(buf)
+	if err_ != nil {
 		return nil, err_
 	}
 	if pkt.PktVer != schema.PacketStructureVersion {
@@ -120,7 +120,7 @@ func (p *BuzzPeer) OnGossipBroadcast(src mesh.PeerName, buf []byte) (received me
 	if pkt.Events != nil {
 		for _, evt := range pkt.Events {
 			if _, ok := p.recvedEvtMap[evt.Id]; !ok {
-				err_ := p.MessageMan.handleRecvMsgBcast(&pkt)
+				err_ := p.MessageMan.handleRecvMsgBcast(pkt)
 				if err_ != nil {
 					panic(err_)
 				}
@@ -132,7 +132,7 @@ func (p *BuzzPeer) OnGossipBroadcast(src mesh.PeerName, buf []byte) (received me
 			}
 		}
 	} else {
-		return &pkt, nil
+		return pkt, nil
 	}
 
 	if len(retPkt.Events) == 0 {
@@ -148,9 +148,13 @@ func (p *BuzzPeer) OnGossipBroadcast(src mesh.PeerName, buf []byte) (received me
 // Merge the gossiped data represented by buf into our state.
 func (p *BuzzPeer) OnGossipUnicast(src mesh.PeerName, buf []byte) error {
 	buzz_util.BuzzDbgPrintln("OnGossipUnicast called")
-	var pkt schema.BuzzPacket
-	if err_ := gob.NewDecoder(bytes.NewReader(buf)).Decode(&pkt); err_ != nil {
-		return err_
+	//var pkt schema.BuzzPacket
+	//if err_ := gob.NewDecoder(bytes.NewReader(buf)).Decode(&pkt); err_ != nil {
+	//	return err_
+	//}
+	pkt, err := schema.NewBuzzPacketFromBytes(buf)
+	if err != nil {
+		return err
 	}
 	if pkt.PktVer != schema.PacketStructureVersion {
 		return errors.New("Invalid packet version")
@@ -159,7 +163,7 @@ func (p *BuzzPeer) OnGossipUnicast(src mesh.PeerName, buf []byte) error {
 		fmt.Println("received packat from newer version of server")
 	}
 
-	err_ := p.MessageMan.handleRecvMsgUnicast(src, &pkt)
+	err_ := p.MessageMan.handleRecvMsgUnicast(src, pkt)
 	if err_ != nil {
 		panic(err_)
 	}
