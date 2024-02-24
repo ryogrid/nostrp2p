@@ -94,7 +94,7 @@ var serverCmd = &cobra.Command{
 		peer := core.NewPeer(mesh.PeerName(name), logger)
 
 		// if log file exist, load it
-		core.NewRecoveryManager(peer.MessageMan)
+		core.NewRecoveryManager(peer.MessageMan).Recover()
 
 		gossip, err := router.NewGossip("buzzoon", peer)
 		if err != nil {

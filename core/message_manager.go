@@ -104,7 +104,7 @@ func (mm *MessageManager) BrodcastOwnPost(content string) *schema.BuzzEvent {
 	copy(sigBytes[:], pubSlice)
 	tagsMap := make(map[string][]string)
 	tagsMap["nickname"] = []string{*glo_val.Nickname}
-	if buzz_util.IsHit(buzz_util.AttachProfileUpdateProb) {
+	if buzz_util.IsHit(buzz_util.AttachProfileUpdateProb) && glo_val.ProfileMyOwn.UpdatedAt > 0 {
 		// remove head 17 for data size reduction
 		updatedAt := strconv.FormatInt(glo_val.ProfileMyOwn.UpdatedAt, 10)[2:]
 		tagsMap["u"] = []string{updatedAt}
