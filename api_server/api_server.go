@@ -19,6 +19,17 @@ type UpdateProfileReq struct {
 	Picture string
 }
 
+type GetProfileReq struct {
+	ShortPkey uint64
+}
+
+type GetProfileResp struct {
+	Name      string
+	About     string
+	Picture   string
+	UpdatedAt int64
+}
+
 type GeneralResp struct {
 	Status string
 }
@@ -53,6 +64,36 @@ func (s *ApiServer) postEvent(w rest.ResponseWriter, req *rest.Request) {
 	w.WriteJson(&GeneralResp{
 		"SUCCESS",
 	})
+}
+
+// TODO: TEMPORAL IMPL
+func (s *ApiServer) getProfile(w rest.ResponseWriter, req *rest.Request) {
+	input := GetProfileReq{}
+	err := req.DecodeJsonPayload(&input)
+	
+	if err != nil {
+		fmt.Println(err)
+		rest.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	prof := s.buzzPeer.MessageMan.DataMan.GetProfileLocal(input.ShortPkey)
+
+	if prof == nil {
+		w.WriteJson(&GetProfileResp{
+			Name:    "",
+			About:   "",
+			Picture: "",
+		})
+	} else {
+		w.WriteJson(&GetProfileResp{
+			Name:      prof.Name,
+			About:     prof.About,
+			Picture:   prof.Picture,
+			UpdatedAt: prof.UpdatedAt,
+		})
+	}
+
 }
 
 func (s *ApiServer) updateProfile(w rest.ResponseWriter, req *rest.Request) {
@@ -112,6 +153,7 @@ func (s *ApiServer) LaunchAPIServer(addrStr string) {
 	router, err := rest.MakeRouter(
 		&rest.Route{"POST", "/postEvent", s.postEvent},
 		&rest.Route{"POST", "/updateProfile", s.updateProfile},
+		&rest.Route{"POST", "/getProfile", s.getProfile},
 	)
 	if err != nil {
 		log.Fatal(err)
