@@ -1,4 +1,4 @@
-package persistence
+package core
 
 import (
 	"encoding/binary"
@@ -31,6 +31,14 @@ func NewEventDataLogger(logFilename string) *EventDataLogger {
 		lastReadPos:     0,
 		IsLoggingActive: true,
 	}
+}
+
+func (l *EventDataLogger) GetLogfileSize() int64 {
+	fi, err := l.logFile.Stat()
+	if err != nil {
+		panic(err)
+	}
+	return fi.Size()
 }
 
 func (l *EventDataLogger) WriteLog(data []byte) error {

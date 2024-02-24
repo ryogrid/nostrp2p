@@ -3,7 +3,6 @@ package core
 import (
 	"github.com/chenjiandongx/mandodb/pkg/sortedlist"
 	"github.com/ryogrid/buzzoon/glo_val"
-	"github.com/ryogrid/buzzoon/persistence"
 	"github.com/ryogrid/buzzoon/schema"
 	"strconv"
 	"sync"
@@ -18,7 +17,7 @@ type DataManager struct {
 	EvtMapIdKey       sync.Map // event id(uint64) -> *schema.BuzzEvent
 	// latest profile only stored
 	ProfMap   sync.Map // pubkey lower 64bit (uint64) -> *schema.BuzzProfile
-	EvtLogger *persistence.EventDataLogger
+	EvtLogger *EventDataLogger
 }
 
 func NewDataManager() *DataManager {
@@ -27,7 +26,7 @@ func NewDataManager() *DataManager {
 		EvtListTimeKeyMtx: &sync.Mutex{},
 		EvtMapIdKey:       sync.Map{},
 		ProfMap:           sync.Map{},
-		EvtLogger:         persistence.NewEventDataLogger("./" + strconv.FormatUint(glo_val.SelfPubkey64bit, 16) + ".evtlog"),
+		EvtLogger:         NewEventDataLogger("./" + strconv.FormatUint(glo_val.SelfPubkey64bit, 16) + ".evtlog"),
 	}
 }
 

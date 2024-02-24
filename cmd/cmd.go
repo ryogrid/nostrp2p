@@ -92,6 +92,10 @@ var serverCmd = &cobra.Command{
 		} // initialized at server restart or update request
 
 		peer := core.NewPeer(mesh.PeerName(name), logger)
+
+		// if log file exist, load it
+		core.NewRecoveryManager(peer.MessageMan)
+
 		gossip, err := router.NewGossip("buzzoon", peer)
 		if err != nil {
 			logger.Fatalf("Could not create gossip: %v", err)
