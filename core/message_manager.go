@@ -29,8 +29,7 @@ func (mm *MessageManager) handleRecvMsgBcast(pkt *schema.BuzzPacket) error {
 					// store received profile data
 					mm.DataMan.StoreProfile(GenProfileFromEvent(evt))
 				case 1: // post
-					// display (TEMPORAL IMPL)
-					if val, ok := evt.Tags["u"]; ok {
+					if val, ok := evt.Tags["u"]; ok && mm.DataMan.EvtLogger.IsLoggingActive {
 						// profile update time is attached
 						//(periodically attached the tag for avoiding old profile is kept)
 						recvdTime, err := strconv.ParseInt("17"+val[0], 10, 64)
@@ -45,6 +44,7 @@ func (mm *MessageManager) handleRecvMsgBcast(pkt *schema.BuzzPacket) error {
 							go mm.RequestProfile(shortId)
 						}
 					}
+					// display (TEMPORAL IMPL)
 					mm.DispPostAtStdout(evt)
 				default:
 					fmt.Println("received unknown kind event: " + strconv.Itoa(int(evt.Kind)))
@@ -78,8 +78,8 @@ func (mm *MessageManager) handleRecvMsgUnicast(src mesh.PeerName, pkt *schema.Bu
 		// handle request
 		switch pkt.Req.Kind {
 		case 0: // profile request
-		// send profile data
-
+			// send profile data asynchronous
+			go mm.SendProfileUnicast(uint64(src))
 		default:
 			fmt.Println("received unknown kind request: " + strconv.Itoa(int(pkt.Req.Kind)))
 		}

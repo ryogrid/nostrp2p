@@ -2,6 +2,7 @@ package schema
 
 import (
 	"github.com/holiman/uint256"
+	"github.com/vmihailenco/msgpack/v5"
 	"math/big"
 )
 
@@ -26,4 +27,20 @@ func (e *BuzzEvent) SetPubkey(pubkey *big.Int) {
 		panic("overflow")
 	}
 	fixed256.WriteToArray32(&e.Pubkey)
+}
+
+func (e *BuzzEvent) Encode() []byte {
+	b, err := msgpack.Marshal(e)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func NewBuzzEventFromBytes(b []byte) (*BuzzEvent, error) {
+	var e BuzzEvent
+	if err := msgpack.Unmarshal(b, &e); err != nil {
+		return nil, err
+	}
+	return &e, nil
 }

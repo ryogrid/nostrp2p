@@ -2,7 +2,10 @@ package core
 
 import (
 	"github.com/chenjiandongx/mandodb/pkg/sortedlist"
+	"github.com/ryogrid/buzzoon/glo_val"
+	"github.com/ryogrid/buzzoon/persistence"
 	"github.com/ryogrid/buzzoon/schema"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -14,7 +17,8 @@ type DataManager struct {
 	EvtListTimeKeyMtx *sync.Mutex
 	EvtMapIdKey       sync.Map // event id(uint64) -> *schema.BuzzEvent
 	// latest profile only stored
-	ProfMap sync.Map // pubkey lower 64bit (uint64) -> *schema.BuzzProfile
+	ProfMap   sync.Map // pubkey lower 64bit (uint64) -> *schema.BuzzProfile
+	EvtLogger *persistence.EventDataLogger
 }
 
 func NewDataManager() *DataManager {
@@ -23,6 +27,7 @@ func NewDataManager() *DataManager {
 		EvtListTimeKeyMtx: &sync.Mutex{},
 		EvtMapIdKey:       sync.Map{},
 		ProfMap:           sync.Map{},
+		EvtLogger:         persistence.NewEventDataLogger("./" + strconv.FormatUint(glo_val.SelfPubkey64bit, 16) + ".evtlog"),
 	}
 }
 
@@ -32,7 +37,14 @@ func (dman *DataManager) StoreEvent(evt *schema.BuzzEvent) {
 	evt.Sig = nil // set nil because already verified
 	dman.EvtListTimeKey.Add(evt.Created_at, evt)
 	dman.EvtListTimeKeyMtx.Unlock()
-	dman.EvtMapIdKey.Store(evt.Id, evt)
+	if _, ok := dman.EvtMapIdKey.Load(evt.Id); ok {
+		dman.EvtMapIdKey.Store(evt.Id, evt)
+	} else {
+		dman.EvtMapIdKey.Store(evt.Id, evt)
+		// log event data when it is not duplicated
+		// write asynchrounously
+		go dman.EvtLogger.WriteLog(evt.Encode())
+	}
 }
 
 func (dman *DataManager) StoreProfile(prof *schema.BuzzProfile) {
