@@ -74,14 +74,14 @@ func (mm *MessageManager) handleRecvMsgUnicast(src mesh.PeerName, pkt *schema.Bu
 		return nil
 	}
 
-	if pkt.Req != nil {
+	if pkt.Reqs != nil {
 		// handle request
-		switch pkt.Req.Kind {
+		switch pkt.Reqs[0].Kind {
 		case 0: // profile request
 			// send profile data asynchronous
 			go mm.SendProfileUnicast(uint64(src))
 		default:
-			fmt.Println("received unknown kind request: " + strconv.Itoa(int(pkt.Req.Kind)))
+			fmt.Println("received unknown kind request: " + strconv.Itoa(int(pkt.Reqs[0].Kind)))
 		}
 		return nil
 	}
@@ -163,10 +163,10 @@ func (mm *MessageManager) constructProfileEvt(name *string, about *string, pictu
 }
 
 func (mm *MessageManager) RequestProfile(pubkey64bit uint64) {
-	req := &schema.BuzzReq{
+	reqs := []*schema.BuzzReq{&schema.BuzzReq{
 		Kind: 0,
-	}
-	pkt := schema.NewBuzzPacket(nil, req)
+	}}
+	pkt := schema.NewBuzzPacket(nil, &reqs)
 	mm.SendMsgUnicast(mesh.PeerName(pubkey64bit), pkt)
 }
 

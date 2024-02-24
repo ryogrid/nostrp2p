@@ -47,7 +47,7 @@ func TestBuzzPacketEncodeMessagePack(t *testing.T) {
 
 	pkt := BuzzPacket{
 		Events: []*BuzzEvent{event},
-		Req:    nil,
+		Reqs:   nil,
 	}
 
 	//encodedPkt := pkt.Encode()[0]

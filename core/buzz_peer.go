@@ -115,8 +115,9 @@ func (p *BuzzPeer) OnGossipBroadcast(src mesh.PeerName, buf []byte) (received me
 		fmt.Println("received packat from newer version of server")
 	}
 
-	tmp := make([]*schema.BuzzEvent, 0)
-	retPkt := schema.NewBuzzPacket(&tmp, nil)
+	tmpEvts := make([]*schema.BuzzEvent, 0)
+	tmpReqs := make([]*schema.BuzzReq, 0)
+	retPkt := schema.NewBuzzPacket(&tmpEvts, &tmpReqs)
 	if pkt.Events != nil {
 		for _, evt := range pkt.Events {
 			if _, ok := p.recvedEvtMap[evt.Id]; !ok {
@@ -135,7 +136,7 @@ func (p *BuzzPeer) OnGossipBroadcast(src mesh.PeerName, buf []byte) (received me
 		return pkt, nil
 	}
 
-	if len(retPkt.Events) == 0 {
+	if len(retPkt.Events) == 0 && len(retPkt.Reqs) == 0 {
 		return nil, nil
 	} else {
 		return retPkt, nil

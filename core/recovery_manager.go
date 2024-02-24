@@ -30,7 +30,6 @@ func (rm *RecoveryManager) Recover() {
 		}
 		pkt := schema.NewBuzzPacket(&[]*schema.BuzzEvent{evt}, nil)
 		rm.messageMan.handleRecvMsgBcast(pkt)
-		fmt.Println("Recovered events...")
 		_, buf, err = rm.messageMan.DataMan.EvtLogger.ReadLog()
 	}
 	rm.messageMan.DataMan.EvtLogger.IsLoggingActive = true
