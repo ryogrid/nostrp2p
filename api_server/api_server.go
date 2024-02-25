@@ -5,6 +5,7 @@ import (
 	"github.com/ant0ine/go-json-rest/rest"
 	"github.com/ryogrid/buzzoon/core"
 	"github.com/ryogrid/buzzoon/glo_val"
+	"github.com/ryogrid/buzzoon/schema"
 	"log"
 	"net/http"
 )
@@ -33,6 +34,14 @@ type GetProfileResp struct {
 	UpdatedAt int64
 }
 
+type GetEventsReq struct {
+	Since int64
+	Until int64
+}
+
+type GetEventsResp struct {
+	Events []schema.BuzzEvent
+}
 type GeneralResp struct {
 	Status string
 }
@@ -98,6 +107,28 @@ func (s *ApiServer) getProfile(w rest.ResponseWriter, req *rest.Request) {
 			UpdatedAt: prof.UpdatedAt,
 		})
 	}
+}
+
+func (s *ApiServer) getEvents(w rest.ResponseWriter, req *rest.Request) {
+	input := GetEventsReq{}
+	err := req.DecodeJsonPayload(&input)
+
+	if err != nil {
+		fmt.Println(err)
+		rest.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	events := s.buzzPeer.MessageMan.DataMan.GetLatestEvents(input.Since, input.Until)
+
+	retEvents := make([]schema.BuzzEvent, 0)
+	for _, evt := range *events {
+		retEvents = append(retEvents, *evt)
+	}
+
+	w.WriteJson(&GetEventsResp{
+		Events: retEvents,
+	})
 
 }
 
@@ -178,6 +209,7 @@ func (s *ApiServer) LaunchAPIServer(addrStr string) {
 		&rest.Route{"POST", "/updateProfile", s.updateProfile},
 		&rest.Route{"POST", "/getProfile", s.getProfile},
 		&rest.Route{"POST", "/gatherData", s.gatherData},
+		&rest.Route{"POST", "/getEvents", s.getEvents},
 	)
 	if err != nil {
 		log.Fatal(err)

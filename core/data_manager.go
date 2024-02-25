@@ -4,7 +4,6 @@ import (
 	"github.com/chenjiandongx/mandodb/pkg/sortedlist"
 	"github.com/ryogrid/buzzoon/glo_val"
 	"github.com/ryogrid/buzzoon/schema"
-	"math"
 	"strconv"
 	"sync"
 	"time"
@@ -68,10 +67,10 @@ func (dman *DataManager) GetProfileLocal(pubkey64bit uint64) *schema.BuzzProfile
 	return nil
 }
 
-func (dman *DataManager) GetLatestEvents(since int64) *[]*schema.BuzzEvent {
+func (dman *DataManager) GetLatestEvents(since int64, until int64) *[]*schema.BuzzEvent {
 	dman.EvtListTimeKeyMtx.Lock()
 	defer dman.EvtListTimeKeyMtx.Unlock()
-	itr := dman.EvtListTimeKey.Range(since, math.MaxInt64)
+	itr := dman.EvtListTimeKey.Range(since, until)
 
 	ret := make([]*schema.BuzzEvent, 0)
 	for itr.Next() {

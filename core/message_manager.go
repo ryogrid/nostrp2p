@@ -247,7 +247,7 @@ func (mm *MessageManager) BcastShareEvtDataReq() {
 // TODO: TEMPORAL IMPL
 // send latest 3days events
 func (mm *MessageManager) UnicastHavingEvtData(dest mesh.PeerName) {
-	events := mm.DataMan.GetLatestEvents(time.Now().Unix() - 3*24*3600)
+	events := mm.DataMan.GetLatestEvents(time.Now().Unix()-3*24*3600, math.MaxInt64)
 	pkt := schema.NewBuzzPacket(events, nil)
 	mm.SendMsgUnicast(dest, pkt)
 	buzz_util.BuzzDbgPrintln("UnicastHavingEvtData: sent " + strconv.Itoa(len(*events)) + " events")
