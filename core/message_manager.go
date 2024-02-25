@@ -76,9 +76,16 @@ func (mm *MessageManager) handleRecvMsgBcast(src mesh.PeerName, pkt *schema.Buzz
 	}
 
 	if pkt.Reqs != nil {
-		// TODO: need to implement request handling (MessageManager::handleRecvMsgBcast)
 		for _, req := range pkt.Reqs {
-			fmt.Println("received request: " + strconv.Itoa(int(req.Kind)))
+			if src != mesh.PeerName(glo_val.SelfPubkey64bit) {
+				switch req.Kind {
+				case KIND_REQ_SHARE_EVT_DATA: // need to having event datas
+					go mm.UnicastHavingEvtData(src)
+				default:
+					fmt.Println("received unknown kind req: " + strconv.Itoa(int(req.Kind)))
+				}
+				buzz_util.BuzzDbgPrintln("received request: " + strconv.Itoa(int(req.Kind)))
+			}
 		}
 	}
 	return nil
@@ -221,10 +228,18 @@ func GenProfileFromEvent(evt *schema.BuzzEvent) *schema.BuzzProfile {
 	}
 }
 
-// TODO: TEMPORAL_IMPL
-func (mm *MessageManager) BcastShareEvtDataReq(pubkey64bit uint64) {
+// TODO: TEMPORAL IMPL
+func (mm *MessageManager) BcastShareEvtDataReq() {
 	reqs := []*schema.BuzzReq{schema.NewBuzzReq(KIND_REQ_SHARE_EVT_DATA, nil)}
 
 	pkt := schema.NewBuzzPacket(nil, &reqs)
-	mm.SendMsgUnicast(mesh.PeerName(pubkey64bit), pkt)
+	mm.SendMsgBroadcast(pkt)
+}
+
+// TODO: TEMPORAL IMPL
+// send latest 3days events
+func (mm *MessageManager) UnicastHavingEvtData(dest mesh.PeerName) {
+	events := mm.DataMan.GetLatestEvents(time.Now().Unix() - 3*26*3600)
+	pkt := schema.NewBuzzPacket(events, nil)
+	mm.SendMsgUnicast(dest, pkt)
 }
