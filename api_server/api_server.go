@@ -57,7 +57,9 @@ func (s *ApiServer) postEvent(w rest.ResponseWriter, req *rest.Request) {
 		return
 	}
 
-	evt := s.buzzPeer.MessageMan.BrodcastOwnPost(input.Content)
+	evt := s.buzzPeer.MessageMan.BcastOwnPost(input.Content)
+	// store for myself
+	s.buzzPeer.MessageMan.DataMan.StoreEvent(evt)
 	// display for myself
 	s.buzzPeer.MessageMan.DispPostAtStdout(evt)
 
@@ -111,7 +113,7 @@ func (s *ApiServer) updateProfile(w rest.ResponseWriter, req *rest.Request) {
 		return
 	}
 
-	prof := s.buzzPeer.MessageMan.BrodcastOwnProfile(&input.Name, &input.About, &input.Picture)
+	prof := s.buzzPeer.MessageMan.BcastOwnProfile(&input.Name, &input.About, &input.Picture)
 	// update local profile
 	glo_val.ProfileMyOwn = prof
 

@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"github.com/ryogrid/buzzoon/schema"
+	"math"
 )
 
 type RecoveryManager struct {
@@ -19,18 +20,22 @@ func (rm *RecoveryManager) Recover() {
 	}
 
 	fmt.Println("Recovering from log file...")
-	rm.messageMan.DataMan.EvtLogger.IsLoggingActive = false
 	// do recovery
 	_, buf, err := rm.messageMan.DataMan.EvtLogger.ReadLog()
 	for err == nil {
 		evt, err_ := schema.NewBuzzEventFromBytes(buf)
+		if evt.Tags != nil {
+			evt.Tags["recovering"] = []interface{}{true}
+		} else {
+			evt.Tags = make(map[string][]interface{})
+			evt.Tags["recovering"] = []interface{}{true}
+		}
 		if err_ != nil {
 			// EOF
 			break
 		}
 		pkt := schema.NewBuzzPacket(&[]*schema.BuzzEvent{evt}, nil)
-		rm.messageMan.handleRecvMsgBcast(pkt)
+		rm.messageMan.handleRecvMsgBcast(math.MaxUint64, pkt)
 		_, buf, err = rm.messageMan.DataMan.EvtLogger.ReadLog()
 	}
-	rm.messageMan.DataMan.EvtLogger.IsLoggingActive = true
 }

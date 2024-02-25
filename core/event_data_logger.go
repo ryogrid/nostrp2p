@@ -14,8 +14,6 @@ type EventDataLogger struct {
 	logFileMtx  *sync.Mutex
 	curSize     int64
 	lastReadPos int64
-	// when recovery from log file, set this to false
-	IsLoggingActive bool
 }
 
 func NewEventDataLogger(logFilename string) *EventDataLogger {
@@ -26,11 +24,10 @@ func NewEventDataLogger(logFilename string) *EventDataLogger {
 	}
 	file.Seek(io.SeekStart, 0)
 	return &EventDataLogger{
-		logFile:         file,
-		logFileMtx:      &sync.Mutex{},
-		curSize:         -1,
-		lastReadPos:     0,
-		IsLoggingActive: true,
+		logFile:     file,
+		logFileMtx:  &sync.Mutex{},
+		curSize:     -1,
+		lastReadPos: 0,
 	}
 }
 
@@ -43,10 +40,6 @@ func (l *EventDataLogger) GetLogfileSize() int64 {
 }
 
 func (l *EventDataLogger) WriteLog(data []byte) error {
-	if !l.IsLoggingActive {
-		return nil
-	}
-
 	l.logFileMtx.Lock()
 	defer l.logFileMtx.Unlock()
 	if l.curSize < 0 {

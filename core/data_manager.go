@@ -42,6 +42,16 @@ func (dman *DataManager) StoreEvent(evt *schema.BuzzEvent) {
 		dman.EvtMapIdKey.Store(evt.Id, evt)
 		// log event data when it is not duplicated
 		// write asynchrounously
+		if evt.Tags != nil {
+			// consider when func is called from recovery
+			if _, ok2 := evt.Tags["recovering"]; ok2 {
+				delete(evt.Tags, "recovering")
+				if len(evt.Tags) == 0 {
+					evt.Tags = nil
+				}
+				return
+			}
+		}
 		go dman.EvtLogger.WriteLog(evt.Encode())
 	}
 }

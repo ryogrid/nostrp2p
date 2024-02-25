@@ -1,7 +1,7 @@
 package schema
 
 import (
-	"github.com/ryogrid/buzzoon/buzz_util"
+	"github.com/ryogrid/buzzoon/buzz_const"
 	"github.com/vmihailenco/msgpack/v5"
 	"github.com/weaveworks/mesh"
 )
@@ -33,7 +33,7 @@ func NewBuzzPacket(events *[]*BuzzEvent, req *[]*BuzzReq) *BuzzPacket {
 	}
 
 	return &BuzzPacket{
-		SrvVer: buzz_util.ServerImplVersion,
+		SrvVer: buzz_const.ServerImplVersion,
 		PktVer: PacketStructureVersion,
 		Events: events_,
 		Reqs:   req_,

@@ -3,6 +3,7 @@ package schema
 import (
 	"crypto/sha256"
 	"fmt"
+	"github.com/ryogrid/buzzoon/buzz_const"
 	"github.com/ryogrid/buzzoon/buzz_util"
 	"github.com/vmihailenco/msgpack/v5"
 	"strconv"
@@ -11,9 +12,9 @@ import (
 )
 
 func TestBuzzPacketEncodeMessagePack(t *testing.T) {
-	tagMap := make(map[string][]string)
-	tagMap["nickname"] = []string{"ryogrid"}
-	tagMap["u"] = []string{strconv.FormatInt(time.Now().Unix(), 10)}
+	tagMap := make(map[string][]interface{})
+	tagMap["nickname"] = []interface{}{"ryogrid"}
+	tagMap["u"] = []interface{}{strconv.FormatInt(time.Now().Unix(), 10)}
 
 	event := &BuzzEvent{
 		Id:         11111,
@@ -21,13 +22,13 @@ func TestBuzzPacketEncodeMessagePack(t *testing.T) {
 		Kind:       1,
 		Tags:       tagMap,
 		Content:    "こんにちは世界",
-		Sig:        &[64]byte{},
+		Sig:        &[buzz_const.SignatureSize]byte{},
 	}
 
 	// set value to SelfPubkey and Sig field
 	hf := sha256.New()
 	hf.Write([]byte("test"))
-	pubkey := hf.Sum(nil)[:32]
+	pubkey := hf.Sum(nil)[:buzz_const.PubkeySize]
 	for idx, val := range pubkey {
 		event.Pubkey[idx] = val
 	}
@@ -45,9 +46,12 @@ func TestBuzzPacketEncodeMessagePack(t *testing.T) {
 		event.Sig[32+idx] = val
 	}
 
+	argsMap := make(map[string][]interface{})
+	//tmpStr := "ryogrid"
+	argsMap["hoge"] = []interface{}{2024}
 	pkt := BuzzPacket{
 		Events: []*BuzzEvent{event},
-		Reqs:   nil,
+		Reqs:   []*BuzzReq{NewBuzzReq(1, argsMap)},
 	}
 
 	//encodedPkt := pkt.Encode()[0]
@@ -81,5 +85,8 @@ func TestBuzzPacketEncodeMessagePack(t *testing.T) {
 	buzz_util.Assert(t, err == nil, "decode error")
 
 	fmt.Println(*decodedPkt.Events[0])
+	fmt.Println(*decodedPkt.Reqs[0])
+	fmt.Println((*decodedPkt.Reqs[0]).Args["hoge"])
+	fmt.Println((*decodedPkt.Reqs[0]).Args["hoge"][0])
 	fmt.Println(*(*decodedPkt.Events[0]).Sig)
 }

@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"encoding/binary"
 	"fmt"
+	"github.com/ryogrid/buzzoon/buzz_const"
 	"io"
 	"math/rand"
 	"os"
@@ -17,11 +18,6 @@ import (
 	"testing"
 	"time"
 )
-
-const ServerImplVersion uint16 = 1
-
-// ratio of post event attached profile update time
-const AttachProfileUpdateProb = 0.2 // 1post / 5posts
 
 var DebugMode = false
 var DenyWriteMode = false
@@ -84,7 +80,7 @@ func IsHit(prob float64) bool {
 	return randGen.Float64() < prob
 }
 
-func GetLower64bitUint(bytes [32]byte) uint64 {
+func GetLower64bitUint(bytes [buzz_const.PubkeySize]byte) uint64 {
 	return binary.LittleEndian.Uint64(bytes[:8])
 }
 

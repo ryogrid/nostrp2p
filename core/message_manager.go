@@ -2,12 +2,21 @@ package core
 
 import (
 	"fmt"
+	"github.com/ryogrid/buzzoon/buzz_const"
 	"github.com/ryogrid/buzzoon/buzz_util"
 	"github.com/ryogrid/buzzoon/glo_val"
 	"github.com/ryogrid/buzzoon/schema"
 	"github.com/weaveworks/mesh"
+	"math"
 	"strconv"
 	"time"
+)
+
+const (
+	KIND_EVT_PROFILE        = 0
+	KIND_EVT_POST           = 1
+	KIND_REQ_PROFILE        = KIND_EVT_PROFILE
+	KIND_REQ_SHARE_EVT_DATA = 40000
 )
 
 type MessageManager struct {
@@ -15,78 +24,102 @@ type MessageManager struct {
 	send    mesh.Gossip // set by BuzzPeer.Register
 }
 
-func (mm *MessageManager) handleRecvMsgBcast(pkt *schema.BuzzPacket) error {
+// when recovery, src is math.MaxUint64
+func (mm *MessageManager) handleRecvMsgBcast(src mesh.PeerName, pkt *schema.BuzzPacket) error {
 	// TODO: need to use on-disk DB (DataManager::mergeReceived)
-	if pkt.Events != nil {
-		for _, evt := range pkt.Events {
-			if evt.Pubkey != *glo_val.SelfPubkey {
-				// store received event data (on memory)
-				tmpEvt := *evt
-				mm.DataMan.StoreEvent(&tmpEvt)
 
-				switch evt.Kind {
-				case 0: // profile
-					// store received profile data
-					mm.DataMan.StoreProfile(GenProfileFromEvent(evt))
-				case 1: // post
-					if val, ok := evt.Tags["u"]; ok && mm.DataMan.EvtLogger.IsLoggingActive {
-						// profile update time is attached
-						//(periodically attached the tag for avoiding old profile is kept)
-						recvdTime, err := strconv.ParseInt("17"+val[0], 10, 64)
-						if err != nil {
-							fmt.Println("strconv.Atoi error: " + err.Error())
+	if pkt.Events != nil {
+		// handle with new goroutine
+		go func() {
+			for _, evt := range pkt.Events {
+				if evt.Pubkey != *glo_val.SelfPubkey || src == math.MaxUint64 {
+					switch evt.Kind {
+					case KIND_EVT_PROFILE: // profile
+						// store received profile data
+						prof := GenProfileFromEvent(evt)
+						mm.DataMan.StoreProfile(prof)
+						if prof.Pubkey64bit == glo_val.SelfPubkey64bit && glo_val.ProfileMyOwn.UpdatedAt < evt.Created_at {
+							// this route works only when recovery
+							glo_val.ProfileMyOwn = prof
 						}
-						shortId := buzz_util.GetLower64bitUint(evt.Pubkey)
-						if mm.DataMan.GetProfileLocal(shortId) == nil ||
-							recvdTime > mm.DataMan.GetProfileLocal(buzz_util.GetLower64bitUint(evt.Pubkey)).UpdatedAt {
-							// TODO: need to implement limitation of request times (MessageManager::handleRecvMsgBcast)
-							// profile is updated. request latest profile asynchronous.
-							go mm.RequestProfile(shortId)
+					case KIND_EVT_POST: // post
+						if val, ok := evt.Tags["u"]; ok {
+							// delete "u" tag because it is not necessary for storing
+							delete(evt.Tags, "u")
+							if len(evt.Tags) == 0 {
+								evt.Tags = nil
+							}
+
+							// profile update time is attached
+							//(periodically attached the tag for avoiding old profile is kept)
+							recvdTime := val[0].(int64)
+							shortId := buzz_util.GetLower64bitUint(evt.Pubkey)
+							if mm.DataMan.GetProfileLocal(shortId) == nil ||
+								recvdTime > mm.DataMan.GetProfileLocal(buzz_util.GetLower64bitUint(evt.Pubkey)).UpdatedAt {
+								// TODO: need to implement limitation of request times (MessageManager::handleRecvMsgBcast)
+								// profile is updated. request latest profile asynchronous.
+								go mm.UnicastProfileReq(shortId)
+							}
 						}
+						// display (TEMPORAL IMPL)
+						mm.DispPostAtStdout(evt)
+					default:
+						fmt.Println("received unknown kind event: " + strconv.Itoa(int(evt.Kind)))
 					}
-					// display (TEMPORAL IMPL)
-					mm.DispPostAtStdout(evt)
-				default:
-					fmt.Println("received unknown kind event: " + strconv.Itoa(int(evt.Kind)))
+
+					// store received event data (on memory)
+					tmpEvt := *evt
+					mm.DataMan.StoreEvent(&tmpEvt)
 				}
 			}
+		}()
+	}
+
+	if pkt.Reqs != nil {
+		// TODO: need to implement request handling (MessageManager::handleRecvMsgBcast)
+		for _, req := range pkt.Reqs {
+			fmt.Println("received request: " + strconv.Itoa(int(req.Kind)))
 		}
-	} else {
-		fmt.Println("pkt.Events is nil")
 	}
 	return nil
 }
 
 func (mm *MessageManager) handleRecvMsgUnicast(src mesh.PeerName, pkt *schema.BuzzPacket) error {
 	if pkt.Events != nil {
-		// handle response of request
+		// handle with new goroutine
+		go func() {
+			// handle response of request
 
-		// store received event data (on memory)
-		mm.DataMan.StoreEvent(pkt.Events[0])
+			// store received event data (on memory)
+			mm.DataMan.StoreEvent(pkt.Events[0])
 
-		switch pkt.Events[0].Kind {
-		case 0: // profile
-			// store received profile data
-			mm.DataMan.StoreProfile(GenProfileFromEvent(pkt.Events[0]))
-		default:
-			fmt.Println("received unknown kind event: " + strconv.Itoa(int(pkt.Events[0].Kind)))
-		}
+			switch pkt.Events[0].Kind {
+			case KIND_EVT_PROFILE: // profile
+				// store received profile data
+				mm.DataMan.StoreProfile(GenProfileFromEvent(pkt.Events[0]))
+			default:
+				fmt.Println("received unknown kind event: " + strconv.Itoa(int(pkt.Events[0].Kind)))
+			}
+		}()
 		return nil
 	}
 
 	if pkt.Reqs != nil {
-		// handle request
-		switch pkt.Reqs[0].Kind {
-		case 0: // profile request
-			// send profile data asynchronous
-			go mm.SendProfileUnicast(uint64(src))
-		default:
-			fmt.Println("received unknown kind request: " + strconv.Itoa(int(pkt.Reqs[0].Kind)))
-		}
+		// handle with new goroutine
+		go func() {
+			// handle request
+			switch pkt.Reqs[0].Kind {
+			case KIND_REQ_PROFILE: // profile request
+				// send profile data asynchronous
+				go mm.UnicastOwnProfile(uint64(src))
+			default:
+				fmt.Println("received unknown kind request: " + strconv.Itoa(int(pkt.Reqs[0].Kind)))
+			}
+		}()
 		return nil
 	}
 
-	fmt.Println("MessageManager::handleRecvMsgUnicast: received unknown kind message")
+	fmt.Println("MessageManager::handleRecvMsgUnicast: received package which does not include both Events and Reqs")
 	return nil
 }
 
@@ -98,22 +131,20 @@ func (mm *MessageManager) SendMsgBroadcast(pkt *schema.BuzzPacket) {
 	mm.send.GossipBroadcast(pkt)
 }
 
-func (mm *MessageManager) BrodcastOwnPost(content string) *schema.BuzzEvent {
+func (mm *MessageManager) BcastOwnPost(content string) *schema.BuzzEvent {
 	pubSlice := glo_val.SelfPubkey[:]
-	var sigBytes [64]byte
+	var sigBytes [buzz_const.SignatureSize]byte
 	copy(sigBytes[:], pubSlice)
-	tagsMap := make(map[string][]string)
-	tagsMap["nickname"] = []string{*glo_val.Nickname}
-	if buzz_util.IsHit(buzz_util.AttachProfileUpdateProb) && glo_val.ProfileMyOwn.UpdatedAt > 0 {
-		// remove head 17 for data size reduction
-		updatedAt := strconv.FormatInt(glo_val.ProfileMyOwn.UpdatedAt, 10)[2:]
-		tagsMap["u"] = []string{updatedAt}
+	tagsMap := make(map[string][]interface{})
+	tagsMap["nickname"] = []interface{}{*glo_val.Nickname}
+	if buzz_util.IsHit(buzz_const.AttachProfileUpdateProb) && glo_val.ProfileMyOwn.UpdatedAt > 0 {
+		tagsMap["u"] = []interface{}{glo_val.ProfileMyOwn.UpdatedAt}
 	}
 	event := schema.BuzzEvent{
 		Id:         buzz_util.GetRandUint64(),
 		Pubkey:     *glo_val.SelfPubkey,
 		Created_at: time.Now().Unix(),
-		Kind:       1,
+		Kind:       KIND_EVT_POST,
 		Tags:       tagsMap,
 		Content:    content,
 		Sig:        &sigBytes,
@@ -130,7 +161,7 @@ func (mm *MessageManager) BrodcastOwnPost(content string) *schema.BuzzEvent {
 	//fmt.Println(event.Tags["nickname"][0] + "> " + event.Content)
 }
 
-func (mm *MessageManager) BrodcastOwnProfile(name *string, about *string, picture *string) *schema.BuzzProfile {
+func (mm *MessageManager) BcastOwnProfile(name *string, about *string, picture *string) *schema.BuzzProfile {
 	event := mm.constructProfileEvt(name, about, picture)
 	events := []*schema.BuzzEvent{event}
 	mm.SendMsgBroadcast(schema.NewBuzzPacket(&events, nil))
@@ -144,17 +175,17 @@ func (mm *MessageManager) BrodcastOwnProfile(name *string, about *string, pictur
 
 func (mm *MessageManager) constructProfileEvt(name *string, about *string, picture *string) *schema.BuzzEvent {
 	pubSlice := glo_val.SelfPubkey[:]
-	var sigBytes [64]byte
+	var sigBytes [buzz_const.SignatureSize]byte
 	copy(sigBytes[:], pubSlice)
-	tagsMap := make(map[string][]string)
-	tagsMap["name"] = []string{*name}
-	tagsMap["about"] = []string{*about}
-	tagsMap["picture"] = []string{*picture}
+	tagsMap := make(map[string][]interface{})
+	tagsMap["name"] = []interface{}{*name}
+	tagsMap["about"] = []interface{}{*about}
+	tagsMap["picture"] = []interface{}{*picture}
 	event := schema.BuzzEvent{
 		Id:         buzz_util.GetRandUint64(),
 		Pubkey:     *glo_val.SelfPubkey,
 		Created_at: time.Now().Unix(),
-		Kind:       0,
+		Kind:       KIND_EVT_PROFILE,
 		Tags:       tagsMap,
 		Content:    "",
 		Sig:        &sigBytes,
@@ -162,16 +193,14 @@ func (mm *MessageManager) constructProfileEvt(name *string, about *string, pictu
 	return &event
 }
 
-func (mm *MessageManager) RequestProfile(pubkey64bit uint64) {
-	reqs := []*schema.BuzzReq{&schema.BuzzReq{
-		Kind: 0,
-	}}
+func (mm *MessageManager) UnicastProfileReq(pubkey64bit uint64) {
+	reqs := []*schema.BuzzReq{schema.NewBuzzReq(KIND_REQ_SHARE_EVT_DATA, nil)}
 	pkt := schema.NewBuzzPacket(nil, &reqs)
 	mm.SendMsgUnicast(mesh.PeerName(pubkey64bit), pkt)
 }
 
 // used for response of profile request
-func (mm *MessageManager) SendProfileUnicast(pubkey64bit uint64) {
+func (mm *MessageManager) UnicastOwnProfile(pubkey64bit uint64) {
 	evt := mm.constructProfileEvt(&glo_val.ProfileMyOwn.Name, &glo_val.ProfileMyOwn.About, &glo_val.ProfileMyOwn.Picture)
 	events := []*schema.BuzzEvent{evt}
 	mm.SendMsgUnicast(mesh.PeerName(pubkey64bit), schema.NewBuzzPacket(&events, nil))
@@ -179,15 +208,23 @@ func (mm *MessageManager) SendProfileUnicast(pubkey64bit uint64) {
 
 // TODO: TEMPORAL IMPL
 func (mm *MessageManager) DispPostAtStdout(evt *schema.BuzzEvent) {
-	fmt.Println(evt.Tags["nickname"][0] + "> " + evt.Content)
+	fmt.Println(evt.Tags["nickname"][0].(string) + "> " + evt.Content)
 }
 
 func GenProfileFromEvent(evt *schema.BuzzEvent) *schema.BuzzProfile {
 	return &schema.BuzzProfile{
 		Pubkey64bit: buzz_util.GetLower64bitUint(evt.Pubkey),
-		Name:        evt.Tags["name"][0],
-		About:       evt.Tags["about"][0],
-		Picture:     evt.Tags["picture"][0],
+		Name:        evt.Tags["name"][0].(string),
+		About:       evt.Tags["about"][0].(string),
+		Picture:     evt.Tags["picture"][0].(string),
 		UpdatedAt:   evt.Created_at,
 	}
+}
+
+// TODO: TEMPORAL_IMPL
+func (mm *MessageManager) BcastShareEvtDataReq(pubkey64bit uint64) {
+	reqs := []*schema.BuzzReq{schema.NewBuzzReq(KIND_REQ_SHARE_EVT_DATA, nil)}
+
+	pkt := schema.NewBuzzPacket(nil, &reqs)
+	mm.SendMsgUnicast(mesh.PeerName(pubkey64bit), pkt)
 }

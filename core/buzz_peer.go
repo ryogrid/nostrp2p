@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/ryogrid/buzzoon/buzz_const"
 	"github.com/ryogrid/buzzoon/buzz_util"
 	"github.com/ryogrid/buzzoon/glo_val"
 	"github.com/ryogrid/buzzoon/schema"
@@ -23,7 +24,7 @@ type BuzzPeer struct {
 	dataMan      *DataManager
 	MessageMan   *MessageManager
 	SelfId       mesh.PeerName
-	SelfPubkey   [32]byte
+	SelfPubkey   [buzz_const.PubkeySize]byte
 	Router       *mesh.Router
 	recvedEvtMap map[uint64]struct{}
 }
@@ -38,7 +39,7 @@ func NewPeer(self mesh.PeerName, logger *log.Logger) *BuzzPeer {
 	buf := make([]byte, binary.MaxVarintLen64)
 	// TODO: need to set correct pubkey
 	binary.PutUvarint(buf, uint64(self))
-	var pubkeyBytes [32]byte
+	var pubkeyBytes [buzz_const.PubkeySize]byte
 	copy(pubkeyBytes[:], buf)
 	glo_val.SelfPubkey = &pubkeyBytes
 	glo_val.SelfPubkey64bit = uint64(self)
@@ -111,7 +112,7 @@ func (p *BuzzPeer) OnGossipBroadcast(src mesh.PeerName, buf []byte) (received me
 	if pkt.PktVer != schema.PacketStructureVersion {
 		return nil, errors.New("Invalid packet version")
 	}
-	if pkt.SrvVer != buzz_util.ServerImplVersion {
+	if pkt.SrvVer != buzz_const.ServerImplVersion {
 		fmt.Println("received packat from newer version of server")
 	}
 
@@ -121,9 +122,9 @@ func (p *BuzzPeer) OnGossipBroadcast(src mesh.PeerName, buf []byte) (received me
 	if pkt.Events != nil {
 		for _, evt := range pkt.Events {
 			if _, ok := p.recvedEvtMap[evt.Id]; !ok {
-				err_ := p.MessageMan.handleRecvMsgBcast(pkt)
-				if err_ != nil {
-					panic(err_)
+				err2 := p.MessageMan.handleRecvMsgBcast(src, pkt)
+				if err2 != nil {
+					panic(err2)
 				}
 
 				p.recvedEvtMap[evt.Id] = struct{}{}
@@ -160,7 +161,7 @@ func (p *BuzzPeer) OnGossipUnicast(src mesh.PeerName, buf []byte) error {
 	if pkt.PktVer != schema.PacketStructureVersion {
 		return errors.New("Invalid packet version")
 	}
-	if pkt.SrvVer != buzz_util.ServerImplVersion {
+	if pkt.SrvVer != buzz_const.ServerImplVersion {
 		fmt.Println("received packat from newer version of server")
 	}
 
