@@ -35,7 +35,7 @@ func (rm *RecoveryManager) Recover() {
 			break
 		}
 		pkt := schema.NewBuzzPacket(&[]*schema.BuzzEvent{evt}, nil)
-		rm.messageMan.handleRecvMsgBcast(math.MaxUint64, pkt)
+		rm.messageMan.handleRecvMsgBcastEvt(math.MaxUint64, pkt, evt)
 		_, buf, err = rm.messageMan.DataMan.EvtLogger.ReadLog()
 	}
 }

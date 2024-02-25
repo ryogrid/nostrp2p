@@ -1,6 +1,7 @@
 package buzz_const
 
 const ServerImplVersion uint16 = 1
+const PacketStructureVersion uint16 = 3
 
 // ratio of post event attached profile update time
 const AttachProfileUpdateProb = 0.2 // 1post / 5posts

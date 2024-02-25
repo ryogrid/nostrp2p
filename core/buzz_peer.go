@@ -17,16 +17,16 @@ import (
 // and the resulting Gossip registered in turn,
 // before calling mesh.Router.Start.
 type BuzzPeer struct {
-	Send         *mesh.Gossip
-	actions      chan<- func()
-	quit         chan struct{}
-	logger       *log.Logger
-	dataMan      *DataManager
-	MessageMan   *MessageManager
-	SelfId       mesh.PeerName
-	SelfPubkey   [buzz_const.PubkeySize]byte
-	Router       *mesh.Router
-	recvedEvtMap map[uint64]struct{}
+	Send            *mesh.Gossip
+	actions         chan<- func()
+	quit            chan struct{}
+	logger          *log.Logger
+	dataMan         *DataManager
+	MessageMan      *MessageManager
+	SelfId          mesh.PeerName
+	SelfPubkey      [buzz_const.PubkeySize]byte
+	Router          *mesh.Router
+	recvedEvtReqMap map[uint64]struct{}
 }
 
 // BuzzPeer implements mesh.Gossiper.
@@ -49,14 +49,14 @@ func NewPeer(self mesh.PeerName, logger *log.Logger) *BuzzPeer {
 	msgMan := &MessageManager{DataMan: dataMan}
 
 	p := &BuzzPeer{
-		Send:         nil, // must .Register() later
-		actions:      actions,
-		quit:         make(chan struct{}),
-		logger:       logger,
-		dataMan:      dataMan,
-		MessageMan:   msgMan,
-		SelfId:       self,
-		recvedEvtMap: make(map[uint64]struct{}),
+		Send:            nil, // must .Register() later
+		actions:         actions,
+		quit:            make(chan struct{}),
+		logger:          logger,
+		dataMan:         dataMan,
+		MessageMan:      msgMan,
+		SelfId:          self,
+		recvedEvtReqMap: make(map[uint64]struct{}),
 	}
 	go p.loop(actions)
 	return p
@@ -109,7 +109,7 @@ func (p *BuzzPeer) OnGossipBroadcast(src mesh.PeerName, buf []byte) (received me
 	if err_ != nil {
 		return nil, err_
 	}
-	if pkt.PktVer != schema.PacketStructureVersion {
+	if pkt.PktVer != buzz_const.PacketStructureVersion {
 		return nil, errors.New("Invalid packet version")
 	}
 	if pkt.SrvVer != buzz_const.ServerImplVersion {
@@ -121,14 +121,28 @@ func (p *BuzzPeer) OnGossipBroadcast(src mesh.PeerName, buf []byte) (received me
 	retPkt := schema.NewBuzzPacket(&tmpEvts, &tmpReqs)
 	if pkt.Events != nil {
 		for _, evt := range pkt.Events {
-			if _, ok := p.recvedEvtMap[evt.Id]; !ok {
-				err2 := p.MessageMan.handleRecvMsgBcast(src, pkt)
+			if _, ok := p.recvedEvtReqMap[evt.Id]; !ok {
+				err2 := p.MessageMan.handleRecvMsgBcastEvt(src, pkt, evt)
 				if err2 != nil {
 					panic(err2)
 				}
 
-				p.recvedEvtMap[evt.Id] = struct{}{}
+				p.recvedEvtReqMap[evt.Id] = struct{}{}
 				retPkt.Events = append(retPkt.Events, evt)
+			} else {
+				continue
+			}
+		}
+	} else if pkt.Reqs != nil {
+		for _, req := range pkt.Reqs {
+			if _, ok := p.recvedEvtReqMap[req.Id]; !ok {
+				err2 := p.MessageMan.handleRecvMsgBcastReq(src, pkt, req)
+				if err2 != nil {
+					panic(err2)
+				}
+
+				p.recvedEvtReqMap[req.Id] = struct{}{}
+				retPkt.Reqs = append(retPkt.Reqs, req)
 			} else {
 				continue
 			}
@@ -158,7 +172,7 @@ func (p *BuzzPeer) OnGossipUnicast(src mesh.PeerName, buf []byte) error {
 	if err != nil {
 		return err
 	}
-	if pkt.PktVer != schema.PacketStructureVersion {
+	if pkt.PktVer != buzz_const.PacketStructureVersion {
 		return errors.New("Invalid packet version")
 	}
 	if pkt.SrvVer != buzz_const.ServerImplVersion {

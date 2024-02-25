@@ -9,6 +9,9 @@ import (
 	"net/http"
 )
 
+type NoArgReq struct {
+}
+
 type PostEventReq struct {
 	Content string
 }
@@ -98,6 +101,24 @@ func (s *ApiServer) getProfile(w rest.ResponseWriter, req *rest.Request) {
 
 }
 
+// TODO: TEMPORAL IMPL
+func (s *ApiServer) gatherData(w rest.ResponseWriter, req *rest.Request) {
+	input := NoArgReq{}
+	err := req.DecodeJsonPayload(&input)
+
+	if err != nil {
+		fmt.Println(err)
+		rest.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	s.buzzPeer.MessageMan.BcastShareEvtDataReq()
+
+	w.WriteJson(&GeneralResp{
+		"SUCCESS",
+	})
+}
+
 func (s *ApiServer) updateProfile(w rest.ResponseWriter, req *rest.Request) {
 	input := UpdateProfileReq{}
 	err := req.DecodeJsonPayload(&input)
@@ -156,6 +177,7 @@ func (s *ApiServer) LaunchAPIServer(addrStr string) {
 		&rest.Route{"POST", "/postEvent", s.postEvent},
 		&rest.Route{"POST", "/updateProfile", s.updateProfile},
 		&rest.Route{"POST", "/getProfile", s.getProfile},
+		&rest.Route{"POST", "/gatherData", s.gatherData},
 	)
 	if err != nil {
 		log.Fatal(err)

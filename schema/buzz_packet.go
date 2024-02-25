@@ -6,8 +6,6 @@ import (
 	"github.com/weaveworks/mesh"
 )
 
-const PacketStructureVersion uint16 = 2
-
 // BuzzPacket is an implementation of GossipData
 type BuzzPacket struct {
 	SrvVer uint16 // version of buzzoon server implementation
@@ -34,7 +32,7 @@ func NewBuzzPacket(events *[]*BuzzEvent, req *[]*BuzzReq) *BuzzPacket {
 
 	return &BuzzPacket{
 		SrvVer: buzz_const.ServerImplVersion,
-		PktVer: PacketStructureVersion,
+		PktVer: buzz_const.PacketStructureVersion,
 		Events: events_,
 		Reqs:   req_,
 	}
