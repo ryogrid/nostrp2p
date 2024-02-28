@@ -65,8 +65,9 @@ Flags:
 ./buzzoon server -l 0.0.0.0:20000 -p <public key in hex> -n tom -b redsky.social:20000
 ```
 
-## Examples (Client usage)
-- Under construction
+## Examples (Client)
+- [here](https://github.com/ryogrid/flustr-for-buzzoon/tree/for-buzzoon)
+  - Under construction :)
 
 ## About ultra simple prototype system
 - [here (Japanese)](https://ryogrid.hatenablog.com/entry/2024/02/14/225619)
