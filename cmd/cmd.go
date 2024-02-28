@@ -87,7 +87,7 @@ var serverCmd = &cobra.Command{
 			Pubkey64bit: uint64(name),
 			Name:        nickname,
 			About:       "brank yet",
-			Picture:     "http://robohash.com/" + strconv.Itoa(int(name)) + ".png?size=200x200",
+			Picture:     "http://robohash.org/" + strconv.Itoa(int(name)) + ".png?size=200x200",
 			UpdatedAt:   0,
 		} // initialized at server restart or update request
 

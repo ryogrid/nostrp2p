@@ -28,10 +28,9 @@ type GetProfileReq struct {
 }
 
 type GetProfileResp struct {
-	Name      string
-	About     string
-	Picture   string
-	UpdatedAt int64
+	Name    string
+	About   string
+	Picture string
 }
 
 type GetEventsReq struct {
@@ -101,10 +100,9 @@ func (s *ApiServer) getProfile(w rest.ResponseWriter, req *rest.Request) {
 		})
 	} else {
 		w.WriteJson(&GetProfileResp{
-			Name:      prof.Name,
-			About:     prof.About,
-			Picture:   prof.Picture,
-			UpdatedAt: prof.UpdatedAt,
+			Name:    prof.Name,
+			About:   prof.About,
+			Picture: prof.Picture,
 		})
 	}
 }
