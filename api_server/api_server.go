@@ -1,13 +1,16 @@
 package api_server
 
 import (
+	"encoding/binary"
 	"fmt"
 	"github.com/ant0ine/go-json-rest/rest"
+	"github.com/ryogrid/buzzoon/buzz_util"
 	"github.com/ryogrid/buzzoon/core"
 	"github.com/ryogrid/buzzoon/glo_val"
 	"github.com/ryogrid/buzzoon/schema"
 	"log"
 	"net/http"
+	"strings"
 )
 
 type NoArgReq struct {
@@ -38,8 +41,41 @@ type GetEventsReq struct {
 	Until int64
 }
 
+type BuzzEventOnAPIResp struct {
+	Id         string     // string of zero paddinged ID (32bytes) in hex
+	Pubkey     string     // string of zeropaddinged Pubkey(encoded 256bit uint (holiman/uint256)) in hex
+	Created_at int64      // unix timestamp in seconds
+	Kind       uint16     // integer between 0 and 65535
+	Tags       [][]string // Key: tag string, Value: string
+	Content    string
+	Sig        string // string of Sig(64-bytes integr of the signature) in hex
+}
+
+func NewBuzzEventOnAPIResp(evt *schema.BuzzEvent) *BuzzEventOnAPIResp {
+	idBuf := make([]byte, 32)
+	binary.LittleEndian.PutUint64(idBuf, evt.Id)
+	idStr := fmt.Sprintf("%x", buzz_util.Gen256bitHash(idBuf))
+	sigStr := idStr + idStr
+
+	tagsArr := make([][]string, 0)
+	if evt.Kind == core.KIND_EVT_PROFILE {
+		tagsArr = append(tagsArr, []string{"name", evt.Tags["name"][0].(string)})
+		tagsArr = append(tagsArr, []string{"about", evt.Tags["about"][0].(string)})
+		tagsArr = append(tagsArr, []string{"picture", evt.Tags["picture"][0].(string)})
+	}
+	return &BuzzEventOnAPIResp{
+		Id:         strings.TrimLeft(idStr, "0"), // remove leading zeros
+		Pubkey:     strings.TrimLeft(fmt.Sprintf("%x", buzz_util.Gen256bitHash(evt.Pubkey[:])), "0"),
+		Created_at: evt.Created_at,
+		Kind:       evt.Kind,
+		Tags:       tagsArr,
+		Content:    evt.Content,
+		Sig:        strings.TrimLeft(sigStr, "0"),
+	}
+}
+
 type GetEventsResp struct {
-	Events []schema.BuzzEvent
+	Events []BuzzEventOnAPIResp
 }
 type GeneralResp struct {
 	Status string
@@ -91,6 +127,7 @@ func (s *ApiServer) getProfile(w rest.ResponseWriter, req *rest.Request) {
 	}
 
 	prof := s.buzzPeer.MessageMan.DataMan.GetProfileLocal(input.ShortPkey)
+	// TODO: when profile is not found, request latest profile (ApiServer::getProfile)
 
 	if prof == nil {
 		w.WriteJson(&GetProfileResp{
@@ -119,9 +156,9 @@ func (s *ApiServer) getEvents(w rest.ResponseWriter, req *rest.Request) {
 
 	events := s.buzzPeer.MessageMan.DataMan.GetLatestEvents(input.Since, input.Until)
 
-	retEvents := make([]schema.BuzzEvent, 0)
+	retEvents := make([]BuzzEventOnAPIResp, 0)
 	for _, evt := range *events {
-		retEvents = append(retEvents, *evt)
+		retEvents = append(retEvents, *NewBuzzEventOnAPIResp(evt))
 	}
 
 	w.WriteJson(&GetEventsResp{

@@ -3,6 +3,7 @@ package buzz_util
 import (
 	"bytes"
 	"compress/gzip"
+	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
 	"github.com/ryogrid/buzzoon/buzz_const"
@@ -117,4 +118,12 @@ func GzipDecompless(data []byte) []byte {
 
 	retBuf := buf2.Bytes()
 	return retBuf
+}
+
+func Gen256bitHash(data []byte) [32]byte {
+	hf := sha256.New()
+	hf.Write(data)
+	var ret [32]byte
+	copy(ret[:], hf.Sum(nil)[:32])
+	return ret
 }
