@@ -10,7 +10,6 @@ import (
 	"github.com/ryogrid/buzzoon/schema"
 	"log"
 	"net/http"
-	"strings"
 )
 
 type NoArgReq struct {
@@ -64,13 +63,13 @@ func NewBuzzEventOnAPIResp(evt *schema.BuzzEvent) *BuzzEventOnAPIResp {
 		tagsArr = append(tagsArr, []string{"picture", evt.Tags["picture"][0].(string)})
 	}
 	return &BuzzEventOnAPIResp{
-		Id:         strings.TrimLeft(idStr, "0"), // remove leading zeros
-		Pubkey:     strings.TrimLeft(fmt.Sprintf("%x", buzz_util.Gen256bitHash(evt.Pubkey[:])), "0"),
+		Id:         idStr, // remove leading zeros
+		Pubkey:     fmt.Sprintf("%x", buzz_util.Gen256bitHash(evt.Pubkey[:])),
 		Created_at: evt.Created_at,
 		Kind:       evt.Kind,
 		Tags:       tagsArr,
 		Content:    evt.Content,
-		Sig:        strings.TrimLeft(sigStr, "0"),
+		Sig:        sigStr,
 	}
 }
 

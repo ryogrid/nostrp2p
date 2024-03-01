@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/holiman/uint256"
 	"github.com/ryogrid/buzzoon/glo_val"
 	"github.com/ryogrid/buzzoon/schema"
 	"io/ioutil"
@@ -58,15 +59,23 @@ var serverCmd = &cobra.Command{
 			logger.Fatalf("port sting coversion error: %s: %v", listenAddrPort, err)
 		}
 
-		// TODO: need to use big int (cmd.go)
-		name, err := strconv.ParseUint(publicKey, 16, 64)
+		//name, err := strconv.ParseUint(publicKey, 16, 64)
+		pkey256, err := uint256.FromHex("0x" + publicKey)
 		if err != nil {
-			logger.Fatalf("public key: %s: %v", listenAddrPort, err)
+			logger.Fatalf("public key: %s: %v", publicKey, err)
 		}
-		// TODO: need to print boot message with hex public key string
+		fmt.Println("public key: ", publicKey)
+
+		// short pubkey
+		name := pkey256.Uint64()
+
+		var tmpArr [32]byte
+		pkey256.WriteToArray32(&tmpArr)
+		glo_val.SelfPubkey = &tmpArr
+		glo_val.SelfPubkey64bit = name
 
 		// initializa rand generator
-		buzz_util.InitializeRandGen(int64(name))
+		buzz_util.InitializeRandGen(-1 * int64(name))
 
 		router, err := mesh.NewRouter(mesh.Config{
 			Host:               host,
@@ -84,7 +93,7 @@ var serverCmd = &cobra.Command{
 
 		glo_val.Nickname = &nickname
 		glo_val.ProfileMyOwn = &schema.BuzzProfile{
-			Pubkey64bit: uint64(name),
+			Pubkey64bit: name,
 			Name:        nickname,
 			About:       "brank yet",
 			Picture:     "http://robohash.org/" + strconv.Itoa(int(name)) + ".png?size=200x200",
