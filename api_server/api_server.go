@@ -64,7 +64,7 @@ func NewBuzzEventOnAPIResp(evt *schema.BuzzEvent) *BuzzEventOnAPIResp {
 	}
 	return &BuzzEventOnAPIResp{
 		Id:         idStr, // remove leading zeros
-		Pubkey:     fmt.Sprintf("%x", buzz_util.Gen256bitHash(evt.Pubkey[:])),
+		Pubkey:     fmt.Sprintf("%x", evt.Pubkey[:]),
 		Created_at: evt.Created_at,
 		Kind:       evt.Kind,
 		Tags:       tagsArr,

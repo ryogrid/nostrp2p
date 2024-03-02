@@ -10,6 +10,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/ryogrid/buzzoon/api_server"
 	"github.com/ryogrid/buzzoon/buzz_util"
@@ -73,6 +74,7 @@ var serverCmd = &cobra.Command{
 		pkey256.WriteToArray32(&tmpArr)
 		glo_val.SelfPubkey = &tmpArr
 		glo_val.SelfPubkey64bit = name
+		fmt.Println(fmt.Sprintf("%x", glo_val.SelfPubkey), fmt.Sprintf("%x", name))
 
 		// initializa rand generator
 		buzz_util.InitializeRandGen(-1 * int64(name))
@@ -104,6 +106,8 @@ var serverCmd = &cobra.Command{
 
 		// if log file exist, load it
 		core.NewRecoveryManager(peer.MessageMan).Recover()
+		time.Sleep(10 * time.Second)
+		fmt.Println(fmt.Sprintf("%x", *glo_val.SelfPubkey), fmt.Sprintf("%x", name))
 
 		gossip, err := router.NewGossip("buzzoon", peer)
 		if err != nil {
