@@ -6,10 +6,12 @@ import (
 	"github.com/ant0ine/go-json-rest/rest"
 	"github.com/ryogrid/buzzoon/buzz_util"
 	"github.com/ryogrid/buzzoon/core"
-	"github.com/ryogrid/buzzoon/glo_val"
 	"github.com/ryogrid/buzzoon/schema"
 	"log"
+	"math"
 	"net/http"
+	"slices"
+	"strconv"
 )
 
 type NoArgReq struct {
@@ -40,9 +42,9 @@ type GetEventsReq struct {
 	Until int64
 }
 
-type BuzzEventOnAPIResp struct {
-	Id         string     // string of zero paddinged ID (32bytes) in hex
-	Pubkey     string     // string of zeropaddinged Pubkey(encoded 256bit uint (holiman/uint256)) in hex
+type BuzzEventAndReq struct {
+	Id         string     // string of ID (32bytes) in hex
+	Pubkey     string     // string of Pubkey(encoded 256bit uint (holiman/uint256)) in hex
 	Created_at int64      // unix timestamp in seconds
 	Kind       uint16     // integer between 0 and 65535
 	Tags       [][]string // Key: tag string, Value: string
@@ -50,7 +52,7 @@ type BuzzEventOnAPIResp struct {
 	Sig        string // string of Sig(64-bytes integr of the signature) in hex
 }
 
-func NewBuzzEventOnAPIResp(evt *schema.BuzzEvent) *BuzzEventOnAPIResp {
+func NewBuzzEventAndReq(evt *schema.BuzzEvent) *BuzzEventAndReq {
 	idBuf := make([]byte, 32)
 	binary.LittleEndian.PutUint64(idBuf, evt.Id)
 	idStr := fmt.Sprintf("%x", buzz_util.Gen256bitHash(idBuf))
@@ -62,7 +64,7 @@ func NewBuzzEventOnAPIResp(evt *schema.BuzzEvent) *BuzzEventOnAPIResp {
 		tagsArr = append(tagsArr, []string{"about", evt.Tags["about"][0].(string)})
 		tagsArr = append(tagsArr, []string{"picture", evt.Tags["picture"][0].(string)})
 	}
-	return &BuzzEventOnAPIResp{
+	return &BuzzEventAndReq{
 		Id:         idStr, // remove leading zeros
 		Pubkey:     fmt.Sprintf("%x", evt.Pubkey[:]),
 		Created_at: evt.Created_at,
@@ -73,8 +75,8 @@ func NewBuzzEventOnAPIResp(evt *schema.BuzzEvent) *BuzzEventOnAPIResp {
 	}
 }
 
-type GetEventsResp struct {
-	Events []BuzzEventOnAPIResp
+type EventsResp struct {
+	Events []BuzzEventAndReq
 }
 type GeneralResp struct {
 	Status string
@@ -88,8 +90,8 @@ func NewApiServer(peer *core.BuzzPeer) *ApiServer {
 	return &ApiServer{peer}
 }
 
-func (s *ApiServer) postEvent(w rest.ResponseWriter, req *rest.Request) {
-	input := PostEventReq{}
+func (s *ApiServer) sendEventHandler(w rest.ResponseWriter, req *rest.Request) {
+	input := BuzzEventAndReq{}
 	err := req.DecodeJsonPayload(&input)
 
 	if err != nil {
@@ -97,6 +99,26 @@ func (s *ApiServer) postEvent(w rest.ResponseWriter, req *rest.Request) {
 		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	// TODO: need to check Sig (ApiServer::sendEventHandler)
+
+	switch input.Kind {
+	case core.KIND_EVT_POST:
+		s.sendPost(w, &input)
+	case core.KIND_EVT_PROFILE:
+		s.updateProfile(w, &input)
+	default:
+		rest.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	//w.WriteJson(&GeneralResp{
+	//	"SUCCESS",
+	//})
+}
+
+func (s *ApiServer) sendPost(w rest.ResponseWriter, input *BuzzEventAndReq) {
+	// TODO: need to implement post handling (ApiServer::sendPost)
 
 	if input.Content == "" {
 		rest.Error(w, "Content is required", 400)
@@ -109,42 +131,27 @@ func (s *ApiServer) postEvent(w rest.ResponseWriter, req *rest.Request) {
 	// display for myself
 	s.buzzPeer.MessageMan.DispPostAtStdout(evt)
 
-	w.WriteJson(&GeneralResp{
-		"SUCCESS",
-	})
+	w.WriteJson(&EventsResp{})
 }
 
-// TODO: TEMPORAL IMPL
-func (s *ApiServer) getProfile(w rest.ResponseWriter, req *rest.Request) {
-	input := GetProfileReq{}
-	err := req.DecodeJsonPayload(&input)
+func (s *ApiServer) getProfile(w rest.ResponseWriter, input *BuzzEventAndReq) {
+	// TODO: need to implement profile request handling (ApiServer::getProfile)
 
-	if err != nil {
-		fmt.Println(err)
-		rest.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	prof := s.buzzPeer.MessageMan.DataMan.GetProfileLocal(input.ShortPkey)
+	prof := s.buzzPeer.MessageMan.DataMan.GetProfileLocal(math.MaxUint64)
+	//prof := s.buzzPeer.MessageMan.DataMan.GetProfileLocal(input.ShortPkey)
 	// TODO: when profile is not found, request latest profile (ApiServer::getProfile)
 
-	if prof == nil {
-		w.WriteJson(&GetProfileResp{
-			Name:    "",
-			About:   "",
-			Picture: "",
-		})
+	if prof != nil {
+		// TODO: need to set approprivate event data (ApiServer::getProfile)
+		w.WriteJson(&EventsResp{Events: []BuzzEventAndReq{*NewBuzzEventAndReq(nil)}})
 	} else {
-		w.WriteJson(&GetProfileResp{
-			Name:    prof.Name,
-			About:   prof.About,
-			Picture: prof.Picture,
-		})
+		// profile data will be included on response of "getEvents"
+		w.WriteJson(&EventsResp{Events: []BuzzEventAndReq{}})
 	}
 }
 
-func (s *ApiServer) getEvents(w rest.ResponseWriter, req *rest.Request) {
-	input := GetEventsReq{}
+func (s *ApiServer) reqHandler(w rest.ResponseWriter, req *rest.Request) {
+	input := BuzzEventAndReq{}
 	err := req.DecodeJsonPayload(&input)
 
 	if err != nil {
@@ -153,17 +160,50 @@ func (s *ApiServer) getEvents(w rest.ResponseWriter, req *rest.Request) {
 		return
 	}
 
-	events := s.buzzPeer.MessageMan.DataMan.GetLatestEvents(input.Since, input.Until)
+	// TODO: need to check Created_at and Sig for authorizaton (ApiServer::reqHandler)
+	//       accept only when ((currentTime - Created_at) < 10sec)
 
-	retEvents := make([]BuzzEventOnAPIResp, 0)
-	for _, evt := range *events {
-		retEvents = append(retEvents, *NewBuzzEventOnAPIResp(evt))
+	switch input.Content {
+	case "getProfile":
+		s.getProfile(w, &input)
+	case "getEvents":
+		s.getEvents(w, &input)
+	default:
+		rest.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+}
+
+func (s *ApiServer) getEvents(w rest.ResponseWriter, input *BuzzEventAndReq) {
+	if input.Tags == nil {
+		rest.Error(w, "Tags is null", http.StatusBadRequest)
+		return
 	}
 
-	w.WriteJson(&GetEventsResp{
+	sinceIdx := slices.IndexFunc(input.Tags, func(ss []string) bool { return ss[0] == "since" })
+	untilIdx := slices.IndexFunc(input.Tags, func(ss []string) bool { return ss[0] == "until" })
+	if sinceIdx == -1 || untilIdx == -1 || len(input.Tags[sinceIdx]) < 2 || len(input.Tags[untilIdx]) < 2 {
+		rest.Error(w, "since and until are required", http.StatusBadRequest)
+		return
+	}
+
+	since, err1 := strconv.Atoi(input.Tags[sinceIdx][1])
+	until, err2 := strconv.Atoi(input.Tags[untilIdx][1])
+	if err1 != nil || err2 != nil {
+		rest.Error(w, "since and until must be integer", http.StatusBadRequest)
+		return
+	}
+
+	events := s.buzzPeer.MessageMan.DataMan.GetLatestEvents(int64(since), int64(until))
+
+	retEvents := make([]BuzzEventAndReq, 0)
+	for _, evt := range *events {
+		retEvents = append(retEvents, *NewBuzzEventAndReq(evt))
+	}
+
+	w.WriteJson(&EventsResp{
 		Events: retEvents,
 	})
-
 }
 
 // TODO: TEMPORAL IMPL
@@ -184,28 +224,20 @@ func (s *ApiServer) gatherData(w rest.ResponseWriter, req *rest.Request) {
 	})
 }
 
-func (s *ApiServer) updateProfile(w rest.ResponseWriter, req *rest.Request) {
-	input := UpdateProfileReq{}
-	err := req.DecodeJsonPayload(&input)
-
-	if err != nil {
-		fmt.Println(err)
-		rest.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	if input.Name == "" {
-		rest.Error(w, "Name is required", 400)
-		return
-	}
-
-	prof := s.buzzPeer.MessageMan.BcastOwnProfile(&input.Name, &input.About, &input.Picture)
-	// update local profile
-	glo_val.ProfileMyOwn = prof
-
-	w.WriteJson(&GeneralResp{
-		"SUCCESS",
-	})
+func (s *ApiServer) updateProfile(w rest.ResponseWriter, input *BuzzEventAndReq) {
+	// TODO: need to implement profile update handling (ApiServer::updateProfile)
+	//if input.Name == "" {
+	//	rest.Error(w, "Name is required", 400)
+	//	return
+	//}
+	//
+	//prof := s.buzzPeer.MessageMan.BcastOwnProfile(&input.Name, &input.About, &input.Picture)
+	//// update local profile
+	//glo_val.ProfileMyOwn = prof
+	//
+	//w.WriteJson(&GeneralResp{
+	//	"SUCCESS",
+	//})
 }
 
 func (s *ApiServer) LaunchAPIServer(addrStr string) {
@@ -239,11 +271,12 @@ func (s *ApiServer) LaunchAPIServer(addrStr string) {
 	})
 
 	router, err := rest.MakeRouter(
-		&rest.Route{"POST", "/postEvent", s.postEvent},
-		&rest.Route{"POST", "/updateProfile", s.updateProfile},
-		&rest.Route{"POST", "/getProfile", s.getProfile},
-		&rest.Route{"POST", "/gatherData", s.gatherData},
-		&rest.Route{"POST", "/getEvents", s.getEvents},
+		&rest.Route{"POST", "/sendEvent", s.sendEventHandler},
+		//&rest.Route{"POST", "/updateProfile", s.updateProfile},
+		//&rest.Route{"POST", "/getProfile", s.getProfile},
+		//&rest.Route{"POST", "/gatherData", s.gatherData},
+		//&rest.Route{"POST", "/getEvents", s.getEvents},
+		&rest.Route{"POST", "/req", s.reqHandler},
 	)
 	if err != nil {
 		log.Fatal(err)
