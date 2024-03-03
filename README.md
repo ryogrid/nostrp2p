@@ -66,7 +66,7 @@ Flags:
 ```
 
 ## Examples (Client)
-- [here](https://github.com/ryogrid/flustr-for-nosp2p/tree/for-buzzoon)
+- [here](https://github.com/ryogrid/flustr-for-nosp2p/tree/for-nostrp2p)
   - Under construction :)
 
 ## About ultra simple prototype system
