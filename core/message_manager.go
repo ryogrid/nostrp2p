@@ -2,10 +2,10 @@ package core
 
 import (
 	"fmt"
-	"github.com/ryogrid/buzzoon/buzz_const"
-	"github.com/ryogrid/buzzoon/buzz_util"
-	"github.com/ryogrid/buzzoon/glo_val"
-	"github.com/ryogrid/buzzoon/schema"
+	"github.com/ryogrid/nostrp2p/glo_val"
+	"github.com/ryogrid/nostrp2p/np2p_const"
+	"github.com/ryogrid/nostrp2p/np2p_util"
+	"github.com/ryogrid/nostrp2p/schema"
 	"github.com/weaveworks/mesh"
 	"math"
 	"strconv"
@@ -21,14 +21,14 @@ const (
 
 type MessageManager struct {
 	DataMan *DataManager
-	send    mesh.Gossip // set by BuzzPeer.Register
+	send    mesh.Gossip // set by Np2pPeer.Register
 }
 
 // when recovery, src is math.MaxUint64
-func (mm *MessageManager) handleRecvMsgBcastEvt(src mesh.PeerName, pkt *schema.BuzzPacket, evt *schema.BuzzEvent) error {
+func (mm *MessageManager) handleRecvMsgBcastEvt(src mesh.PeerName, pkt *schema.Np2pPacket, evt *schema.Np2pEvent) error {
 	// TODO: need to use on-disk DB (DataManager::mergeReceived)
-	buzz_util.BuzzDbgPrintln("handleRecvMsgBcastEvt: received from " + strconv.Itoa(int(src)))
-	buzz_util.BuzzDbgPrintln("handleRecvMsgBcastEvt: ", pkt)
+	np2p_util.Np2pDbgPrintln("handleRecvMsgBcastEvt: received from " + strconv.Itoa(int(src)))
+	np2p_util.Np2pDbgPrintln("handleRecvMsgBcastEvt: ", pkt)
 
 	// handle with new goroutine
 	go func() {
@@ -53,9 +53,9 @@ func (mm *MessageManager) handleRecvMsgBcastEvt(src mesh.PeerName, pkt *schema.B
 					// profile update time is attached
 					//(periodically attached the tag for avoiding old profile is kept)
 					recvdTime := val[0].(int64)
-					shortId := buzz_util.GetLower64bitUint(evt.Pubkey)
+					shortId := np2p_util.GetLower64bitUint(evt.Pubkey)
 					if mm.DataMan.GetProfileLocal(shortId) == nil ||
-						recvdTime > mm.DataMan.GetProfileLocal(buzz_util.GetLower64bitUint(evt.Pubkey)).UpdatedAt {
+						recvdTime > mm.DataMan.GetProfileLocal(np2p_util.GetLower64bitUint(evt.Pubkey)).UpdatedAt {
 						// TODO: need to implement limitation of request times (MessageManager::handleRecvMsgBcastEvt)
 						// profile is updated. request latest profile asynchronous.
 						go mm.UnicastProfileReq(shortId)
@@ -77,7 +77,7 @@ func (mm *MessageManager) handleRecvMsgBcastEvt(src mesh.PeerName, pkt *schema.B
 }
 
 // when recovery, src is math.MaxUint64
-func (mm *MessageManager) handleRecvMsgBcastReq(src mesh.PeerName, pkt *schema.BuzzPacket, req *schema.BuzzReq) error {
+func (mm *MessageManager) handleRecvMsgBcastReq(src mesh.PeerName, pkt *schema.Np2pPacket, req *schema.Np2pReq) error {
 	go func() {
 		if src != mesh.PeerName(glo_val.SelfPubkey64bit) {
 			switch req.Kind {
@@ -86,7 +86,7 @@ func (mm *MessageManager) handleRecvMsgBcastReq(src mesh.PeerName, pkt *schema.B
 			default:
 				fmt.Println("received unknown kind req: " + strconv.Itoa(int(req.Kind)))
 			}
-			buzz_util.BuzzDbgPrintln("received request: " + strconv.Itoa(int(req.Kind)))
+			np2p_util.Np2pDbgPrintln("received request: " + strconv.Itoa(int(req.Kind)))
 		}
 
 	}()
@@ -94,7 +94,7 @@ func (mm *MessageManager) handleRecvMsgBcastReq(src mesh.PeerName, pkt *schema.B
 	return nil
 }
 
-func (mm *MessageManager) handleRecvMsgUnicast(src mesh.PeerName, pkt *schema.BuzzPacket) error {
+func (mm *MessageManager) handleRecvMsgUnicast(src mesh.PeerName, pkt *schema.Np2pPacket) error {
 	if pkt.Events != nil && len(pkt.Events) > 0 {
 		// handle with new goroutine
 		go func() {
@@ -138,25 +138,25 @@ func (mm *MessageManager) handleRecvMsgUnicast(src mesh.PeerName, pkt *schema.Bu
 	return nil
 }
 
-func (mm *MessageManager) SendMsgUnicast(dst mesh.PeerName, pkt *schema.BuzzPacket) {
+func (mm *MessageManager) SendMsgUnicast(dst mesh.PeerName, pkt *schema.Np2pPacket) {
 	mm.send.GossipUnicast(dst, pkt.Encode()[0])
 }
 
-func (mm *MessageManager) SendMsgBroadcast(pkt *schema.BuzzPacket) {
+func (mm *MessageManager) SendMsgBroadcast(pkt *schema.Np2pPacket) {
 	mm.send.GossipBroadcast(pkt)
 }
 
-func (mm *MessageManager) BcastOwnPost(content string) *schema.BuzzEvent {
+func (mm *MessageManager) BcastOwnPost(content string) *schema.Np2pEvent {
 	pubSlice := glo_val.SelfPubkey[:]
-	var sigBytes [buzz_const.SignatureSize]byte
+	var sigBytes [np2p_const.SignatureSize]byte
 	copy(sigBytes[:], pubSlice)
 	tagsMap := make(map[string][]interface{})
 	tagsMap["nickname"] = []interface{}{*glo_val.Nickname}
-	if buzz_util.IsHit(buzz_const.AttachProfileUpdateProb) && glo_val.ProfileMyOwn.UpdatedAt > 0 {
+	if np2p_util.IsHit(np2p_const.AttachProfileUpdateProb) && glo_val.ProfileMyOwn.UpdatedAt > 0 {
 		tagsMap["u"] = []interface{}{glo_val.ProfileMyOwn.UpdatedAt}
 	}
-	event := schema.BuzzEvent{
-		Id:         buzz_util.GetRandUint64(),
+	event := schema.Np2pEvent{
+		Id:         np2p_util.GetRandUint64(),
 		Pubkey:     *glo_val.SelfPubkey,
 		Created_at: time.Now().Unix(),
 		Kind:       KIND_EVT_POST,
@@ -164,11 +164,11 @@ func (mm *MessageManager) BcastOwnPost(content string) *schema.BuzzEvent {
 		Content:    content,
 		Sig:        &sigBytes,
 	}
-	events := []*schema.BuzzEvent{&event}
+	events := []*schema.Np2pEvent{&event}
 	//for _, peerId := range s.buzzPeer.GetPeerList() {
-	//	s.buzzPeer.MessageMan.SendMsgUnicast(peerId, schema.NewBuzzPacket(&events, nil, nil))
+	//	s.buzzPeer.MessageMan.SendMsgUnicast(peerId, schema.NewNp2pPacket(&events, nil, nil))
 	//}
-	mm.SendMsgBroadcast(schema.NewBuzzPacket(&events, nil))
+	mm.SendMsgBroadcast(schema.NewNp2pPacket(&events, nil))
 	// store own issued event
 	mm.DataMan.StoreEvent(&event)
 
@@ -176,10 +176,10 @@ func (mm *MessageManager) BcastOwnPost(content string) *schema.BuzzEvent {
 	//fmt.Println(event.Tags["nickname"][0] + "> " + event.Content)
 }
 
-func (mm *MessageManager) BcastOwnProfile(name *string, about *string, picture *string) *schema.BuzzProfile {
+func (mm *MessageManager) BcastOwnProfile(name *string, about *string, picture *string) *schema.Np2pProfile {
 	event := mm.constructProfileEvt(name, about, picture)
-	events := []*schema.BuzzEvent{event}
-	mm.SendMsgBroadcast(schema.NewBuzzPacket(&events, nil))
+	events := []*schema.Np2pEvent{event}
+	mm.SendMsgBroadcast(schema.NewNp2pPacket(&events, nil))
 	mm.DataMan.StoreEvent(event)
 
 	storeProf := GenProfileFromEvent(event)
@@ -188,16 +188,16 @@ func (mm *MessageManager) BcastOwnProfile(name *string, about *string, picture *
 	return storeProf
 }
 
-func (mm *MessageManager) constructProfileEvt(name *string, about *string, picture *string) *schema.BuzzEvent {
+func (mm *MessageManager) constructProfileEvt(name *string, about *string, picture *string) *schema.Np2pEvent {
 	pubSlice := glo_val.SelfPubkey[:]
-	var sigBytes [buzz_const.SignatureSize]byte
+	var sigBytes [np2p_const.SignatureSize]byte
 	copy(sigBytes[:], pubSlice)
 	tagsMap := make(map[string][]interface{})
 	tagsMap["name"] = []interface{}{*name}
 	tagsMap["about"] = []interface{}{*about}
 	tagsMap["picture"] = []interface{}{*picture}
-	event := schema.BuzzEvent{
-		Id:         buzz_util.GetRandUint64(),
+	event := schema.Np2pEvent{
+		Id:         np2p_util.GetRandUint64(),
 		Pubkey:     *glo_val.SelfPubkey,
 		Created_at: time.Now().Unix(),
 		Kind:       KIND_EVT_PROFILE,
@@ -209,26 +209,26 @@ func (mm *MessageManager) constructProfileEvt(name *string, about *string, pictu
 }
 
 func (mm *MessageManager) UnicastProfileReq(pubkey64bit uint64) {
-	reqs := []*schema.BuzzReq{schema.NewBuzzReq(KIND_REQ_SHARE_EVT_DATA, nil)}
-	pkt := schema.NewBuzzPacket(nil, &reqs)
+	reqs := []*schema.Np2pReq{schema.NewNp2pReq(KIND_REQ_SHARE_EVT_DATA, nil)}
+	pkt := schema.NewNp2pPacket(nil, &reqs)
 	mm.SendMsgUnicast(mesh.PeerName(pubkey64bit), pkt)
 }
 
 // used for response of profile request
 func (mm *MessageManager) UnicastOwnProfile(pubkey64bit uint64) {
 	evt := mm.constructProfileEvt(&glo_val.ProfileMyOwn.Name, &glo_val.ProfileMyOwn.About, &glo_val.ProfileMyOwn.Picture)
-	events := []*schema.BuzzEvent{evt}
-	mm.SendMsgUnicast(mesh.PeerName(pubkey64bit), schema.NewBuzzPacket(&events, nil))
+	events := []*schema.Np2pEvent{evt}
+	mm.SendMsgUnicast(mesh.PeerName(pubkey64bit), schema.NewNp2pPacket(&events, nil))
 }
 
 // TODO: TEMPORAL IMPL
-func (mm *MessageManager) DispPostAtStdout(evt *schema.BuzzEvent) {
+func (mm *MessageManager) DispPostAtStdout(evt *schema.Np2pEvent) {
 	fmt.Println(evt.Tags["nickname"][0].(string) + "> " + evt.Content)
 }
 
-func GenProfileFromEvent(evt *schema.BuzzEvent) *schema.BuzzProfile {
-	return &schema.BuzzProfile{
-		Pubkey64bit: buzz_util.GetLower64bitUint(evt.Pubkey),
+func GenProfileFromEvent(evt *schema.Np2pEvent) *schema.Np2pProfile {
+	return &schema.Np2pProfile{
+		Pubkey64bit: np2p_util.GetLower64bitUint(evt.Pubkey),
 		Name:        evt.Tags["name"][0].(string),
 		About:       evt.Tags["about"][0].(string),
 		Picture:     evt.Tags["picture"][0].(string),
@@ -238,9 +238,9 @@ func GenProfileFromEvent(evt *schema.BuzzEvent) *schema.BuzzProfile {
 
 // TODO: TEMPORAL IMPL
 func (mm *MessageManager) BcastShareEvtDataReq() {
-	reqs := []*schema.BuzzReq{schema.NewBuzzReq(KIND_REQ_SHARE_EVT_DATA, nil)}
+	reqs := []*schema.Np2pReq{schema.NewNp2pReq(KIND_REQ_SHARE_EVT_DATA, nil)}
 
-	pkt := schema.NewBuzzPacket(nil, &reqs)
+	pkt := schema.NewNp2pPacket(nil, &reqs)
 	mm.SendMsgBroadcast(pkt)
 }
 
@@ -248,7 +248,7 @@ func (mm *MessageManager) BcastShareEvtDataReq() {
 // send latest 3days events
 func (mm *MessageManager) UnicastHavingEvtData(dest mesh.PeerName) {
 	events := mm.DataMan.GetLatestEvents(time.Now().Unix()-3*24*3600, math.MaxInt64)
-	pkt := schema.NewBuzzPacket(events, nil)
+	pkt := schema.NewNp2pPacket(events, nil)
 	mm.SendMsgUnicast(dest, pkt)
-	buzz_util.BuzzDbgPrintln("UnicastHavingEvtData: sent " + strconv.Itoa(len(*events)) + " events")
+	np2p_util.Np2pDbgPrintln("UnicastHavingEvtData: sent " + strconv.Itoa(len(*events)) + " events")
 }

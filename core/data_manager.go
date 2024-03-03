@@ -2,8 +2,8 @@ package core
 
 import (
 	"github.com/chenjiandongx/mandodb/pkg/sortedlist"
-	"github.com/ryogrid/buzzoon/glo_val"
-	"github.com/ryogrid/buzzoon/schema"
+	"github.com/ryogrid/nostrp2p/glo_val"
+	"github.com/ryogrid/nostrp2p/schema"
 	"strconv"
 	"sync"
 	"time"
@@ -12,11 +12,11 @@ import (
 const profReqInterval = 30 * time.Second
 
 type DataManager struct {
-	EvtListTimeKey    sortedlist.List // timestamp(int64) -> *schema.BuzzEvent
+	EvtListTimeKey    sortedlist.List // timestamp(int64) -> *schema.Np2pEvent
 	EvtListTimeKeyMtx *sync.Mutex
-	EvtMapIdKey       sync.Map // event id(uint64) -> *schema.BuzzEvent
+	EvtMapIdKey       sync.Map // event id(uint64) -> *schema.Np2pEvent
 	// latest profile only stored
-	ProfMap   sync.Map // pubkey lower 64bit (uint64) -> *schema.BuzzProfile
+	ProfMap   sync.Map // pubkey lower 64bit (uint64) -> *schema.Np2pProfile
 	EvtLogger *EventDataLogger
 }
 
@@ -30,7 +30,7 @@ func NewDataManager() *DataManager {
 	}
 }
 
-func (dman *DataManager) StoreEvent(evt *schema.BuzzEvent) {
+func (dman *DataManager) StoreEvent(evt *schema.Np2pEvent) {
 	// TODO: current impl overwrites the same timestamp event on EvtListTimeKey (DataManager::StoreEvent)
 	dman.EvtListTimeKeyMtx.Lock()
 	evt.Sig = nil // set nil because already verified
@@ -56,26 +56,26 @@ func (dman *DataManager) StoreEvent(evt *schema.BuzzEvent) {
 	}
 }
 
-func (dman *DataManager) StoreProfile(prof *schema.BuzzProfile) {
+func (dman *DataManager) StoreProfile(prof *schema.Np2pProfile) {
 	dman.ProfMap.Store(prof.Pubkey64bit, prof)
 }
 
-func (dman *DataManager) GetProfileLocal(pubkey64bit uint64) *schema.BuzzProfile {
+func (dman *DataManager) GetProfileLocal(pubkey64bit uint64) *schema.Np2pProfile {
 	if val, ok := dman.ProfMap.Load(pubkey64bit); ok {
-		return val.(*schema.BuzzProfile)
+		return val.(*schema.Np2pProfile)
 	}
 	return nil
 }
 
-func (dman *DataManager) GetLatestEvents(since int64, until int64) *[]*schema.BuzzEvent {
+func (dman *DataManager) GetLatestEvents(since int64, until int64) *[]*schema.Np2pEvent {
 	dman.EvtListTimeKeyMtx.Lock()
 	defer dman.EvtListTimeKeyMtx.Unlock()
 	itr := dman.EvtListTimeKey.Range(since, until)
 
-	ret := make([]*schema.BuzzEvent, 0)
+	ret := make([]*schema.Np2pEvent, 0)
 	for itr.Next() {
 		val := itr.Value()
-		ret = append(ret, val.(*schema.BuzzEvent))
+		ret = append(ret, val.(*schema.Np2pEvent))
 	}
 	return &ret
 }

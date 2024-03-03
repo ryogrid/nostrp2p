@@ -4,9 +4,9 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/ant0ine/go-json-rest/rest"
-	"github.com/ryogrid/buzzoon/buzz_util"
-	"github.com/ryogrid/buzzoon/core"
-	"github.com/ryogrid/buzzoon/schema"
+	"github.com/ryogrid/nostrp2p/core"
+	"github.com/ryogrid/nostrp2p/np2p_util"
+	"github.com/ryogrid/nostrp2p/schema"
 	"log"
 	"math"
 	"net/http"
@@ -42,7 +42,7 @@ type GetEventsReq struct {
 	Until int64
 }
 
-type BuzzEventAndReq struct {
+type Np2pEventAndReq struct {
 	Id         string     // string of ID (32bytes) in hex
 	Pubkey     string     // string of Pubkey(encoded 256bit uint (holiman/uint256)) in hex
 	Created_at int64      // unix timestamp in seconds
@@ -52,10 +52,10 @@ type BuzzEventAndReq struct {
 	Sig        string // string of Sig(64-bytes integr of the signature) in hex
 }
 
-func NewBuzzEventAndReq(evt *schema.BuzzEvent) *BuzzEventAndReq {
+func NewNp2pEventAndReq(evt *schema.Np2pEvent) *Np2pEventAndReq {
 	idBuf := make([]byte, 32)
 	binary.LittleEndian.PutUint64(idBuf, evt.Id)
-	idStr := fmt.Sprintf("%x", buzz_util.Gen256bitHash(idBuf))
+	idStr := fmt.Sprintf("%x", np2p_util.Gen256bitHash(idBuf))
 	sigStr := idStr + idStr
 
 	tagsArr := make([][]string, 0)
@@ -64,7 +64,7 @@ func NewBuzzEventAndReq(evt *schema.BuzzEvent) *BuzzEventAndReq {
 		tagsArr = append(tagsArr, []string{"about", evt.Tags["about"][0].(string)})
 		tagsArr = append(tagsArr, []string{"picture", evt.Tags["picture"][0].(string)})
 	}
-	return &BuzzEventAndReq{
+	return &Np2pEventAndReq{
 		Id:         idStr, // remove leading zeros
 		Pubkey:     fmt.Sprintf("%x", evt.Pubkey[:]),
 		Created_at: evt.Created_at,
@@ -76,22 +76,22 @@ func NewBuzzEventAndReq(evt *schema.BuzzEvent) *BuzzEventAndReq {
 }
 
 type EventsResp struct {
-	Events []BuzzEventAndReq
+	Events []Np2pEventAndReq
 }
 type GeneralResp struct {
 	Status string
 }
 
 type ApiServer struct {
-	buzzPeer *core.BuzzPeer
+	buzzPeer *core.Np2pPeer
 }
 
-func NewApiServer(peer *core.BuzzPeer) *ApiServer {
+func NewApiServer(peer *core.Np2pPeer) *ApiServer {
 	return &ApiServer{peer}
 }
 
 func (s *ApiServer) sendEventHandler(w rest.ResponseWriter, req *rest.Request) {
-	input := BuzzEventAndReq{}
+	input := Np2pEventAndReq{}
 	err := req.DecodeJsonPayload(&input)
 
 	if err != nil {
@@ -117,7 +117,7 @@ func (s *ApiServer) sendEventHandler(w rest.ResponseWriter, req *rest.Request) {
 	//})
 }
 
-func (s *ApiServer) sendPost(w rest.ResponseWriter, input *BuzzEventAndReq) {
+func (s *ApiServer) sendPost(w rest.ResponseWriter, input *Np2pEventAndReq) {
 	// TODO: need to implement post handling (ApiServer::sendPost)
 
 	if input.Content == "" {
@@ -134,7 +134,7 @@ func (s *ApiServer) sendPost(w rest.ResponseWriter, input *BuzzEventAndReq) {
 	w.WriteJson(&EventsResp{})
 }
 
-func (s *ApiServer) getProfile(w rest.ResponseWriter, input *BuzzEventAndReq) {
+func (s *ApiServer) getProfile(w rest.ResponseWriter, input *Np2pEventAndReq) {
 	// TODO: need to implement profile request handling (ApiServer::getProfile)
 
 	prof := s.buzzPeer.MessageMan.DataMan.GetProfileLocal(math.MaxUint64)
@@ -143,15 +143,15 @@ func (s *ApiServer) getProfile(w rest.ResponseWriter, input *BuzzEventAndReq) {
 
 	if prof != nil {
 		// TODO: need to set approprivate event data (ApiServer::getProfile)
-		w.WriteJson(&EventsResp{Events: []BuzzEventAndReq{*NewBuzzEventAndReq(nil)}})
+		w.WriteJson(&EventsResp{Events: []Np2pEventAndReq{*NewNp2pEventAndReq(nil)}})
 	} else {
 		// profile data will be included on response of "getEvents"
-		w.WriteJson(&EventsResp{Events: []BuzzEventAndReq{}})
+		w.WriteJson(&EventsResp{Events: []Np2pEventAndReq{}})
 	}
 }
 
 func (s *ApiServer) reqHandler(w rest.ResponseWriter, req *rest.Request) {
-	input := BuzzEventAndReq{}
+	input := Np2pEventAndReq{}
 	err := req.DecodeJsonPayload(&input)
 
 	if err != nil {
@@ -174,7 +174,7 @@ func (s *ApiServer) reqHandler(w rest.ResponseWriter, req *rest.Request) {
 	}
 }
 
-func (s *ApiServer) getEvents(w rest.ResponseWriter, input *BuzzEventAndReq) {
+func (s *ApiServer) getEvents(w rest.ResponseWriter, input *Np2pEventAndReq) {
 	if input.Tags == nil {
 		rest.Error(w, "Tags is null", http.StatusBadRequest)
 		return
@@ -196,9 +196,9 @@ func (s *ApiServer) getEvents(w rest.ResponseWriter, input *BuzzEventAndReq) {
 
 	events := s.buzzPeer.MessageMan.DataMan.GetLatestEvents(int64(since), int64(until))
 
-	retEvents := make([]BuzzEventAndReq, 0)
+	retEvents := make([]Np2pEventAndReq, 0)
 	for _, evt := range *events {
-		retEvents = append(retEvents, *NewBuzzEventAndReq(evt))
+		retEvents = append(retEvents, *NewNp2pEventAndReq(evt))
 	}
 
 	w.WriteJson(&EventsResp{
@@ -224,7 +224,7 @@ func (s *ApiServer) gatherData(w rest.ResponseWriter, req *rest.Request) {
 	})
 }
 
-func (s *ApiServer) updateProfile(w rest.ResponseWriter, input *BuzzEventAndReq) {
+func (s *ApiServer) updateProfile(w rest.ResponseWriter, input *Np2pEventAndReq) {
 	// TODO: need to implement profile update handling (ApiServer::updateProfile)
 	//if input.Name == "" {
 	//	rest.Error(w, "Name is required", 400)

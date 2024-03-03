@@ -2,7 +2,7 @@ package core
 
 import (
 	"fmt"
-	"github.com/ryogrid/buzzoon/schema"
+	"github.com/ryogrid/nostrp2p/schema"
 	"math"
 )
 
@@ -23,7 +23,7 @@ func (rm *RecoveryManager) Recover() {
 	// do recovery
 	_, buf, err := rm.messageMan.DataMan.EvtLogger.ReadLog()
 	for err == nil {
-		evt, err_ := schema.NewBuzzEventFromBytes(buf)
+		evt, err_ := schema.NewNp2pEventFromBytes(buf)
 		if evt.Tags != nil {
 			evt.Tags["recovering"] = []interface{}{true}
 		} else {
@@ -34,7 +34,7 @@ func (rm *RecoveryManager) Recover() {
 			// EOF
 			break
 		}
-		pkt := schema.NewBuzzPacket(&[]*schema.BuzzEvent{evt}, nil)
+		pkt := schema.NewNp2pPacket(&[]*schema.Np2pEvent{evt}, nil)
 		rm.messageMan.handleRecvMsgBcastEvt(math.MaxUint64, pkt, evt)
 		_, buf, err = rm.messageMan.DataMan.EvtLogger.ReadLog()
 	}

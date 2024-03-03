@@ -6,14 +6,14 @@ Pure peer-to-peer distributed microblog system on NAT transparent overlay networ
 
 ## Build
 ```bash
-$ go build -o nosp2p main.go
+$ go build -o nostrp2p main.go
 ```
 
 ## Buzoon command usage
 ```
 Usage:
-  buzzoon [flags]
-  buzzoon [command]
+  nostrp2p [flags]
+  nostrp2p [command]
 
 Available Commands:
   help        Help about any command.
@@ -43,26 +43,26 @@ Flags:
 ## Examples (Server lauch)
 ```bash
 # 4 servers network on local network (4 shells are needed...)
-./nosp2p server  -l 0.0.0.0:20000 -p <public key in hex> -n origin
-./nosp2p server -l 0.0.0.0:20002 -p <public key in hex> -n alice -b 127.0.0.1:20000 
-./nosp2p server -l 0.0.0.0:20004 -p <public key in hex> -n bob -b 127.0.0.1:20002
-./nosp2p server -l 0.0.0.0:20006 -p <public key in hex> -n tom -b 127.0.0.1:20000
+./nostrp2p server  -l 0.0.0.0:20000 -p <public key in hex> -n origin
+./nostrp2p server -l 0.0.0.0:20002 -p <public key in hex> -n alice -b 127.0.0.1:20000 
+./nostrp2p server -l 0.0.0.0:20004 -p <public key in hex> -n bob -b 127.0.0.1:20002
+./nostrp2p server -l 0.0.0.0:20006 -p <public key in hex> -n tom -b 127.0.0.1:20000
 ```
 
 ```bash
 # 4 servers distributed on different networks
 
 # on network ryogrid.net (bind to address/port which is accessible from The Internet)
-./nosp2p server  -l 0.0.0.0:20000 -p <public key in hex> -n ryo
+./nostrp2p server  -l 0.0.0.0:20000 -p <public key in hex> -n ryo
 
 # on network redsky.social (bind to address/port which accessible from The Internet)
-./nosp2p server -l 0.0.0.0:20000 -p <public key in hex> -n alice -b ryogrid.net:20000 
+./nostrp2p server -l 0.0.0.0:20000 -p <public key in hex> -n alice -b ryogrid.net:20000 
 
 # on network A (bind to address/port which is NOT accessible from The Internet)
-./nosp2p server -l 0.0.0.0:20000 -p <public key in hex> -n bob -b ryogrid.net:20000
+./nostrp2p server -l 0.0.0.0:20000 -p <public key in hex> -n bob -b ryogrid.net:20000
 
 # on network B (bind to address/port which is NOT accessible from The Internet)
-./nosp2p server -l 0.0.0.0:20000 -p <public key in hex> -n tom -b redsky.social:20000
+./nostrp2p server -l 0.0.0.0:20000 -p <public key in hex> -n tom -b redsky.social:20000
 ```
 
 ## Examples (Client)

@@ -1,4 +1,4 @@
-package buzz_const
+package np2p_const
 
 const ServerImplVersion uint16 = 1
 const PacketStructureVersion uint16 = 3

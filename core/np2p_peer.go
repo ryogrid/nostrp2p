@@ -3,9 +3,9 @@ package core
 import (
 	"errors"
 	"fmt"
-	"github.com/ryogrid/buzzoon/buzz_const"
-	"github.com/ryogrid/buzzoon/buzz_util"
-	"github.com/ryogrid/buzzoon/schema"
+	"github.com/ryogrid/nostrp2p/np2p_const"
+	"github.com/ryogrid/nostrp2p/np2p_util"
+	"github.com/ryogrid/nostrp2p/schema"
 	"github.com/weaveworks/mesh"
 	"log"
 )
@@ -14,7 +14,7 @@ import (
 // It should be passed to mesh.Router.NewGossip,
 // and the resulting Gossip registered in turn,
 // before calling mesh.Router.Start.
-type BuzzPeer struct {
+type Np2pPeer struct {
 	Send            *mesh.Gossip
 	actions         chan<- func()
 	quit            chan struct{}
@@ -22,23 +22,23 @@ type BuzzPeer struct {
 	dataMan         *DataManager
 	MessageMan      *MessageManager
 	SelfId          mesh.PeerName
-	SelfPubkey      [buzz_const.PubkeySize]byte
+	SelfPubkey      [np2p_const.PubkeySize]byte
 	Router          *mesh.Router
 	recvedEvtReqMap map[uint64]struct{}
 }
 
-// BuzzPeer implements mesh.Gossiper.
-var _ mesh.Gossiper = &BuzzPeer{}
+// Np2pPeer implements mesh.Gossiper.
+var _ mesh.Gossiper = &Np2pPeer{}
 
-// Construct a BuzzPeer with empty state.
+// Construct a Np2pPeer with empty state.
 // Be sure to Register a channel, later,
 // so we can make outbound communication.
-func NewPeer(self mesh.PeerName, logger *log.Logger) *BuzzPeer {
+func NewPeer(self mesh.PeerName, logger *log.Logger) *Np2pPeer {
 	actions := make(chan func())
 	dataMan := NewDataManager()
 	msgMan := &MessageManager{DataMan: dataMan}
 
-	p := &BuzzPeer{
+	p := &Np2pPeer{
 		Send:            nil, // must .Register() later
 		actions:         actions,
 		quit:            make(chan struct{}),
@@ -52,7 +52,7 @@ func NewPeer(self mesh.PeerName, logger *log.Logger) *BuzzPeer {
 	return p
 }
 
-func (p *BuzzPeer) loop(actions <-chan func()) {
+func (p *Np2pPeer) loop(actions <-chan func()) {
 	for {
 		select {
 		case f := <-actions:
@@ -64,51 +64,51 @@ func (p *BuzzPeer) loop(actions <-chan func()) {
 }
 
 // Register the result of a mesh.Router.NewGossip.
-func (p *BuzzPeer) Register(send mesh.Gossip) {
+func (p *Np2pPeer) Register(send mesh.Gossip) {
 	p.actions <- func() {
 		p.Send = &send
 		p.MessageMan.send = send
 	}
 }
 
-func (p *BuzzPeer) stop() {
+func (p *Np2pPeer) stop() {
 	close(p.quit)
 }
 
 // Return a copy of our complete state.
-func (p *BuzzPeer) Gossip() (complete mesh.GossipData) {
-	buzz_util.BuzzDbgPrintln("Gossip called")
-	//return &schema.BuzzPacket{}
+func (p *Np2pPeer) Gossip() (complete mesh.GossipData) {
+	np2p_util.Np2pDbgPrintln("Gossip called")
+	//return &schema.Np2pPacket{}
 	return nil
 }
 
 // Merge the gossiped data represented by buf into our state.
 // Return the state information that was modified.
-func (p *BuzzPeer) OnGossip(buf []byte) (delta mesh.GossipData, err error) {
-	buzz_util.BuzzDbgPrintln("OnGossip called")
-	return &schema.BuzzPacket{}, nil
+func (p *Np2pPeer) OnGossip(buf []byte) (delta mesh.GossipData, err error) {
+	np2p_util.Np2pDbgPrintln("OnGossip called")
+	return &schema.Np2pPacket{}, nil
 }
 
 // Merge the gossiped data represented by buf into our state.
 // Return the state information that was modified.
-func (p *BuzzPeer) OnGossipBroadcast(src mesh.PeerName, buf []byte) (received mesh.GossipData, err error) {
-	buzz_util.BuzzDbgPrintln("OnGossipBroadcast called")
-	//var pkt schema.BuzzPacket
+func (p *Np2pPeer) OnGossipBroadcast(src mesh.PeerName, buf []byte) (received mesh.GossipData, err error) {
+	np2p_util.Np2pDbgPrintln("OnGossipBroadcast called")
+	//var pkt schema.Np2pPacket
 	///if err_ := gob.NewDecoder(bytes.NewReader(buf)).Decode(&pkt); err_ != nil {
-	pkt, err_ := schema.NewBuzzPacketFromBytes(buf)
+	pkt, err_ := schema.NewNp2pPacketFromBytes(buf)
 	if err_ != nil {
 		return nil, err_
 	}
-	if pkt.PktVer != buzz_const.PacketStructureVersion {
+	if pkt.PktVer != np2p_const.PacketStructureVersion {
 		return nil, errors.New("Invalid packet version")
 	}
-	if pkt.SrvVer != buzz_const.ServerImplVersion {
+	if pkt.SrvVer != np2p_const.ServerImplVersion {
 		fmt.Println("received packat from newer version of server")
 	}
 
-	tmpEvts := make([]*schema.BuzzEvent, 0)
-	tmpReqs := make([]*schema.BuzzReq, 0)
-	retPkt := schema.NewBuzzPacket(&tmpEvts, &tmpReqs)
+	tmpEvts := make([]*schema.Np2pEvent, 0)
+	tmpReqs := make([]*schema.Np2pReq, 0)
+	retPkt := schema.NewNp2pPacket(&tmpEvts, &tmpReqs)
 	if pkt.Events != nil {
 		for _, evt := range pkt.Events {
 			if _, ok := p.recvedEvtReqMap[evt.Id]; !ok {
@@ -148,24 +148,24 @@ func (p *BuzzPeer) OnGossipBroadcast(src mesh.PeerName, buf []byte) (received me
 	}
 
 	//return &pkt, nil
-	//return &schema.BuzzPacket{}, nil
+	//return &schema.Np2pPacket{}, nil
 }
 
 // Merge the gossiped data represented by buf into our state.
-func (p *BuzzPeer) OnGossipUnicast(src mesh.PeerName, buf []byte) error {
-	buzz_util.BuzzDbgPrintln("OnGossipUnicast called")
-	//var pkt schema.BuzzPacket
+func (p *Np2pPeer) OnGossipUnicast(src mesh.PeerName, buf []byte) error {
+	np2p_util.Np2pDbgPrintln("OnGossipUnicast called")
+	//var pkt schema.Np2pPacket
 	//if err_ := gob.NewDecoder(bytes.NewReader(buf)).Decode(&pkt); err_ != nil {
 	//	return err_
 	//}
-	pkt, err := schema.NewBuzzPacketFromBytes(buf)
+	pkt, err := schema.NewNp2pPacketFromBytes(buf)
 	if err != nil {
 		return err
 	}
-	if pkt.PktVer != buzz_const.PacketStructureVersion {
+	if pkt.PktVer != np2p_const.PacketStructureVersion {
 		return errors.New("Invalid packet version")
 	}
-	if pkt.SrvVer != buzz_const.ServerImplVersion {
+	if pkt.SrvVer != np2p_const.ServerImplVersion {
 		fmt.Println("received packat from newer version of server")
 	}
 
@@ -177,7 +177,7 @@ func (p *BuzzPeer) OnGossipUnicast(src mesh.PeerName, buf []byte) error {
 	return nil
 }
 
-func (p *BuzzPeer) GetPeerList() []mesh.PeerName {
+func (p *Np2pPeer) GetPeerList() []mesh.PeerName {
 	tmpMap := p.Router.Routes.PeerNames()
 	retArr := make([]mesh.PeerName, 0)
 	for k, _ := range tmpMap {

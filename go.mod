@@ -1,4 +1,4 @@
-module github.com/ryogrid/buzzoon
+module github.com/ryogrid/nostrp2p
 
 go 1.18
 

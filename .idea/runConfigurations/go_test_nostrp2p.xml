@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="go test buzzoon" type="GoTestRunConfiguration" factoryName="Go Test" nameIsGenerated="true">
+  <configuration default="false" name="go test nostrp2p" type="GoTestRunConfiguration" factoryName="Go Test">
     <module name="buzzoon" />
     <working_directory value="$PROJECT_DIR$" />
     <go_parameters value="./... -v" />

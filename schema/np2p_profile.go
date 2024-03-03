@@ -2,7 +2,7 @@ package schema
 
 import "time"
 
-type BuzzProfile struct {
+type Np2pProfile struct {
 	Pubkey64bit uint64
 	Name        string
 	About       string
@@ -10,8 +10,8 @@ type BuzzProfile struct {
 	UpdatedAt   int64 // unix timestamp in seconds
 }
 
-func NewBuzzProfile(pubKey64bit uint64, name string, about string, picture string) *BuzzProfile {
-	return &BuzzProfile{
+func NewNp2pProfile(pubKey64bit uint64, name string, about string, picture string) *Np2pProfile {
+	return &Np2pProfile{
 		Pubkey64bit: pubKey64bit,
 		Name:        name,
 		About:       about,

@@ -3,8 +3,9 @@ package cmd
 import (
 	"fmt"
 	"github.com/holiman/uint256"
-	"github.com/ryogrid/buzzoon/glo_val"
-	"github.com/ryogrid/buzzoon/schema"
+	"github.com/ryogrid/nostrp2p/glo_val"
+	"github.com/ryogrid/nostrp2p/np2p_util"
+	"github.com/ryogrid/nostrp2p/schema"
 	"io/ioutil"
 	"log"
 	"net"
@@ -12,9 +13,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ryogrid/buzzoon/api_server"
-	"github.com/ryogrid/buzzoon/buzz_util"
-	"github.com/ryogrid/buzzoon/core"
+	"github.com/ryogrid/nostrp2p/api_server"
+	"github.com/ryogrid/nostrp2p/core"
 	"github.com/spf13/cobra"
 	"github.com/weaveworks/mesh"
 )
@@ -27,9 +27,9 @@ var writable = true
 var debug = false
 
 var rootCmd = &cobra.Command{
-	Use: "buzzoon",
+	Use: "nostrp2p",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("buzzoon v0.0.1")
+		fmt.Println("nostrp2p v0.0.1")
 	},
 }
 
@@ -38,13 +38,13 @@ var serverCmd = &cobra.Command{
 	Short: "Startup server.",
 	Run: func(cmd *cobra.Command, args []string) {
 		if !writable {
-			buzz_util.DenyWriteMode = true
+			np2p_util.DenyWriteMode = true
 		}
 		if debug {
-			buzz_util.DebugMode = true
+			np2p_util.DebugMode = true
 		}
 
-		peers := &buzz_util.Stringset{}
+		peers := &np2p_util.Stringset{}
 		if bootPeerAddrPort != "" {
 			peers.Set(bootPeerAddrPort)
 		}
@@ -77,7 +77,7 @@ var serverCmd = &cobra.Command{
 		fmt.Println(fmt.Sprintf("%x", glo_val.SelfPubkey), fmt.Sprintf("%x", name))
 
 		// initializa rand generator
-		buzz_util.InitializeRandGen(-1 * int64(name))
+		np2p_util.InitializeRandGen(-1 * int64(name))
 
 		router, err := mesh.NewRouter(mesh.Config{
 			Host:               host,
@@ -94,7 +94,7 @@ var serverCmd = &cobra.Command{
 		}
 
 		glo_val.Nickname = &nickname
-		glo_val.ProfileMyOwn = &schema.BuzzProfile{
+		glo_val.ProfileMyOwn = &schema.Np2pProfile{
 			Pubkey64bit: name,
 			Name:        nickname,
 			About:       "brank yet",
@@ -109,7 +109,7 @@ var serverCmd = &cobra.Command{
 		time.Sleep(10 * time.Second)
 		fmt.Println(fmt.Sprintf("%x", *glo_val.SelfPubkey), fmt.Sprintf("%x", name))
 
-		gossip, err := router.NewGossip("buzzoon", peer)
+		gossip, err := router.NewGossip("nostrp2p", peer)
 		if err != nil {
 			logger.Fatalf("Could not create gossip: %v", err)
 		}
@@ -128,12 +128,12 @@ var serverCmd = &cobra.Command{
 		router.ConnectionMaker.InitiateConnections(peers.Slice(), true)
 		peer.Router = router
 
-		if !buzz_util.DenyWriteMode {
+		if !np2p_util.DenyWriteMode {
 			apiServ := api_server.NewApiServer(peer)
 			go apiServ.LaunchAPIServer(host + ":" + strconv.Itoa(port+1))
 		}
 
-		buzz_util.OSInterrupt()
+		np2p_util.OSInterrupt()
 	},
 }
 
@@ -161,7 +161,7 @@ func init() {
 		"boot-peer-addr-port",
 		"b",
 		"",
-		"Address and port of a server which already joined buzzoon network (optional)",
+		"Address and port of a server which already joined nostrp2p network (optional)",
 	)
 	serverCmd.Flags().StringVarP(
 		&publicKey,
@@ -174,7 +174,7 @@ func init() {
 
 	serverCmd.Flags().StringVarP(
 		&nickname,
-		"Your nickname on buzzoon (required)",
+		"Your nickname on nostrp2p (required)",
 		"n",
 		"",
 		"Port to forward",

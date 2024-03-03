@@ -1,4 +1,4 @@
-package buzz_util
+package np2p_util
 
 import (
 	"bytes"
@@ -6,7 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
-	"github.com/ryogrid/buzzoon/buzz_const"
+	"github.com/ryogrid/nostrp2p/np2p_const"
 	"io"
 	"math/rand"
 	"os"
@@ -50,7 +50,7 @@ func OSInterrupt() {
 	<-quit
 }
 
-func BuzzDbgPrintln(a ...interface{}) {
+func Np2pDbgPrintln(a ...interface{}) {
 	if DebugMode {
 		fmt.Fprintln(os.Stderr, a...)
 	}
@@ -81,7 +81,7 @@ func IsHit(prob float64) bool {
 	return randGen.Float64() < prob
 }
 
-func GetLower64bitUint(bytes [buzz_const.PubkeySize]byte) uint64 {
+func GetLower64bitUint(bytes [np2p_const.PubkeySize]byte) uint64 {
 	return binary.LittleEndian.Uint64(bytes[:8])
 }
 

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/ryogrid/buzzoon/cmd"
+	"github.com/ryogrid/nostrp2p/cmd"
 )
 
 func main() {
