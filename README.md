@@ -56,26 +56,32 @@ Flags:
 ./nostrp2p server  -l 0.0.0.0:20000 -p <public key in hex> -n ryo
 
 # on network redsky.social (bind to address/port which accessible from The Internet)
-./nostrp2p server -l 0.0.0.0:20000 -p <public key in hex> -n alice -b ryogrid.net:20000 
+./nostrp2p server -l 0.0.0.0:7777 -p <public key in hex> -n alice -b ryogrid.net:9999 
 
 # on network A (bind to address/port which is NOT accessible from The Internet)
-./nostrp2p server -l 0.0.0.0:20000 -p <public key in hex> -n bob -b ryogrid.net:20000
+./nostrp2p server -l 0.0.0.0:20000 -p <public key in hex> -n bob -b ryogrid.net:8888
 
 # on network B (bind to address/port which is NOT accessible from The Internet)
-./nostrp2p server -l 0.0.0.0:20000 -p <public key in hex> -n tom -b redsky.social:20000
+./nostrp2p server -l 0.0.0.0:20000 -p <public key in hex> -n tom -b redsky.social:7777
 ```
+
+## Bootstrap Server
+- currently two servers are running
+  - ryogrid.net:9999
+  - ryogrid.net:8888
+- **These servers don't response to request from client. A server for yourself is needed to use NostrP2P.** 
 
 ## Examples (Client)
 - [here](https://github.com/ryogrid/flustr-for-nosp2p/tree/for-nostrp2p)
   - Under construction :)
 
-## About ultra simple prototype system
+## <del>About ultra simple prototype system</del> (not work in current impl)
 - [here (Japanese)](https://ryogrid.hatenablog.com/entry/2024/02/14/225619)
   - NAT transparent overlay has been implented
   - No signature validation
   - No follow feature (global TL only)
   - No data replication
-  - No persistence
+  - No data persistence
   - (Almost) No client
     - Posts are outputed to stdout of server
     - Posting text via REST I/F which accepts HTTP POST of JSON text
