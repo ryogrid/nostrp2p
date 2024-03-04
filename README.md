@@ -9,7 +9,7 @@ Pure peer-to-peer distributed microblog system on NAT transparent overlay networ
 $ go build -o nostrp2p main.go
 ```
 
-## Buzoon command usage
+## NostrP2P command usage
 ```
 Usage:
   nostrp2p [flags]
@@ -26,7 +26,7 @@ Flags:
 
 ```
 Usage:
-  buzzoon server [flags]
+  nostrp2p server [flags]
 
 Flags:
   -h, --help                         Help for server
