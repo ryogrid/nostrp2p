@@ -80,6 +80,7 @@ Flags:
 ## <del>About ultra simple prototype system</del> (not work in current impl)
 - [here (Japanese)](https://ryogrid.hatenablog.com/entry/2024/02/14/225619)
   - NAT transparent overlay has been implented
+  - Posting to overlay NW has been implemented
   - No signature validation
   - No follow feature (global TL only)
   - No data replication
