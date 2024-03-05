@@ -76,6 +76,7 @@ Flags:
 ## Examples (Client)
 - [here](https://github.com/ryogrid/flustr-for-nosp2p/tree/for-nostrp2p)
   - Under construction :)
+<img src="https://i.gyazo.com/edb5989031c27794c651cc7499a618b1.png" height="50%" width="50%" />
 
 ## <del>About ultra simple prototype system</del> (not work in current impl)
 - [here (Japanese)](https://ryogrid.hatenablog.com/entry/2024/02/14/225619)
