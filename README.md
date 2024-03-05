@@ -71,7 +71,7 @@ Flags:
 - currently two servers are running
   - ryogrid.net:9999
   - ryogrid.net:8888
-- **These servers don't response to REST API requests from clients. A server for yourself is also needed to use NostrP2P.** 
+- **These servers don't response to REST API requests from clients. A server for yourself is also needed to use NostrP2P** 
 
 ## Examples (Client)
 - [here](https://github.com/ryogrid/flustr-for-nosp2p/tree/for-nostrp2p)
