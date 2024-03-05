@@ -1,5 +1,5 @@
 # What is NostrP2P?
-Pure peer-to-peer distributed microblog system on NAT transparent overlay network based on idea of [Nostr](https://en.wikipedia.org/wiki/Nostr) implemented in Golang
+Pure peer-to-peer distributed microblog system on NAT transparent overlay network based on idea of [Nostr](https://en.wikipedia.org/wiki/Nostr)
 
 ## Design Note
 - [here](https://gist.github.com/ryogrid/fa2bfa284784c866ad88e3c38445752a)
