@@ -23,7 +23,7 @@ Available Commands:
   genkey      Generate key pair.
 
 Flags:
-  -h, --help   Help for buzzoon
+  -h, --help   Help for NostrP2P
 ```
 
 ```
@@ -35,7 +35,7 @@ Flags:
   -l, --listen-addr-port    string   Address and port to bind to (default: 127.0.0.1:20000)
   -b, --boot-peer-addr-port string   Address and port of a server which already joined buzzoon network (optional)
   -p, --public-key          string   Your public key (required)
-  -n, --nickname            string   Your nickname on Buzzoon (required) [TEMPORAL]
+  -n, --nickname            string   Your nickname on NostrP2P (required) [TEMPORAL]
   -d, --debug               bool     If true, debug log is output to stderr (default: false)
 ```
 
