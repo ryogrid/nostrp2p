@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/ant0ine/go-json-rest/rest"
 	"github.com/ryogrid/nostrp2p/core"
+	"github.com/ryogrid/nostrp2p/glo_val"
 	"github.com/ryogrid/nostrp2p/np2p_util"
 	"github.com/ryogrid/nostrp2p/schema"
 	"log"
@@ -94,6 +95,11 @@ func (s *ApiServer) sendEventHandler(w rest.ResponseWriter, req *rest.Request) {
 	input := Np2pEventAndReq{}
 	err := req.DecodeJsonPayload(&input)
 
+	if np2p_util.DenyWriteMode {
+		rest.Error(w, "Write is denied", http.StatusNotAcceptable)
+		return
+	}
+
 	if err != nil {
 		fmt.Println(err)
 		rest.Error(w, err.Error(), http.StatusBadRequest)
@@ -102,6 +108,8 @@ func (s *ApiServer) sendEventHandler(w rest.ResponseWriter, req *rest.Request) {
 
 	// TODO: need to check Sig (ApiServer::sendEventHandler)
 
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Private-Network", "true")
 	switch input.Kind {
 	case core.KIND_EVT_POST:
 		s.sendPost(w, &input)
@@ -163,6 +171,8 @@ func (s *ApiServer) reqHandler(w rest.ResponseWriter, req *rest.Request) {
 	// TODO: need to check Created_at and Sig for authorizaton (ApiServer::reqHandler)
 	//       accept only when ((currentTime - Created_at) < 10sec)
 
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Private-Network", "true")
 	switch input.Content {
 	case "getProfile":
 		s.getProfile(w, &input)
@@ -238,6 +248,31 @@ func (s *ApiServer) updateProfile(w rest.ResponseWriter, input *Np2pEventAndReq)
 	//w.WriteJson(&GeneralResp{
 	//	"SUCCESS",
 	//})
+
+	if input.Tags == nil {
+		rest.Error(w, "Tags is null", http.StatusBadRequest)
+		return
+	}
+
+	nameIdx := slices.IndexFunc(input.Tags, func(ss []string) bool { return ss[0] == "name" })
+	aboutIdx := slices.IndexFunc(input.Tags, func(ss []string) bool { return ss[0] == "about" })
+	pictureIdx := slices.IndexFunc(input.Tags, func(ss []string) bool { return ss[0] == "picture" })
+	if nameIdx == -1 || aboutIdx == -1 || pictureIdx == -1 || len(input.Tags[nameIdx]) < 2 || len(input.Tags[aboutIdx]) < 2 || len(input.Tags[pictureIdx]) < 2 {
+		rest.Error(w, "since and until are required", http.StatusBadRequest)
+		return
+	}
+
+	name := input.Tags[nameIdx][1]
+	about := input.Tags[aboutIdx][1]
+	picture := input.Tags[pictureIdx][1]
+
+	prof := s.buzzPeer.MessageMan.BcastOwnProfile(&name, &about, &picture)
+	// update local profile
+	glo_val.ProfileMyOwn = prof
+
+	w.WriteJson(&GeneralResp{
+		"SUCCESS",
+	})
 }
 
 func (s *ApiServer) LaunchAPIServer(addrStr string) {
@@ -264,8 +299,8 @@ func (s *ApiServer) LaunchAPIServer(addrStr string) {
 		OriginValidator: func(origin string, request *rest.Request) bool {
 			return true
 		},
-		AllowedMethods:                []string{"POST"},
-		AllowedHeaders:                []string{"Accept", "content-type"},
+		AllowedMethods:                []string{"POST", "OPTIONS"},
+		AllowedHeaders:                []string{"Accept", "content-type", "Access-Control-Request-Headers", "Access-Control-Request-Method", "Origin", "Referer", "User-Agent"},
 		AccessControlAllowCredentials: true,
 		AccessControlMaxAge:           3600,
 	})
