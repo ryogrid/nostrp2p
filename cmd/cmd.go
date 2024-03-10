@@ -25,6 +25,7 @@ var publicKey = ""
 var nickname = ""
 var writable = true
 var debug = false
+var isEnabledSSL = false
 
 var rootCmd = &cobra.Command{
 	Use: "nostrp2p",
@@ -76,6 +77,10 @@ var serverCmd = &cobra.Command{
 		glo_val.SelfPubkey64bit = name
 		fmt.Println(fmt.Sprintf("%x", glo_val.SelfPubkey), fmt.Sprintf("%x", name))
 
+		if isEnabledSSL {
+			glo_val.IsEnabledSSL = true
+			fmt.Println("REST I/F is offered over SSL")
+		}
 		// initializa rand generator
 		np2p_util.InitializeRandGen(-1 * int64(name))
 
@@ -194,6 +199,13 @@ func init() {
 		"d",
 		false,
 		"If true, debug log is output to stderr (default: false)",
+	)
+	serverCmd.Flags().BoolVarP(
+		&isEnabledSSL,
+		"ssl",
+		"s",
+		false,
+		"If true, REST I/F is offered over SSL (default: false)",
 	)
 
 	rootCmd.AddCommand(serverCmd)

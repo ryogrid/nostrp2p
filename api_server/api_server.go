@@ -319,8 +319,17 @@ func (s *ApiServer) LaunchAPIServer(addrStr string) {
 	api.SetApp(router)
 
 	log.Printf("Server started")
-	log.Fatal(http.ListenAndServe(
-		addrStr,
-		api.MakeHandler(),
-	))
+	if glo_val.IsEnabledSSL {
+		log.Fatal(http.ListenAndServeTLS(
+			addrStr,
+			"cert.pem",
+			"privkey.pem",
+			api.MakeHandler(),
+		))
+	} else {
+		log.Fatal(http.ListenAndServe(
+			addrStr,
+			api.MakeHandler(),
+		))
+	}
 }
