@@ -75,18 +75,18 @@ Flags:
 
 ## Examples (Client)
 - [here](https://github.com/ryogrid/flustr-for-nosp2p)
-  - Under construction :)
 <img src="https://i.gyazo.com/edb5989031c27794c651cc7499a618b1.png" height="50%" width="50%" />
 
-## <del>About ultra simple prototype system</del> (not work in current impl)
-- [here (Japanese)](https://ryogrid.hatenablog.com/entry/2024/02/14/225619)
+## Trial of current implemented featues on trial NW
+- Please read [this](https://gist.github.com/ryogrid/5080ff36b6786902d40bb4b91de0766e)
   - NAT transparent overlay has been implented
   - Posting to overlay NW has been implemented
+  - REST I/F using JSON text as serialized format has been implemented (TEMPORAL)
+  - Simple client has been implemented with flutter
+  - Event data persistence has been implemented (only server now)
   - No signature validation
   - No follow feature (global TL only)
+  - No reply featue
+  - No Like feature
   - No data replication
-  - No data persistence
-  - (Almost) No client
-    - Posts are outputed to stdout of server
-    - Posting text via REST I/F which accepts HTTP POST of JSON text
 
