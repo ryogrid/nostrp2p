@@ -73,7 +73,7 @@ Flags:
     - this address including port number shoud be specified at launching of your server 
 - **These servers don't response to write kind REST API requests from clients. A server for yourself is also needed to use NostrP2P** 
 
-## Examples (Client)
+## Client
 - [here](https://github.com/ryogrid/flustr-for-nosp2p)
 <img src="https://i.gyazo.com/edb5989031c27794c651cc7499a618b1.png" height="50%" width="50%" />
 
