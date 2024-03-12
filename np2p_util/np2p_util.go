@@ -21,7 +21,6 @@ import (
 )
 
 var DebugMode = false
-var DenyWriteMode = false
 
 type Stringset map[string]struct{}
 

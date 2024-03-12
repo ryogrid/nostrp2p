@@ -95,7 +95,7 @@ func (s *ApiServer) sendEventHandler(w rest.ResponseWriter, req *rest.Request) {
 	input := Np2pEventAndReq{}
 	err := req.DecodeJsonPayload(&input)
 
-	if np2p_util.DenyWriteMode {
+	if glo_val.DenyWriteMode {
 		rest.Error(w, "Write is denied", http.StatusNotAcceptable)
 		return
 	}
@@ -235,20 +235,6 @@ func (s *ApiServer) gatherData(w rest.ResponseWriter, req *rest.Request) {
 }
 
 func (s *ApiServer) updateProfile(w rest.ResponseWriter, input *Np2pEventAndReq) {
-	// TODO: need to implement profile update handling (ApiServer::updateProfile)
-	//if input.Name == "" {
-	//	rest.Error(w, "Name is required", 400)
-	//	return
-	//}
-	//
-	//prof := s.buzzPeer.MessageMan.BcastOwnProfile(&input.Name, &input.About, &input.Picture)
-	//// update local profile
-	//glo_val.ProfileMyOwn = prof
-	//
-	//w.WriteJson(&GeneralResp{
-	//	"SUCCESS",
-	//})
-
 	if input.Tags == nil {
 		rest.Error(w, "Tags is null", http.StatusBadRequest)
 		return
@@ -307,11 +293,11 @@ func (s *ApiServer) LaunchAPIServer(addrStr string) {
 
 	router, err := rest.MakeRouter(
 		&rest.Route{"POST", "/sendEvent", s.sendEventHandler},
+		&rest.Route{"POST", "/req", s.reqHandler},
 		//&rest.Route{"POST", "/updateProfile", s.updateProfile},
 		//&rest.Route{"POST", "/getProfile", s.getProfile},
 		//&rest.Route{"POST", "/gatherData", s.gatherData},
 		//&rest.Route{"POST", "/getEvents", s.getEvents},
-		&rest.Route{"POST", "/req", s.reqHandler},
 	)
 	if err != nil {
 		log.Fatal(err)

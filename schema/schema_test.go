@@ -3,6 +3,8 @@ package schema
 import (
 	"crypto/sha256"
 	"fmt"
+	"github.com/ryogrid/nostrp2p/np2p_const"
+	"github.com/ryogrid/nostrp2p/np2p_util"
 	"github.com/vmihailenco/msgpack/v5"
 	"strconv"
 	"testing"
@@ -13,6 +15,8 @@ func TestNp2pPacketEncodeMessagePack(t *testing.T) {
 	tagMap := make(map[string][]interface{})
 	tagMap["nickname"] = []interface{}{"ryogrid"}
 	tagMap["u"] = []interface{}{strconv.FormatInt(time.Now().Unix(), 10)}
+
+	np2p_util.InitializeRandGen(int64(777))
 
 	event := &Np2pEvent{
 		Id:         11111,

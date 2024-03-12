@@ -39,7 +39,7 @@ var serverCmd = &cobra.Command{
 	Short: "Startup server.",
 	Run: func(cmd *cobra.Command, args []string) {
 		if !writable {
-			np2p_util.DenyWriteMode = true
+			glo_val.DenyWriteMode = true
 		}
 		if debug {
 			np2p_util.DebugMode = true
@@ -133,7 +133,7 @@ var serverCmd = &cobra.Command{
 		router.ConnectionMaker.InitiateConnections(peers.Slice(), true)
 		peer.Router = router
 
-		if !np2p_util.DenyWriteMode {
+		if !glo_val.DenyWriteMode {
 			apiServ := api_server.NewApiServer(peer)
 			go apiServ.LaunchAPIServer(host + ":" + strconv.Itoa(port+1))
 		}
