@@ -6,6 +6,24 @@ Pure Peer-to-Peer Distributed Microblogging System on NAT Transparent Overlay Ne
 - [Japanese version](https://gist.github.com/ryogrid/0ba0d825c3bb840dffa519c5ab91d4ff)
   - Japanese version is latest :)
 
+## Technical Overview
+- Difference with (general) Nostr
+  - Relay server (Nostr)
+    - Firstly, in NostrP2P, servers communicate with each other on pure peer-to-peer manner. Clients does not
+      - This means that NostrP2P have client-server architecture also
+    - Servers handle each recieved event data in a different way though these are not special kind (ex: replacable events) on Nostr because optimization for pure-peer-to-peer architecture is needed
+    - Servers of NostrP2P are correspond to Relay server of Nostr but these are more distributed and coodinate with each other
+    - Supporse large number of servers because user of NostrP2P need my server for using 
+    - Client can trust server it accesses (it is important)
+  - Client (Nostr)
+    - Almost same role with one of Nostr but its communication protocol between server is little bit different
+      - In current plan, transport is REST and data is encoded to binary. Not websocket and Not JSON text
+    - Client which is used by User-A only accesses to a server which is managed by the user only  
+- Common point with Nostr
+  - Data structure of event data is almost same
+  - Key pair format and signing method are same
+  - Specification like kind number is same if it is for same functionality (at least for now)
+
 ## Build
 ```bash
 $ go build -o nostrp2p main.go
