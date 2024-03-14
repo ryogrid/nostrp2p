@@ -75,7 +75,7 @@ Flags:
 
 ## Client
 - [here](https://github.com/ryogrid/flustr-for-nosp2p)
-<img src="https://i.gyazo.com/edb5989031c27794c651cc7499a618b1.png" height="50%" width="50%" />
+<img src="https://i.gyazo.com/fbed4277dcada30d22fb0c7be7401e7c.png" height="50%" width="50%" />
 
 ## Trial of current implemented featues on trial NW
 - Please read [this](https://gist.github.com/ryogrid/5080ff36b6786902d40bb4b91de0766e)
