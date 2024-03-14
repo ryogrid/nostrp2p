@@ -42,7 +42,7 @@ Flags:
 ## Examples (Generate key pair)
 - Under construction
 
-## Examples (Server lauch)
+## Examples (Server launch)
 ```bash
 # 4 servers network on local network (4 shells are needed...)
 ./nostrp2p server  -l 0.0.0.0:20000 -p <public key in hex> -n origin
