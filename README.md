@@ -13,8 +13,8 @@
     - Firstly, in NostrP2P, servers communicate with each other on pure peer-to-peer manner. Clients does not
       - This means that NostrP2P have client-server architecture also
     - Servers of NostrP2P are correspond and similar to Relay server of Nostr but these are more distributed and coodinate with each other
-    - Servers handle each recieved event data in a different way though these are not special kind (ex: replacable events) on Nostr because optimization for pure peer-to-peer architecture is needed
-    - Supporse large number of servers because user of NostrP2P need my server for using 
+    - Servers handle each recieved event data in a different way though these are not special kind one (ex: replacable events) on Nostr because optimization for pure peer-to-peer network architecture is needed
+    - Supporse large number of servers because each user of NostrP2P need my server
     - Client can trust server it accesses to
       - This is important for optimization of client's network resource consumption and power consumption
     - Powerful machine is not needed for server because it handles only one user's requests and amount of managing data is not large compred to (general) Nostr
@@ -23,10 +23,11 @@
     - Almost same role with one of Nostr but its communication protocol between server is little bit different
       - In current plan, transport is REST and data is encoded to binary. Not websocket and Not JSON text
     - Client which is used by User-A only accesses to a server which is managed by the user only
-  - In all design
+  - In all of design
     - Microbrogging application specific
       - This means architecture and protcorl of NostrP2P is not for general purpose unlike Nostr
-      - In other words, "NostrP2P" is a name of an microblogging application like "Bluesky"
+        - "Nostr" is a name of architecture and protocol and not name of SNS and Microblogging system
+      - In other words, "NostrP2P" is a name of an microblogging system like "Bluesky"
 - Common point with (general) Nostr
   - Data structure of event data is almost same
   - Key pair format and signing method are same
