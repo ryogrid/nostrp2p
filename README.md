@@ -16,7 +16,7 @@
     - Servers handle each recieved event data in a different way though these are not special kind (ex: replacable events) on Nostr because optimization for pure peer-to-peer architecture is needed
     - Supporse large number of servers because user of NostrP2P need my server for using 
     - Client can trust server it accesses to
-      - This is important for optimization of clients's network resource consumption and power consumption
+      - This is important for optimization of client's network resource consumption and power consumption
     - Powerful machine is not needed for server because it handles only one user's requests and amount of managing data is not large compred to (general) Nostr
       - If we considered server (Relay server) as a kind of database system, above is obvious 
   - Client (Nostr)
