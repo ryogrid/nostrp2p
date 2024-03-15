@@ -14,7 +14,8 @@ Pure Peer-to-Peer Distributed Microblogging System on NAT Transparent Overlay Ne
     - Servers handle each recieved event data in a different way though these are not special kind (ex: replacable events) on Nostr because optimization for pure-peer-to-peer architecture is needed
     - Servers of NostrP2P are correspond to Relay server of Nostr but these are more distributed and coodinate with each other
     - Supporse large number of servers because user of NostrP2P need my server for using 
-    - Client can trust server it accesses (it is important)
+    - Client can trust server it accesses
+      - This is important for optimization of clients's network resource consumption and power consumption
   - Client (Nostr)
     - Almost same role with one of Nostr but its communication protocol between server is little bit different
       - In current plan, transport is REST and data is encoded to binary. Not websocket and Not JSON text
