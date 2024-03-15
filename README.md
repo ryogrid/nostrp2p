@@ -6,6 +6,29 @@ Pure Peer-to-Peer Distributed Microblogging System on NAT Transparent Overlay Ne
 - [Japanese version](https://gist.github.com/ryogrid/0ba0d825c3bb840dffa519c5ab91d4ff)
   - Japanese version is latest :)
 
+## Technical Overview
+- Difference with (general) Nostr
+  - Relay server (Nostr)
+    - Firstly, in NostrP2P, servers communicate with each other on pure peer-to-peer manner. Clients does not
+      - This means that NostrP2P have client-server architecture also
+    - Servers handle each recieved event data in a different way though these are not special kind (ex: replacable events) on Nostr because optimization for pure-peer-to-peer architecture is needed
+    - Servers of NostrP2P are correspond to Relay server of Nostr but these are more distributed and coodinate with each other
+    - Supporse large number of servers because user of NostrP2P need my server for using 
+    - Client can trust server it accesses to
+      - This is important for optimization of clients's network resource consumption and power consumption
+    - Powerful machine is not needed for server because it handles only one users requests and amount of managing data is not large compred to Nostr
+      - If we think server (Relay server) as a kind of database system, above is obvious 
+  - Client (Nostr)
+    - Almost same role with one of Nostr but its communication protocol between server is little bit different
+      - In current plan, transport is REST and data is encoded to binary. Not websocket and Not JSON text
+    - Client which is used by User-A only accesses to a server which is managed by the user only  
+- Common point with Nostr
+  - Data structure of event data is almost same
+  - Key pair format and signing method are same
+  - Specification like kind number is same if it is for same functionality (at least for now)
+  - Functionality realization led by Clients
+    - (flexibility may be low compared with general Nostr...)
+
 ## Build
 ```bash
 $ go build -o nostrp2p main.go
@@ -42,7 +65,7 @@ Flags:
 ## Examples (Generate key pair)
 - Under construction
 
-## Examples (Server lauch)
+## Examples (Server launch)
 ```bash
 # 4 servers network on local network (4 shells are needed...)
 ./nostrp2p server  -l 0.0.0.0:20000 -p <public key in hex> -n origin
@@ -68,25 +91,25 @@ Flags:
 ```
 
 ## Bootstrap Server
-- currently two servers are running
-  - ryogrid.net:9999
+- currently single server is running
   - ryogrid.net:8888
-- **These servers don't response to REST API requests from clients. A server for yourself is also needed to use NostrP2P** 
+    - this address including port number shoud be specified at launching of your server 
+- **These servers don't response to write kind REST API requests from clients. A server for yourself is also needed to use NostrP2P** 
 
-## Examples (Client)
-- [here](https://github.com/ryogrid/flustr-for-nosp2p/tree/for-nostrp2p)
-  - Under construction :)
-<img src="https://i.gyazo.com/edb5989031c27794c651cc7499a618b1.png" height="50%" width="50%" />
+## Client
+- [here](https://github.com/ryogrid/flustr-for-nosp2p)
+<img src="https://i.gyazo.com/fbed4277dcada30d22fb0c7be7401e7c.png" height="50%" width="50%" />
 
-## <del>About ultra simple prototype system</del> (not work in current impl)
-- [here (Japanese)](https://ryogrid.hatenablog.com/entry/2024/02/14/225619)
+## Trial of current implemented featues on trial NW
+- Please read [this](https://gist.github.com/ryogrid/5080ff36b6786902d40bb4b91de0766e)
   - NAT transparent overlay has been implented
   - Posting to overlay NW has been implemented
+  - REST I/F using JSON text as serialized format has been implemented (TEMPORAL)
+  - Simple client has been implemented with flutter
+  - Event data persistence has been implemented (only server now)
   - No signature validation
   - No follow feature (global TL only)
+  - No reply featue
+  - No Like feature
   - No data replication
-  - No data persistence
-  - (Almost) No client
-    - Posts are outputed to stdout of server
-    - Posting text via REST I/F which accepts HTTP POST of JSON text
 
