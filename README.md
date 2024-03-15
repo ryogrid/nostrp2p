@@ -22,7 +22,7 @@ Pure Peer-to-Peer Distributed Microblogging System on NAT Transparent Overlay Ne
     - Almost same role with one of Nostr but its communication protocol between server is little bit different
       - In current plan, transport is REST and data is encoded to binary. Not websocket and Not JSON text
     - Client which is used by User-A only accesses to a server which is managed by the user only  
-- Common point with Nostr
+- Common point with (general) Nostr
   - Data structure of event data is almost same
   - Key pair format and signing method are same
   - Specification like kind number is same if it is for same functionality (at least for now)
