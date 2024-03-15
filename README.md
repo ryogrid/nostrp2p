@@ -26,7 +26,7 @@
   - In all design
     - Microbrogging application specific
       - This means architecture and protcorl of NostrP2P is not for general purpose unlike Nostr
-      - In other words, "NostrP2P" is name of an microblogging application unlike Nostr  
+      - In other words, "NostrP2P" is name of an microblogging application like "Bluesky"
 - Common point with (general) Nostr
   - Data structure of event data is almost same
   - Key pair format and signing method are same
