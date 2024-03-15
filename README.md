@@ -9,7 +9,7 @@
 
 ## Technical Overview
 - Difference with (general) Nostr
-  - Relay server (Nostr)
+  - Server (Relay server)
     - Firstly, in NostrP2P, servers communicate with each other on pure peer-to-peer manner. Clients does not
       - This means that NostrP2P have client-server architecture also
     - Servers of NostrP2P are correspond and similar to Relay server of Nostr but these are more distributed and coodinate with each other
@@ -19,7 +19,7 @@
       - This is important for optimization of client's network resource consumption and power consumption
     - Powerful machine is not needed for server because it handles only one user's requests and amount of managing data is not large compred to (general) Nostr
       - If we considered server (Relay server) as a kind of database system, above is obvious 
-  - Client (Nostr)
+  - Client
     - Almost same role with one of Nostr but its communication protocol between server is little bit different
       - In current plan, transport is REST and data is encoded to binary. Not websocket and Not JSON text
     - Client which is used by User-A only accesses to a server which is managed by the user only
