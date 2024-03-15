@@ -27,7 +27,7 @@ Pure Peer-to-Peer Distributed Microblogging System on NAT Transparent Overlay Ne
   - Key pair format and signing method are same
   - Specification like kind number is same if it is for same functionality (at least for now)
   - Functionality realization led by Clients
-    - (flexibility may be low compared with normal Nostr...)
+    - (flexibility may be low compared with general Nostr...)
 
 ## Build
 ```bash
