@@ -17,8 +17,8 @@
     - Supporse large number of servers because user of NostrP2P need my server for using 
     - Client can trust server it accesses to
       - This is important for optimization of clients's network resource consumption and power consumption
-    - Powerful machine is not needed for server because it handles only one users requests and amount of managing data is not large compred to Nostr
-      - If we think server (Relay server) as a kind of database system, above is obvious 
+    - Powerful machine is not needed for server because it handles only one user's requests and amount of managing data is not large compred to (general) Nostr
+      - If we considered server (Relay server) as a kind of database system, above is obvious 
   - Client (Nostr)
     - Almost same role with one of Nostr but its communication protocol between server is little bit different
       - In current plan, transport is REST and data is encoded to binary. Not websocket and Not JSON text
