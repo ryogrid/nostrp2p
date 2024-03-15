@@ -12,8 +12,8 @@
   - Relay server (Nostr)
     - Firstly, in NostrP2P, servers communicate with each other on pure peer-to-peer manner. Clients does not
       - This means that NostrP2P have client-server architecture also
+    - Servers of NostrP2P are correspond and similar to Relay server of Nostr but these are more distributed and coodinate with each other
     - Servers handle each recieved event data in a different way though these are not special kind (ex: replacable events) on Nostr because optimization for pure peer-to-peer architecture is needed
-    - Servers of NostrP2P are correspond to Relay server of Nostr but these are more distributed and coodinate with each other
     - Supporse large number of servers because user of NostrP2P need my server for using 
     - Client can trust server it accesses to
       - This is important for optimization of clients's network resource consumption and power consumption
