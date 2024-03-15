@@ -1,5 +1,6 @@
 # What is NostrP2P?
-Pure Peer-to-Peer Distributed Microblogging System on NAT Transparent Overlay Network Based on Idea of [Nostr](https://en.wikipedia.org/wiki/Nostr)
+- Pure Peer-to-Peer Distributed Microblogging System on NAT Transparent Overlay Network Based on Idea of [Nostr](https://en.wikipedia.org/wiki/Nostr)
+- Distributed Microblogging System by All User's Contribution
 
 ## Design Note
 - [here](https://gist.github.com/ryogrid/fa2bfa284784c866ad88e3c38445752a)
@@ -21,13 +22,16 @@ Pure Peer-to-Peer Distributed Microblogging System on NAT Transparent Overlay Ne
   - Client (Nostr)
     - Almost same role with one of Nostr but its communication protocol between server is little bit different
       - In current plan, transport is REST and data is encoded to binary. Not websocket and Not JSON text
-    - Client which is used by User-A only accesses to a server which is managed by the user only  
+    - Client which is used by User-A only accesses to a server which is managed by the user only
+  - In all design
+    - Microbrogging application specific
+      - This means architecture and protcorl of NostrP2P is not for general purpose unlike Nostr 
 - Common point with (general) Nostr
   - Data structure of event data is almost same
   - Key pair format and signing method are same
   - Specification like kind number is same if it is for same functionality (at least for now)
   - Functionality realization led by Clients
-    - (flexibility may be low compared with general Nostr...)
+    - (flexibility may be low compared with general Nostr...) 
 
 ## Build
 ```bash
