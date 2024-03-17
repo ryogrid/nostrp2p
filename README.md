@@ -1,5 +1,6 @@
 # What is NostrP2P?
-Pure Peer-to-Peer Distributed Microblogging System on NAT Transparent Overlay Network Based on Idea of [Nostr](https://en.wikipedia.org/wiki/Nostr)
+- Pure Peer-to-Peer Distributed Microblogging System on NAT Transparent Overlay Network Based on Idea of [Nostr](https://en.wikipedia.org/wiki/Nostr)
+- Distributed Microblogging System by All User's Contribution
 
 ## Design Note
 - [here](https://gist.github.com/ryogrid/fa2bfa284784c866ad88e3c38445752a)
@@ -8,26 +9,31 @@ Pure Peer-to-Peer Distributed Microblogging System on NAT Transparent Overlay Ne
 
 ## Technical Overview
 - Difference with (general) Nostr
-  - Relay server (Nostr)
+  - Server (Relay server)
     - Firstly, in NostrP2P, servers communicate with each other on pure peer-to-peer manner. Clients does not
       - This means that NostrP2P have client-server architecture also
-    - Servers handle each recieved event data in a different way though these are not special kind (ex: replacable events) on Nostr because optimization for pure-peer-to-peer architecture is needed
-    - Servers of NostrP2P are correspond to Relay server of Nostr but these are more distributed and coodinate with each other
-    - Supporse large number of servers because user of NostrP2P need my server for using 
+    - Servers of NostrP2P are correspond and similar to Relay server of Nostr but these are more distributed and coodinate with each other
+    - Servers handle each recieved event data in a different way though these are not special kind one (ex: replacable events) on Nostr because optimization for pure peer-to-peer network architecture is needed
+    - Supporse large number of servers because each user of NostrP2P need my server
     - Client can trust server it accesses to
-      - This is important for optimization of clients's network resource consumption and power consumption
-    - Powerful machine is not needed for server because it handles only one users requests and amount of managing data is not large compred to Nostr
-      - If we think server (Relay server) as a kind of database system, above is obvious 
-  - Client (Nostr)
+      - This is important for optimization of client's network resource consumption and power consumption
+    - Powerful machine is not needed for server because it handles only one user's requests and amount of managing data is not large compred to (general) Nostr
+      - If we considered server (Relay server) as a kind of database system, above is obvious 
+  - Client
     - Almost same role with one of Nostr but its communication protocol between server is little bit different
       - In current plan, transport is REST and data is encoded to binary. Not websocket and Not JSON text
-    - Client which is used by User-A only accesses to a server which is managed by the user only  
-- Common point with Nostr
+    - Client which is used by User-A only accesses to a server which is managed by the user only
+  - In all of design
+    - Microbrogging application specific
+      - This means architecture and protcorl of NostrP2P is not for general purpose unlike Nostr
+        - "Nostr" is a name of architecture and protocol and not name of SNS and Microblogging system
+      - In other words, "NostrP2P" is a name of an microblogging system like "Bluesky"
+- Common point with (general) Nostr
   - Data structure of event data is almost same
   - Key pair format and signing method are same
   - Specification like kind number is same if it is for same functionality (at least for now)
   - Functionality realization led by Clients
-    - (flexibility may be low compared with general Nostr...)
+    - (flexibility may be low compared with general Nostr...) 
 
 ## Build
 ```bash
@@ -91,10 +97,10 @@ Flags:
 ```
 
 ## Bootstrap Server
-- currently single server is running
+- currently, running server which is accessible from The Internet is below
   - ryogrid.net:8888
-    - this address including port number shoud be specified at launching of your server 
-- **These servers don't response to write kind REST API requests from clients. A server for yourself is also needed to use NostrP2P** 
+    - this address including port number shoud be specified at launching of your server with -b option
+- **These servers don't response to write kind REST API requests from clients. A server for yourself is also needed to use NostrP2P!** 
 
 ## Client
 - [here](https://github.com/ryogrid/flustr-for-nosp2p)
