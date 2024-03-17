@@ -2,6 +2,7 @@ package api_server
 
 import (
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"github.com/ant0ine/go-json-rest/rest"
 	"github.com/ryogrid/nostrp2p/core"
@@ -12,7 +13,6 @@ import (
 	"math"
 	"net/http"
 	"slices"
-	"strconv"
 )
 
 type NoArgReq struct {
@@ -43,17 +43,60 @@ type GetEventsReq struct {
 	Until int64
 }
 
-type Np2pEventAndReq struct {
-	Id         string     // string of ID (32bytes) in hex
-	Pubkey     string     // string of Pubkey(encoded 256bit uint (holiman/uint256)) in hex
-	Created_at int64      // unix timestamp in seconds
-	Kind       uint16     // integer between 0 and 65535
-	Tags       [][]string // Key: tag string, Value: string
-	Content    string
-	Sig        string // string of Sig(64-bytes integr of the signature) in hex
+type Np2pEventForREST struct {
+	Id         string     `json:"id"`         // string of ID (32bytes) in hex
+	Pubkey     string     `json:"pubkey"`     // string of Pubkey(encoded 256bit uint (holiman/uint256)) in hex
+	Created_at int64      `json:"created_at"` // unix timestamp in seconds
+	Kind       uint16     `json:"kind"`       // integer between 0 and 65535
+	Tags       [][]string `json:"tags"`       // Key: tag string, Value: string
+	Content    string     `json:"content"`
+	Sig        string     `json:"sig"` // string of Sig(64-bytes integr of the signature) in hex
 }
 
-func NewNp2pEventAndReq(evt *schema.Np2pEvent) *Np2pEventAndReq {
+type Np2pReqForREST struct {
+	Ids     []string `json:"ids"`
+	Tag     []string `json:"tag"` // "#<single-letter (a-zA-Z)>": <a list of tag values, for #e — a list of event ids, for #p — a list of pubkeys, etc.>
+	Authors []string `json:"authors"`
+	Kinds   []uint16 `json:"kinds"`
+	Since   int64    `json:"since"`
+	Until   int64    `json:"until"`
+	Limit   int64    `json:"limit"`
+}
+
+func (p *Np2pReqForREST) UnmarshalJSON(data []byte) error {
+	type Np2pReqForREST2 struct {
+		Ids     []string `json:"ids"`
+		Tag     []string `json:"tag"` // "#<single-letter (a-zA-Z)>": <a list of tag values, for #e — a list of event ids, for #p — a list of pubkeys, etc.>
+		Authors []string `json:"authors"`
+		Kinds   []uint16 `json:"kinds"`
+		Since   int64    `json:"since"`
+		Until   int64    `json:"until"`
+		Limit   int64    `json:"limit"`
+	}
+
+	var req Np2pReqForREST2
+	json.Unmarshal(data, &req)
+	*p = *(*Np2pReqForREST)(&req)
+
+	var tag map[string]interface{}
+	json.Unmarshal(data, &tag)
+
+	for k, v := range tag {
+		if k[0] == '#' && len(k) == 2 {
+			if v == nil {
+				continue
+			}
+			p.Tag = []string{string(k[:2])}
+			for _, val := range v.([]interface{}) {
+				p.Tag = append(p.Tag, val.(string))
+			}
+		}
+	}
+
+	return nil
+}
+
+func NewNp2pEventForREST(evt *schema.Np2pEvent) *Np2pEventForREST {
 	idBuf := make([]byte, 32)
 	binary.LittleEndian.PutUint64(idBuf, evt.Id)
 	idStr := fmt.Sprintf("%x", np2p_util.Gen256bitHash(idBuf))
@@ -65,7 +108,7 @@ func NewNp2pEventAndReq(evt *schema.Np2pEvent) *Np2pEventAndReq {
 		tagsArr = append(tagsArr, []string{"about", evt.Tags["about"][0].(string)})
 		tagsArr = append(tagsArr, []string{"picture", evt.Tags["picture"][0].(string)})
 	}
-	return &Np2pEventAndReq{
+	return &Np2pEventForREST{
 		Id:         idStr, // remove leading zeros
 		Pubkey:     fmt.Sprintf("%x", evt.Pubkey[:]),
 		Created_at: evt.Created_at,
@@ -77,7 +120,7 @@ func NewNp2pEventAndReq(evt *schema.Np2pEvent) *Np2pEventAndReq {
 }
 
 type EventsResp struct {
-	Events []Np2pEventAndReq
+	Events []Np2pEventForREST
 }
 type GeneralResp struct {
 	Status string
@@ -91,8 +134,8 @@ func NewApiServer(peer *core.Np2pPeer) *ApiServer {
 	return &ApiServer{peer}
 }
 
-func (s *ApiServer) sendEventHandler(w rest.ResponseWriter, req *rest.Request) {
-	input := Np2pEventAndReq{}
+func (s *ApiServer) publishHandler(w rest.ResponseWriter, req *rest.Request) {
+	input := Np2pEventForREST{}
 	err := req.DecodeJsonPayload(&input)
 
 	if glo_val.DenyWriteMode {
@@ -106,7 +149,7 @@ func (s *ApiServer) sendEventHandler(w rest.ResponseWriter, req *rest.Request) {
 		return
 	}
 
-	// TODO: need to check Sig (ApiServer::sendEventHandler)
+	// TODO: need to check Sig (ApiServer::publishHandler)
 
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Private-Network", "true")
@@ -125,7 +168,7 @@ func (s *ApiServer) sendEventHandler(w rest.ResponseWriter, req *rest.Request) {
 	//})
 }
 
-func (s *ApiServer) sendPost(w rest.ResponseWriter, input *Np2pEventAndReq) {
+func (s *ApiServer) sendPost(w rest.ResponseWriter, input *Np2pEventForREST) {
 	// TODO: need to implement post handling (ApiServer::sendPost)
 
 	if input.Content == "" {
@@ -142,29 +185,17 @@ func (s *ApiServer) sendPost(w rest.ResponseWriter, input *Np2pEventAndReq) {
 	w.WriteJson(&EventsResp{})
 }
 
-func (s *ApiServer) getProfile(w rest.ResponseWriter, input *Np2pEventAndReq) {
-	// TODO: need to implement profile request handling (ApiServer::getProfile)
-
-	prof := s.buzzPeer.MessageMan.DataMan.GetProfileLocal(math.MaxUint64)
-	//prof := s.buzzPeer.MessageMan.DataMan.GetProfileLocal(input.ShortPkey)
-	// TODO: when profile is not found, request latest profile (ApiServer::getProfile)
-
-	if prof != nil {
-		// TODO: need to set approprivate event data (ApiServer::getProfile)
-		w.WriteJson(&EventsResp{Events: []Np2pEventAndReq{*NewNp2pEventAndReq(nil)}})
-	} else {
-		// profile data will be included on response of "getEvents"
-		w.WriteJson(&EventsResp{Events: []Np2pEventAndReq{}})
-	}
-}
-
 func (s *ApiServer) reqHandler(w rest.ResponseWriter, req *rest.Request) {
-	input := Np2pEventAndReq{}
+	input := Np2pReqForREST{}
 	err := req.DecodeJsonPayload(&input)
 
 	if err != nil {
 		fmt.Println(err)
 		rest.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if input.Kinds == nil || len(input.Kinds) == 0 {
+		rest.Error(w, "Kinds is needed", http.StatusBadRequest)
 		return
 	}
 
@@ -173,10 +204,10 @@ func (s *ApiServer) reqHandler(w rest.ResponseWriter, req *rest.Request) {
 
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Private-Network", "true")
-	switch input.Content {
-	case "getProfile":
+	switch input.Kinds[0] {
+	case core.KIND_REQ_PROFILE:
 		s.getProfile(w, &input)
-	case "getEvents":
+	case core.KIND_REQ_SHARE_EVT_DATA:
 		s.getEvents(w, &input)
 	default:
 		rest.Error(w, err.Error(), http.StatusBadRequest)
@@ -184,31 +215,33 @@ func (s *ApiServer) reqHandler(w rest.ResponseWriter, req *rest.Request) {
 	}
 }
 
-func (s *ApiServer) getEvents(w rest.ResponseWriter, input *Np2pEventAndReq) {
-	if input.Tags == nil {
-		rest.Error(w, "Tags is null", http.StatusBadRequest)
+func (s *ApiServer) getProfile(w rest.ResponseWriter, input *Np2pReqForREST) {
+	// TODO: need to implement profile request handling (ApiServer::getProfile)
+
+	prof := s.buzzPeer.MessageMan.DataMan.GetProfileLocal(math.MaxUint64)
+	//prof := s.buzzPeer.MessageMan.DataMan.GetProfileLocal(input.ShortPkey)
+	// TODO: when profile is not found, request latest profile (ApiServer::getProfile)
+
+	if prof != nil {
+		// TODO: need to set approprivate event data (ApiServer::getProfile)
+		w.WriteJson(&EventsResp{Events: []Np2pEventForREST{*NewNp2pEventForREST(nil)}})
+	} else {
+		// profile data will be included on response of "getEvents"
+		w.WriteJson(&EventsResp{Events: []Np2pEventForREST{}})
+	}
+}
+
+func (s *ApiServer) getEvents(w rest.ResponseWriter, input *Np2pReqForREST) {
+	if input.Since == 0 || input.Until == 0 {
+		rest.Error(w, "value of since and untile is invalid", http.StatusBadRequest)
 		return
 	}
 
-	sinceIdx := slices.IndexFunc(input.Tags, func(ss []string) bool { return ss[0] == "since" })
-	untilIdx := slices.IndexFunc(input.Tags, func(ss []string) bool { return ss[0] == "until" })
-	if sinceIdx == -1 || untilIdx == -1 || len(input.Tags[sinceIdx]) < 2 || len(input.Tags[untilIdx]) < 2 {
-		rest.Error(w, "since and until are required", http.StatusBadRequest)
-		return
-	}
+	events := s.buzzPeer.MessageMan.DataMan.GetLatestEvents(int64(input.Since), int64(input.Until))
 
-	since, err1 := strconv.Atoi(input.Tags[sinceIdx][1])
-	until, err2 := strconv.Atoi(input.Tags[untilIdx][1])
-	if err1 != nil || err2 != nil {
-		rest.Error(w, "since and until must be integer", http.StatusBadRequest)
-		return
-	}
-
-	events := s.buzzPeer.MessageMan.DataMan.GetLatestEvents(int64(since), int64(until))
-
-	retEvents := make([]Np2pEventAndReq, 0)
+	retEvents := make([]Np2pEventForREST, 0)
 	for _, evt := range *events {
-		retEvents = append(retEvents, *NewNp2pEventAndReq(evt))
+		retEvents = append(retEvents, *NewNp2pEventForREST(evt))
 	}
 
 	w.WriteJson(&EventsResp{
@@ -234,7 +267,7 @@ func (s *ApiServer) gatherData(w rest.ResponseWriter, req *rest.Request) {
 	})
 }
 
-func (s *ApiServer) updateProfile(w rest.ResponseWriter, input *Np2pEventAndReq) {
+func (s *ApiServer) updateProfile(w rest.ResponseWriter, input *Np2pEventForREST) {
 	if input.Tags == nil {
 		rest.Error(w, "Tags is null", http.StatusBadRequest)
 		return
@@ -292,7 +325,7 @@ func (s *ApiServer) LaunchAPIServer(addrStr string) {
 	})
 
 	router, err := rest.MakeRouter(
-		&rest.Route{"POST", "/sendEvent", s.sendEventHandler},
+		&rest.Route{"POST", "/publish", s.publishHandler},
 		&rest.Route{"POST", "/req", s.reqHandler},
 		//&rest.Route{"POST", "/updateProfile", s.updateProfile},
 		//&rest.Route{"POST", "/getProfile", s.getProfile},
