@@ -10,3 +10,7 @@ var SelfPubkey64bit uint64                  // initialized at creation of Np2pPe
 var Nickname *string                        // initialized at server launch
 var ProfileMyOwn *schema.Np2pProfile
 var IsEnabledSSL bool = false
+
+var DenyWriteMode = false
+
+// 'DebugMode' global variable is defined on np2p_util.go ....

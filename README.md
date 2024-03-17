@@ -33,7 +33,88 @@
   - Key pair format and signing method are same
   - Specification like kind number is same if it is for same functionality (at least for now)
   - Functionality realization led by Clients
-    - (flexibility may be low compared with general Nostr...) 
+    - (flexibility may be low compared with general Nostr...)
+  
+　　  
+### (General) Nostr Architecture
+
+```mermaid
+
+classDiagram
+    RelayServerA <-- ClientX : Raed/Write
+    RelayServerA <-- ClientY : Raed/Write    
+    RelayServerB <-- ClientX : Raed/Write
+    RelayServerB <-- ClientY : Raed/Write
+    RelayServerB <-- ClientZ : Raed/Write
+    RelayServerC <-- ClientX : Raed/Write    
+    RelayServerC <-- ClientZ : Raed/Write
+    RelayServerD <-- ClientZ : Raed/Write
+    RelayServerD <-- ClientY : Raed/Write
+
+    namespace Internet {
+      class RelayServerA{
+      }
+      class RelayServerB{
+      }
+      class RelayServerC{
+      }
+      class RelayServerD{
+      }
+    }
+    class ClientX{
+
+    }
+    class ClientY{
+
+    }
+    class ClientZ{
+
+    }
+```
+  
+### NostrP2P Architecture
+```mermaid
+classDiagram
+    ServerA <|--|> ServerB : coodinate
+    ServerA <|--|> ServerC : coodinate
+    ServerA <|--|> ServerD : coodinate
+    ServerB <|--|> ServerC : coodinate
+    ServerB <|--|> ServerD : coodinate
+    ServerA <-- ClientA : Raed/Write
+    ServerB <-- ClientB : Read/Write
+    ServerC <-- ClientC : Read/Write
+    ServerD <-- ClientD : Read/Write(VPN)
+    namespace Internet {
+      class ServerA{
+      }
+      class ServerB{
+      }
+    }
+    namespace NW-C____________ {
+      class ServerC{
+      }
+      class ClientC{
+      }      
+    }
+    namespace NW-D______________ {
+      class ServerD{
+      }
+    }
+    namespace NW-A {
+      class ClientA{
+      }
+    }
+    namespace NW-B_________ {
+      class ClientB{
+      }
+    }
+    namespace NW-X_________ {
+      class ClientD{      
+      }
+    }
+    
+```
+
 
 ## Build
 ```bash
