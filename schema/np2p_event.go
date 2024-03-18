@@ -1,7 +1,6 @@
 package schema
 
 import (
-	"fmt"
 	"github.com/holiman/uint256"
 	"github.com/ryogrid/nostrp2p/np2p_const"
 	"github.com/vmihailenco/msgpack/v5"
@@ -44,6 +43,6 @@ func NewNp2pEventFromBytes(b []byte) (*Np2pEvent, error) {
 	if err := msgpack.Unmarshal(b, &e); err != nil {
 		return nil, err
 	}
-	fmt.Println(e)
+	//fmt.Println(e)
 	return &e, nil
 }
