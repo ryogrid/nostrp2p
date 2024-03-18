@@ -33,7 +33,7 @@ func NewDataManager() *DataManager {
 func (dman *DataManager) StoreEvent(evt *schema.Np2pEvent) {
 	// TODO: current impl overwrites the same timestamp event on EvtListTimeKey (DataManager::StoreEvent)
 	dman.EvtListTimeKeyMtx.Lock()
-	evt.Sig = nil // set nil because already verified
+	//evt.Sig = nil // set nil because already verified
 	dman.EvtListTimeKey.Add(evt.Created_at, evt)
 	dman.EvtListTimeKeyMtx.Unlock()
 	if _, ok := dman.EvtMapIdKey.Load(evt.Id); ok {

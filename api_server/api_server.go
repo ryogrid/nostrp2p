@@ -100,7 +100,10 @@ func NewNp2pEventForREST(evt *schema.Np2pEvent) *Np2pEventForREST {
 	//idBuf := make([]byte, 32)
 	//binary.LittleEndian.PutUint64(idBuf, evt.Id)
 	idStr := fmt.Sprintf("%x", evt.Id[:])
-	sigStr := fmt.Sprintf("%x", evt.Sig[:])
+	sigStr := ""
+	if evt.Sig != nil {
+		sigStr = fmt.Sprintf("%x", evt.Sig[:])
+	}
 
 	tagsArr := make([][]string, 0)
 	if evt.Kind == core.KIND_EVT_PROFILE {
@@ -127,15 +130,15 @@ func NewNp2pEventFromREST(evt *Np2pEventForREST) *schema.Np2pEvent {
 		tagsMap["picture"] = []interface{}{evt.Tags[2][1]}
 	}
 
-	pkey, err := uint256.FromHex(evt.Pubkey)
+	pkey, err := uint256.FromHex("0x" + evt.Pubkey)
 	if err != nil {
 		panic(err)
 	}
-	evtId, err := uint256.FromHex(evt.Id)
+	evtId, err := uint256.FromHex("0x" + evt.Id)
 	if err != nil {
 		panic(err)
 	}
-	sig, err := uint512.FromHex(evt.Sig)
+	sig, err := uint512.FromHex("0x" + evt.Sig)
 	if err != nil {
 		panic(err)
 	}
@@ -215,8 +218,8 @@ func (s *ApiServer) sendPost(w rest.ResponseWriter, input *Np2pEventForREST) {
 	s.buzzPeer.MessageMan.BcastOwnPost(evt)
 	// store for myself
 	s.buzzPeer.MessageMan.DataMan.StoreEvent(evt)
-	// display for myself
-	s.buzzPeer.MessageMan.DispPostAtStdout(evt)
+	//// display for myself
+	//s.buzzPeer.MessageMan.DispPostAtStdout(evt)
 
 	w.WriteJson(&EventsResp{})
 }

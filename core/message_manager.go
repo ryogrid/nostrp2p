@@ -62,8 +62,8 @@ func (mm *MessageManager) handleRecvMsgBcastEvt(src mesh.PeerName, pkt *schema.N
 						go mm.UnicastProfileReq(shortId)
 					}
 				}
-				// display (TEMPORAL IMPL)
-				mm.DispPostAtStdout(evt)
+				//// display (TEMPORAL IMPL)
+				//mm.DispPostAtStdout(evt)
 			default:
 				fmt.Println("received unknown kind event: " + strconv.Itoa(int(evt.Kind)))
 			}
@@ -110,8 +110,8 @@ func (mm *MessageManager) handleRecvMsgUnicast(src mesh.PeerName, pkt *schema.Np
 					// store received profile data
 					mm.DataMan.StoreProfile(GenProfileFromEvent(evt))
 				case KIND_EVT_POST: // response of KIND_REQ_SHARE_EVT_DATA
-					// display (TEMPORAL IMPL)
-					mm.DispPostAtStdout(evt)
+					//// display (TEMPORAL IMPL)
+					//mm.DispPostAtStdout(evt)
 				default:
 					fmt.Println("received unknown kind event: " + strconv.Itoa(int(pkt.Events[0].Kind)))
 				}
@@ -228,10 +228,10 @@ func (mm *MessageManager) UnicastOwnProfile(pubkey64bit uint64) {
 	}
 }
 
-// TODO: TEMPORAL IMPL
-func (mm *MessageManager) DispPostAtStdout(evt *schema.Np2pEvent) {
-	fmt.Println(evt.Tags["nickname"][0].(string) + "> " + evt.Content)
-}
+//// TODO: TEMPORAL IMPL
+//func (mm *MessageManager) DispPostAtStdout(evt *schema.Np2pEvent) {
+//	fmt.Println(evt.Tags["nickname"][0].(string) + "> " + evt.Content)
+//}
 
 func GenProfileFromEvent(evt *schema.Np2pEvent) *schema.Np2pProfile {
 	return &schema.Np2pProfile{
