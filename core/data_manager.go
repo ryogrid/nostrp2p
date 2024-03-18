@@ -14,7 +14,7 @@ const profReqInterval = 30 * time.Second
 type DataManager struct {
 	EvtListTimeKey    sortedlist.List // timestamp(int64) -> *schema.Np2pEvent
 	EvtListTimeKeyMtx *sync.Mutex
-	EvtMapIdKey       sync.Map // event id(uint64) -> *schema.Np2pEvent
+	EvtMapIdKey       sync.Map // [32]byte -> *schema.Np2pEvent
 	// latest profile only stored
 	ProfMap   sync.Map // pubkey lower 64bit (uint64) -> *schema.Np2pProfile
 	EvtLogger *EventDataLogger

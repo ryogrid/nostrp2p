@@ -3,7 +3,6 @@ package core
 import (
 	"fmt"
 	"github.com/ryogrid/nostrp2p/glo_val"
-	"github.com/ryogrid/nostrp2p/np2p_const"
 	"github.com/ryogrid/nostrp2p/np2p_util"
 	"github.com/ryogrid/nostrp2p/schema"
 	"github.com/weaveworks/mesh"
@@ -16,6 +15,7 @@ const (
 	KIND_EVT_PROFILE        = 0
 	KIND_EVT_POST           = 1
 	KIND_REQ_PROFILE        = KIND_EVT_PROFILE
+	KIND_REQ_POST           = KIND_EVT_POST
 	KIND_REQ_SHARE_EVT_DATA = 40000
 )
 
@@ -41,6 +41,7 @@ func (mm *MessageManager) handleRecvMsgBcastEvt(src mesh.PeerName, pkt *schema.N
 				if prof.Pubkey64bit == glo_val.SelfPubkey64bit && glo_val.ProfileMyOwn.UpdatedAt < evt.Created_at {
 					// this route works only when recovery
 					glo_val.ProfileMyOwn = prof
+					glo_val.CurrentProfileEvt = evt
 				}
 			case KIND_EVT_POST: // post
 				if val, ok := evt.Tags["u"]; ok {
@@ -146,67 +147,71 @@ func (mm *MessageManager) SendMsgBroadcast(pkt *schema.Np2pPacket) {
 	mm.send.GossipBroadcast(pkt)
 }
 
-func (mm *MessageManager) BcastOwnPost(content string) *schema.Np2pEvent {
-	pubSlice := glo_val.SelfPubkey[:]
-	var sigBytes [np2p_const.SignatureSize]byte
-	copy(sigBytes[:], pubSlice)
-	tagsMap := make(map[string][]interface{})
-	tagsMap["nickname"] = []interface{}{*glo_val.Nickname}
-	if np2p_util.IsHit(np2p_const.AttachProfileUpdateProb) && glo_val.ProfileMyOwn.UpdatedAt > 0 {
-		tagsMap["u"] = []interface{}{glo_val.ProfileMyOwn.UpdatedAt}
-	}
-	event := schema.Np2pEvent{
-		Id:         np2p_util.GetRandUint64(),
-		Pubkey:     *glo_val.SelfPubkey,
-		Created_at: time.Now().Unix(),
-		Kind:       KIND_EVT_POST,
-		Tags:       tagsMap,
-		Content:    content,
-		Sig:        &sigBytes,
-	}
-	events := []*schema.Np2pEvent{&event}
+func (mm *MessageManager) BcastOwnPost(evt *schema.Np2pEvent) {
+	//pubSlice := glo_val.SelfPubkey[:]
+	//var sigBytes [np2p_const.SignatureSize]byte
+	//copy(sigBytes[:], pubSlice)
+	//tagsMap := make(map[string][]interface{})
+	//tagsMap["nickname"] = []interface{}{*glo_val.Nickname}
+	//if np2p_util.IsHit(np2p_const.AttachProfileUpdateProb) && glo_val.ProfileMyOwn.UpdatedAt > 0 {
+	//	tagsMap["u"] = []interface{}{glo_val.ProfileMyOwn.UpdatedAt}
+	//}
+	//event := schema.Np2pEvent{
+	//	Id:         np2p_util.GetRandUint64(),
+	//	Pubkey:     *glo_val.SelfPubkey,
+	//	Created_at: time.Now().Unix(),
+	//	Kind:       KIND_EVT_POST,
+	//	Tags:       tagsMap,
+	//	Content:    content,
+	//	Sig:        &sigBytes,
+	//}
+	//events := []*schema.Np2pEvent{&event}
+
 	//for _, peerId := range s.buzzPeer.GetPeerList() {
 	//	s.buzzPeer.MessageMan.SendMsgUnicast(peerId, schema.NewNp2pPacket(&events, nil, nil))
 	//}
+
+	events := []*schema.Np2pEvent{evt}
 	mm.SendMsgBroadcast(schema.NewNp2pPacket(&events, nil))
 	// store own issued event
-	mm.DataMan.StoreEvent(&event)
+	mm.DataMan.StoreEvent(evt)
 
-	return &event
+	//return &event
 	//fmt.Println(event.Tags["nickname"][0] + "> " + event.Content)
 }
 
-func (mm *MessageManager) BcastOwnProfile(name *string, about *string, picture *string) *schema.Np2pProfile {
-	event := mm.constructProfileEvt(name, about, picture)
-	events := []*schema.Np2pEvent{event}
+// func (mm *MessageManager) BcastOwnProfile(name *string, about *string, picture *string) *schema.Np2pProfile {
+func (mm *MessageManager) BcastOwnProfile(evt *schema.Np2pEvent) *schema.Np2pProfile {
+	//event := mm.constructProfileEvt(name, about, picture)
+	events := []*schema.Np2pEvent{evt}
 	mm.SendMsgBroadcast(schema.NewNp2pPacket(&events, nil))
-	mm.DataMan.StoreEvent(event)
+	mm.DataMan.StoreEvent(evt)
 
-	storeProf := GenProfileFromEvent(event)
+	storeProf := GenProfileFromEvent(evt)
 	mm.DataMan.StoreProfile(storeProf)
 
 	return storeProf
 }
 
-func (mm *MessageManager) constructProfileEvt(name *string, about *string, picture *string) *schema.Np2pEvent {
-	pubSlice := glo_val.SelfPubkey[:]
-	var sigBytes [np2p_const.SignatureSize]byte
-	copy(sigBytes[:], pubSlice)
-	tagsMap := make(map[string][]interface{})
-	tagsMap["name"] = []interface{}{*name}
-	tagsMap["about"] = []interface{}{*about}
-	tagsMap["picture"] = []interface{}{*picture}
-	event := schema.Np2pEvent{
-		Id:         np2p_util.GetRandUint64(),
-		Pubkey:     *glo_val.SelfPubkey,
-		Created_at: time.Now().Unix(),
-		Kind:       KIND_EVT_PROFILE,
-		Tags:       tagsMap,
-		Content:    "",
-		Sig:        &sigBytes,
-	}
-	return &event
-}
+//func (mm *MessageManager) constructProfileEvt(name *string, about *string, picture *string) *schema.Np2pEvent {
+//	pubSlice := glo_val.SelfPubkey[:]
+//	var sigBytes [np2p_const.SignatureSize]byte
+//	copy(sigBytes[:], pubSlice)
+//	tagsMap := make(map[string][]interface{})
+//	tagsMap["name"] = []interface{}{*name}
+//	tagsMap["about"] = []interface{}{*about}
+//	tagsMap["picture"] = []interface{}{*picture}
+//	event := schema.Np2pEvent{
+//		Id:         np2p_util.GetRandUint64(),
+//		Pubkey:     *glo_val.SelfPubkey,
+//		Created_at: time.Now().Unix(),
+//		Kind:       KIND_EVT_PROFILE,
+//		Tags:       tagsMap,
+//		Content:    "",
+//		Sig:        &sigBytes,
+//	}
+//	return &event
+//}
 
 func (mm *MessageManager) UnicastProfileReq(pubkey64bit uint64) {
 	reqs := []*schema.Np2pReq{schema.NewNp2pReq(KIND_REQ_SHARE_EVT_DATA, nil)}
@@ -216,9 +221,11 @@ func (mm *MessageManager) UnicastProfileReq(pubkey64bit uint64) {
 
 // used for response of profile request
 func (mm *MessageManager) UnicastOwnProfile(pubkey64bit uint64) {
-	evt := mm.constructProfileEvt(&glo_val.ProfileMyOwn.Name, &glo_val.ProfileMyOwn.About, &glo_val.ProfileMyOwn.Picture)
-	events := []*schema.Np2pEvent{evt}
-	mm.SendMsgUnicast(mesh.PeerName(pubkey64bit), schema.NewNp2pPacket(&events, nil))
+	if glo_val.CurrentProfileEvt != nil {
+		// send latest profile data
+		events := []*schema.Np2pEvent{glo_val.CurrentProfileEvt}
+		mm.SendMsgUnicast(mesh.PeerName(pubkey64bit), schema.NewNp2pPacket(&events, nil))
+	}
 }
 
 // TODO: TEMPORAL IMPL

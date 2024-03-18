@@ -19,7 +19,7 @@ func TestNp2pPacketEncodeMessagePack(t *testing.T) {
 	np2p_util.InitializeRandGen(int64(777))
 
 	event := &Np2pEvent{
-		Id:         11111,
+		Id:         [np2p_const.EventIdSize]byte{},
 		Created_at: time.Now().Unix(),
 		Kind:       1,
 		Tags:       tagMap,

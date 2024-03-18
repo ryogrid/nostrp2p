@@ -126,3 +126,7 @@ func Gen256bitHash(data []byte) [32]byte {
 	copy(ret[:], hf.Sum(nil)[:32])
 	return ret
 }
+
+func ExtractUint64FromBytes(b []byte) uint64 {
+	return binary.LittleEndian.Uint64(b)
+}

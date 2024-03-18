@@ -46,7 +46,7 @@ func NewPeer(self mesh.PeerName, logger *log.Logger) *Np2pPeer {
 		dataMan:         dataMan,
 		MessageMan:      msgMan,
 		SelfId:          self,
-		recvedEvtReqMap: make(map[uint64]struct{}),
+		recvedEvtReqMap: make(map[uint64]struct{}), // make(map[uint64]struct{}),
 	}
 	go p.loop(actions)
 	return p
@@ -111,13 +111,13 @@ func (p *Np2pPeer) OnGossipBroadcast(src mesh.PeerName, buf []byte) (received me
 	retPkt := schema.NewNp2pPacket(&tmpEvts, &tmpReqs)
 	if pkt.Events != nil {
 		for _, evt := range pkt.Events {
-			if _, ok := p.recvedEvtReqMap[evt.Id]; !ok {
+			if _, ok := p.recvedEvtReqMap[np2p_util.ExtractUint64FromBytes(evt.Id[:])]; !ok {
 				err2 := p.MessageMan.handleRecvMsgBcastEvt(src, pkt, evt)
 				if err2 != nil {
 					panic(err2)
 				}
 
-				p.recvedEvtReqMap[evt.Id] = struct{}{}
+				p.recvedEvtReqMap[np2p_util.ExtractUint64FromBytes(evt.Id[:])] = struct{}{}
 				retPkt.Events = append(retPkt.Events, evt)
 			} else {
 				continue

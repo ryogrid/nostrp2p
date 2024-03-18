@@ -1,13 +1,13 @@
 package api_server
 
 import (
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"github.com/ant0ine/go-json-rest/rest"
+	"github.com/holiman/uint256"
+	"github.com/pavelkrolevets/uint512"
 	"github.com/ryogrid/nostrp2p/core"
 	"github.com/ryogrid/nostrp2p/glo_val"
-	"github.com/ryogrid/nostrp2p/np2p_util"
 	"github.com/ryogrid/nostrp2p/schema"
 	"log"
 	"math"
@@ -97,10 +97,10 @@ func (p *Np2pReqForREST) UnmarshalJSON(data []byte) error {
 }
 
 func NewNp2pEventForREST(evt *schema.Np2pEvent) *Np2pEventForREST {
-	idBuf := make([]byte, 32)
-	binary.LittleEndian.PutUint64(idBuf, evt.Id)
-	idStr := fmt.Sprintf("%x", np2p_util.Gen256bitHash(idBuf))
-	sigStr := idStr + idStr
+	//idBuf := make([]byte, 32)
+	//binary.LittleEndian.PutUint64(idBuf, evt.Id)
+	idStr := fmt.Sprintf("%x", evt.Id[:])
+	sigStr := fmt.Sprintf("%x", evt.Sig[:])
 
 	tagsArr := make([][]string, 0)
 	if evt.Kind == core.KIND_EVT_PROFILE {
@@ -117,6 +117,41 @@ func NewNp2pEventForREST(evt *schema.Np2pEvent) *Np2pEventForREST {
 		Content:    evt.Content,
 		Sig:        sigStr,
 	}
+}
+
+func NewNp2pEventFromREST(evt *Np2pEventForREST) *schema.Np2pEvent {
+	tagsMap := make(map[string][]interface{})
+	if evt.Kind == core.KIND_EVT_PROFILE {
+		tagsMap["name"] = []interface{}{evt.Tags[0][1]}
+		tagsMap["about"] = []interface{}{evt.Tags[1][1]}
+		tagsMap["picture"] = []interface{}{evt.Tags[2][1]}
+	}
+
+	pkey, err := uint256.FromHex(evt.Pubkey)
+	if err != nil {
+		panic(err)
+	}
+	evtId, err := uint256.FromHex(evt.Id)
+	if err != nil {
+		panic(err)
+	}
+	sig, err := uint512.FromHex(evt.Sig)
+	if err != nil {
+		panic(err)
+	}
+	sigBytes := sig.Bytes64()
+
+	retEvt := &schema.Np2pEvent{
+		Pubkey:     pkey.Bytes32(),
+		Id:         evtId.Bytes32(),
+		Created_at: evt.Created_at,
+		Kind:       evt.Kind,
+		Tags:       tagsMap,
+		Content:    evt.Content,
+		Sig:        &sigBytes,
+	}
+
+	return retEvt
 }
 
 type EventsResp struct {
@@ -176,7 +211,8 @@ func (s *ApiServer) sendPost(w rest.ResponseWriter, input *Np2pEventForREST) {
 		return
 	}
 
-	evt := s.buzzPeer.MessageMan.BcastOwnPost(input.Content)
+	evt := NewNp2pEventFromREST(input)
+	s.buzzPeer.MessageMan.BcastOwnPost(evt)
 	// store for myself
 	s.buzzPeer.MessageMan.DataMan.StoreEvent(evt)
 	// display for myself
@@ -208,6 +244,8 @@ func (s *ApiServer) reqHandler(w rest.ResponseWriter, req *rest.Request) {
 	case core.KIND_REQ_PROFILE:
 		s.getProfile(w, &input)
 	case core.KIND_REQ_SHARE_EVT_DATA:
+		s.getEvents(w, &input)
+	case core.KIND_REQ_POST:
 		s.getEvents(w, &input)
 	default:
 		rest.Error(w, err.Error(), http.StatusBadRequest)
@@ -281,11 +319,14 @@ func (s *ApiServer) updateProfile(w rest.ResponseWriter, input *Np2pEventForREST
 		return
 	}
 
-	name := input.Tags[nameIdx][1]
-	about := input.Tags[aboutIdx][1]
-	picture := input.Tags[pictureIdx][1]
+	//name := input.Tags[nameIdx][1]
+	//about := input.Tags[aboutIdx][1]
+	//picture := input.Tags[pictureIdx][1]
+	//
+	//prof := s.buzzPeer.MessageMan.BcastOwnProfile(&name, &about, &picture)
 
-	prof := s.buzzPeer.MessageMan.BcastOwnProfile(&name, &about, &picture)
+	evt := NewNp2pEventFromREST(input)
+	prof := s.buzzPeer.MessageMan.BcastOwnProfile(evt)
 	// update local profile
 	glo_val.ProfileMyOwn = prof
 
