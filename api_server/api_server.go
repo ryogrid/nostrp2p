@@ -11,8 +11,11 @@ import (
 	"github.com/ryogrid/nostrp2p/schema"
 	"log"
 	"math"
+	"math/big"
 	"net/http"
 	"slices"
+	"strconv"
+	"strings"
 )
 
 type NoArgReq struct {
@@ -57,7 +60,7 @@ type Np2pReqForREST struct {
 	Ids     []string `json:"ids"`
 	Tag     []string `json:"tag"` // "#<single-letter (a-zA-Z)>": <a list of tag values, for #e — a list of event ids, for #p — a list of pubkeys, etc.>
 	Authors []string `json:"authors"`
-	Kinds   []uint16 `json:"kinds"`
+	Kinds   string   `json:"kinds"` // list of kind numbers (ex: "1,2,3")
 	Since   int64    `json:"since"`
 	Until   int64    `json:"until"`
 	Limit   int64    `json:"limit"`
@@ -68,7 +71,7 @@ func (p *Np2pReqForREST) UnmarshalJSON(data []byte) error {
 		Ids     []string `json:"ids"`
 		Tag     []string `json:"tag"` // "#<single-letter (a-zA-Z)>": <a list of tag values, for #e — a list of event ids, for #p — a list of pubkeys, etc.>
 		Authors []string `json:"authors"`
-		Kinds   []uint16 `json:"kinds"`
+		Kinds   string   `json:"kinds"`
 		Since   int64    `json:"since"`
 		Until   int64    `json:"until"`
 		Limit   int64    `json:"limit"`
@@ -87,9 +90,10 @@ func (p *Np2pReqForREST) UnmarshalJSON(data []byte) error {
 				continue
 			}
 			p.Tag = []string{string(k[:2])}
-			for _, val := range v.([]interface{}) {
-				p.Tag = append(p.Tag, val.(string))
-			}
+			//for _, val := range v.([]string) {
+			//	p.Tag = append(p.Tag, val)
+			//}
+			p.Tag = append(p.Tag, v.(string))
 		}
 	}
 
@@ -130,16 +134,24 @@ func NewNp2pEventFromREST(evt *Np2pEventForREST) *schema.Np2pEvent {
 		tagsMap["picture"] = []interface{}{evt.Tags[2][1]}
 	}
 
-	pkey, err := uint256.FromHex("0x" + evt.Pubkey)
+	pkey, err := uint256.FromHex("0x" + strings.TrimLeft(evt.Pubkey, "0"))
 	if err != nil {
 		panic(err)
 	}
-	evtId, err := uint256.FromHex("0x" + evt.Id)
+	evtId, err := uint256.FromHex("0x" + strings.TrimLeft(evt.Id, "0"))
 	if err != nil {
 		panic(err)
 	}
-	sig, err := uint512.FromHex("0x" + evt.Sig)
-	if err != nil {
+
+	lowerSig, err := uint512.FromHex("0x" + strings.TrimLeft(evt.Sig[:32], "0"))
+	upperSig, err := uint512.FromHex("0x" + strings.TrimLeft(evt.Sig[32:64], "0"))
+	lowerBytes := lowerSig.Bytes()
+	upperBytes := upperSig.Bytes()
+	allBytes := make([]byte, 64)
+	allBytes = append(allBytes, lowerBytes...)
+	allBytes = append(allBytes, upperBytes...)
+	sig, overflow := uint512.FromBig(new(big.Int).SetBytes(allBytes))
+	if overflow {
 		panic(err)
 	}
 	sigBytes := sig.Bytes64()
@@ -158,7 +170,7 @@ func NewNp2pEventFromREST(evt *Np2pEventForREST) *schema.Np2pEvent {
 }
 
 type EventsResp struct {
-	Events []Np2pEventForREST
+	Events []Np2pEventForREST `json:"results"`
 }
 type GeneralResp struct {
 	Status string
@@ -233,17 +245,24 @@ func (s *ApiServer) reqHandler(w rest.ResponseWriter, req *rest.Request) {
 		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if input.Kinds == nil || len(input.Kinds) == 0 {
-		rest.Error(w, "Kinds is needed", http.StatusBadRequest)
+	//if input.Kinds == nil || len(input.Kinds) == 0 {
+	//	rest.Error(w, "Kinds is needed", http.StatusBadRequest)
+	//	return
+	//}
+	kind, err := strconv.Atoi(strings.Split(input.Kinds, ",")[0])
+	if err != nil {
+		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
+	fmt.Println(kind)
 	// TODO: need to check Created_at and Sig for authorizaton (ApiServer::reqHandler)
 	//       accept only when ((currentTime - Created_at) < 10sec)
 
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Private-Network", "true")
-	switch input.Kinds[0] {
+	//switch input.Kinds[0] {
+	switch kind {
 	case core.KIND_REQ_PROFILE:
 		s.getProfile(w, &input)
 	case core.KIND_REQ_SHARE_EVT_DATA:
@@ -251,7 +270,10 @@ func (s *ApiServer) reqHandler(w rest.ResponseWriter, req *rest.Request) {
 	case core.KIND_REQ_POST:
 		s.getEvents(w, &input)
 	default:
-		rest.Error(w, err.Error(), http.StatusBadRequest)
+		//rest.Error(w, "unknown kind", http.StatusBadRequest)
+		w.WriteJson(&EventsResp{
+			Events: []Np2pEventForREST{},
+		})
 		return
 	}
 }
@@ -273,12 +295,13 @@ func (s *ApiServer) getProfile(w rest.ResponseWriter, input *Np2pReqForREST) {
 }
 
 func (s *ApiServer) getEvents(w rest.ResponseWriter, input *Np2pReqForREST) {
-	if input.Since == 0 || input.Until == 0 {
-		rest.Error(w, "value of since and untile is invalid", http.StatusBadRequest)
-		return
-	}
+	//if input.Since == 0 || input.Until == 0 {
+	//	rest.Error(w, "value of since and untile is invalid", http.StatusBadRequest)
+	//	return
+	//}
 
-	events := s.buzzPeer.MessageMan.DataMan.GetLatestEvents(int64(input.Since), int64(input.Until))
+	//events := s.buzzPeer.MessageMan.DataMan.GetLatestEvents(int64(input.Since), int64(input.Until))
+	events := s.buzzPeer.MessageMan.DataMan.GetLatestEvents(0, math.MaxInt64)
 
 	retEvents := make([]Np2pEventForREST, 0)
 	for _, evt := range *events {
