@@ -13,7 +13,7 @@ import (
 	"log"
 	"math"
 	"net/http"
-	"strconv"
+	"reflect"
 	"strings"
 )
 
@@ -59,7 +59,7 @@ type Np2pReqForREST struct {
 	Ids     []string `json:"ids"`
 	Tag     []string `json:"tag"` // "#<single-letter (a-zA-Z)>": <a list of tag values, for #e — a list of event ids, for #p — a list of pubkeys, etc.>
 	Authors []string `json:"authors"`
-	Kinds   string   `json:"kinds"` // list of kind numbers (ex: "1,2,3")
+	Kinds   []int    `json:"kinds"` // list of kind numbers (ex: "1,2,3")
 	Since   int64    `json:"since"`
 	Until   int64    `json:"until"`
 	Limit   int64    `json:"limit"`
@@ -70,7 +70,7 @@ func (p *Np2pReqForREST) UnmarshalJSON(data []byte) error {
 		Ids     []string `json:"ids"`
 		Tag     []string `json:"tag"` // "#<single-letter (a-zA-Z)>": <a list of tag values, for #e — a list of event ids, for #p — a list of pubkeys, etc.>
 		Authors []string `json:"authors"`
-		Kinds   string   `json:"kinds"`
+		Kinds   []int    `json:"kinds"`
 		Since   int64    `json:"since"`
 		Until   int64    `json:"until"`
 		Limit   int64    `json:"limit"`
@@ -80,7 +80,7 @@ func (p *Np2pReqForREST) UnmarshalJSON(data []byte) error {
 	json.Unmarshal(data, &req)
 	*p = *(*Np2pReqForREST)(&req)
 
-	var tag map[string]interface{}
+	var tag map[string][]string
 	json.Unmarshal(data, &tag)
 
 	for k, v := range tag {
@@ -88,11 +88,12 @@ func (p *Np2pReqForREST) UnmarshalJSON(data []byte) error {
 			if v == nil {
 				continue
 			}
-			p.Tag = []string{k[:2]}
-			//for _, val := range v.([]string) {
-			//	p.Tag = append(p.Tag, val)
-			//}
-			p.Tag = append(p.Tag, v.(string))
+			fmt.Println(v)
+			fmt.Println(reflect.TypeOf(v))
+			p.Tag = []string{k}
+			for _, val := range v {
+				p.Tag = append(p.Tag, val)
+			}
 		}
 	}
 
@@ -234,22 +235,27 @@ func (s *ApiServer) reqHandler(w rest.ResponseWriter, req *rest.Request) {
 	input := Np2pReqForREST{}
 	err := req.DecodeJsonPayload(&input)
 
+	//fmt.Println("reqHandler")
+	//fmt.Println(input.Tag)
 	if err != nil {
 		fmt.Println(err)
 		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	//if input.Kinds == nil || len(input.Kinds) == 0 {
-	//	rest.Error(w, "Kinds is needed", http.StatusBadRequest)
-	//	return
-	//}
-	kind, err := strconv.Atoi(strings.Split(input.Kinds, ",")[0])
+	if input.Kinds == nil || len(input.Kinds) == 0 {
+		rest.Error(w, "Kinds is needed", http.StatusBadRequest)
+		return
+	}
+	//kind, err := strconv.Atoi(strings.Split(input.Kinds, ",")[0])
+	kind := input.Kinds[0]
 	if err != nil {
-		rest.Error(w, err.Error(), http.StatusBadRequest)
+		w.WriteJson(&EventsResp{
+			Events: []Np2pEventForREST{},
+		})
 		return
 	}
 
-	fmt.Println(kind)
+	//fmt.Println(kind)
 	// TODO: need to check Created_at and Sig for authorizaton (ApiServer::reqHandler)
 	//       accept only when ((currentTime - Created_at) < 10sec)
 
