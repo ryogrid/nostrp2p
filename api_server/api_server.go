@@ -88,7 +88,7 @@ func (p *Np2pReqForREST) UnmarshalJSON(data []byte) error {
 			if v == nil {
 				continue
 			}
-			p.Tag = []string{string(k[:2])}
+			p.Tag = []string{k[:2]}
 			//for _, val := range v.([]string) {
 			//	p.Tag = append(p.Tag, val)
 			//}
@@ -100,8 +100,6 @@ func (p *Np2pReqForREST) UnmarshalJSON(data []byte) error {
 }
 
 func NewNp2pEventForREST(evt *schema.Np2pEvent) *Np2pEventForREST {
-	//idBuf := make([]byte, 32)
-	//binary.LittleEndian.PutUint64(idBuf, evt.Id)
 	idStr := fmt.Sprintf("%x", evt.Id[:])
 	sigStr := ""
 	if evt.Sig != nil {
@@ -109,11 +107,7 @@ func NewNp2pEventForREST(evt *schema.Np2pEvent) *Np2pEventForREST {
 	}
 
 	tagsArr := make([][]string, 0)
-	//if evt.Kind == core.KIND_EVT_PROFILE {
-	//	tagsArr = append(tagsArr, []string{"name", evt.Tags["name"][0].(string)})
-	//	tagsArr = append(tagsArr, []string{"about", evt.Tags["about"][0].(string)})
-	//	tagsArr = append(tagsArr, []string{"picture", evt.Tags["picture"][0].(string)})
-	//}
+
 	return &Np2pEventForREST{
 		Id:         idStr, // remove leading zeros
 		Pubkey:     fmt.Sprintf("%x", evt.Pubkey[:]),
@@ -127,11 +121,6 @@ func NewNp2pEventForREST(evt *schema.Np2pEvent) *Np2pEventForREST {
 
 func NewNp2pEventFromREST(evt *Np2pEventForREST) *schema.Np2pEvent {
 	tagsMap := make(map[string][]interface{})
-	//if evt.Kind == core.KIND_EVT_PROFILE {
-	//	tagsMap["name"] = []interface{}{evt.Tags[0][1]}
-	//	tagsMap["about"] = []interface{}{evt.Tags[1][1]}
-	//	tagsMap["picture"] = []interface{}{evt.Tags[2][1]}
-	//}
 
 	pkey, err := uint256.FromHex("0x" + strings.TrimLeft(evt.Pubkey, "0"))
 	if err != nil {
@@ -219,10 +208,10 @@ func (s *ApiServer) publishHandler(w rest.ResponseWriter, req *rest.Request) {
 		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
 	//w.WriteJson(&GeneralResp{
 	//	"SUCCESS",
 	//})
+
 }
 
 func (s *ApiServer) sendPost(w rest.ResponseWriter, input *Np2pEventForREST) {
@@ -237,8 +226,6 @@ func (s *ApiServer) sendPost(w rest.ResponseWriter, input *Np2pEventForREST) {
 	s.buzzPeer.MessageMan.BcastOwnPost(evt)
 	// store for myself
 	s.buzzPeer.MessageMan.DataMan.StoreEvent(evt)
-	//// display for myself
-	//s.buzzPeer.MessageMan.DispPostAtStdout(evt)
 
 	w.WriteJson(&EventsResp{})
 }
@@ -277,7 +264,6 @@ func (s *ApiServer) reqHandler(w rest.ResponseWriter, req *rest.Request) {
 	case core.KIND_REQ_POST:
 		s.getEvents(w, &input)
 	default:
-		//rest.Error(w, "unknown kind", http.StatusBadRequest)
 		w.WriteJson(&EventsResp{
 			Events: []Np2pEventForREST{},
 		})
@@ -344,20 +330,6 @@ func (s *ApiServer) updateProfile(w rest.ResponseWriter, input *Np2pEventForREST
 		return
 	}
 
-	//nameIdx := slices.IndexFunc(input.Tags, func(ss []string) bool { return ss[0] == "name" })
-	//aboutIdx := slices.IndexFunc(input.Tags, func(ss []string) bool { return ss[0] == "about" })
-	//pictureIdx := slices.IndexFunc(input.Tags, func(ss []string) bool { return ss[0] == "picture" })
-	//if nameIdx == -1 || aboutIdx == -1 || pictureIdx == -1 || len(input.Tags[nameIdx]) < 2 || len(input.Tags[aboutIdx]) < 2 || len(input.Tags[pictureIdx]) < 2 {
-	//	rest.Error(w, "since and until are required", http.StatusBadRequest)
-	//	return
-	//}
-
-	//name := input.Tags[nameIdx][1]
-	//about := input.Tags[aboutIdx][1]
-	//picture := input.Tags[pictureIdx][1]
-	//
-	//prof := s.buzzPeer.MessageMan.BcastOwnProfile(&name, &about, &picture)
-
 	evt := NewNp2pEventFromREST(input)
 	prof := s.buzzPeer.MessageMan.BcastOwnProfile(evt)
 	// update local profile
@@ -401,10 +373,6 @@ func (s *ApiServer) LaunchAPIServer(addrStr string) {
 	router, err := rest.MakeRouter(
 		&rest.Route{"POST", "/publish", s.publishHandler},
 		&rest.Route{"POST", "/req", s.reqHandler},
-		//&rest.Route{"POST", "/updateProfile", s.updateProfile},
-		//&rest.Route{"POST", "/getProfile", s.getProfile},
-		//&rest.Route{"POST", "/gatherData", s.gatherData},
-		//&rest.Route{"POST", "/getEvents", s.getEvents},
 	)
 	if err != nil {
 		log.Fatal(err)
