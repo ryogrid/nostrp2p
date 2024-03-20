@@ -1,6 +1,7 @@
 package api_server
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/ant0ine/go-json-rest/rest"
@@ -11,9 +12,7 @@ import (
 	"github.com/ryogrid/nostrp2p/schema"
 	"log"
 	"math"
-	"math/big"
 	"net/http"
-	"slices"
 	"strconv"
 	"strings"
 )
@@ -106,15 +105,15 @@ func NewNp2pEventForREST(evt *schema.Np2pEvent) *Np2pEventForREST {
 	idStr := fmt.Sprintf("%x", evt.Id[:])
 	sigStr := ""
 	if evt.Sig != nil {
-		sigStr = fmt.Sprintf("%x", evt.Sig[:])
+		sigStr = hex.EncodeToString(evt.Sig[:])
 	}
 
 	tagsArr := make([][]string, 0)
-	if evt.Kind == core.KIND_EVT_PROFILE {
-		tagsArr = append(tagsArr, []string{"name", evt.Tags["name"][0].(string)})
-		tagsArr = append(tagsArr, []string{"about", evt.Tags["about"][0].(string)})
-		tagsArr = append(tagsArr, []string{"picture", evt.Tags["picture"][0].(string)})
-	}
+	//if evt.Kind == core.KIND_EVT_PROFILE {
+	//	tagsArr = append(tagsArr, []string{"name", evt.Tags["name"][0].(string)})
+	//	tagsArr = append(tagsArr, []string{"about", evt.Tags["about"][0].(string)})
+	//	tagsArr = append(tagsArr, []string{"picture", evt.Tags["picture"][0].(string)})
+	//}
 	return &Np2pEventForREST{
 		Id:         idStr, // remove leading zeros
 		Pubkey:     fmt.Sprintf("%x", evt.Pubkey[:]),
@@ -128,11 +127,11 @@ func NewNp2pEventForREST(evt *schema.Np2pEvent) *Np2pEventForREST {
 
 func NewNp2pEventFromREST(evt *Np2pEventForREST) *schema.Np2pEvent {
 	tagsMap := make(map[string][]interface{})
-	if evt.Kind == core.KIND_EVT_PROFILE {
-		tagsMap["name"] = []interface{}{evt.Tags[0][1]}
-		tagsMap["about"] = []interface{}{evt.Tags[1][1]}
-		tagsMap["picture"] = []interface{}{evt.Tags[2][1]}
-	}
+	//if evt.Kind == core.KIND_EVT_PROFILE {
+	//	tagsMap["name"] = []interface{}{evt.Tags[0][1]}
+	//	tagsMap["about"] = []interface{}{evt.Tags[1][1]}
+	//	tagsMap["picture"] = []interface{}{evt.Tags[2][1]}
+	//}
 
 	pkey, err := uint256.FromHex("0x" + strings.TrimLeft(evt.Pubkey, "0"))
 	if err != nil {
@@ -143,18 +142,26 @@ func NewNp2pEventFromREST(evt *Np2pEventForREST) *schema.Np2pEvent {
 		panic(err)
 	}
 
-	lowerSig, err := uint512.FromHex("0x" + strings.TrimLeft(evt.Sig[:32], "0"))
-	upperSig, err := uint512.FromHex("0x" + strings.TrimLeft(evt.Sig[32:64], "0"))
-	lowerBytes := lowerSig.Bytes()
-	upperBytes := upperSig.Bytes()
-	allBytes := make([]byte, 64)
-	allBytes = append(allBytes, lowerBytes...)
-	allBytes = append(allBytes, upperBytes...)
-	sig, overflow := uint512.FromBig(new(big.Int).SetBytes(allBytes))
-	if overflow {
+	fmt.Println("evt.Sig: " + evt.Sig)
+
+	lowerSig, err := uint512.FromHex("0x" + strings.TrimLeft(evt.Sig[:64], "0"))
+	if err != nil {
 		panic(err)
 	}
-	sigBytes := sig.Bytes64()
+	upperSig, err := uint512.FromHex("0x" + strings.TrimLeft(evt.Sig[64:128], "0"))
+	if err != nil {
+		panic(err)
+	}
+	lowerBytes := lowerSig.Bytes()
+	upperBytes := upperSig.Bytes()
+	fmt.Println(lowerBytes)
+	fmt.Println(upperBytes)
+	allBytes := make([]byte, 0)
+	allBytes = append(allBytes, lowerBytes...)
+	allBytes = append(allBytes, upperBytes...)
+
+	var sigBytes [64]byte
+	copy(sigBytes[:], allBytes)
 
 	retEvt := &schema.Np2pEvent{
 		Pubkey:     pkey.Bytes32(),
@@ -337,13 +344,13 @@ func (s *ApiServer) updateProfile(w rest.ResponseWriter, input *Np2pEventForREST
 		return
 	}
 
-	nameIdx := slices.IndexFunc(input.Tags, func(ss []string) bool { return ss[0] == "name" })
-	aboutIdx := slices.IndexFunc(input.Tags, func(ss []string) bool { return ss[0] == "about" })
-	pictureIdx := slices.IndexFunc(input.Tags, func(ss []string) bool { return ss[0] == "picture" })
-	if nameIdx == -1 || aboutIdx == -1 || pictureIdx == -1 || len(input.Tags[nameIdx]) < 2 || len(input.Tags[aboutIdx]) < 2 || len(input.Tags[pictureIdx]) < 2 {
-		rest.Error(w, "since and until are required", http.StatusBadRequest)
-		return
-	}
+	//nameIdx := slices.IndexFunc(input.Tags, func(ss []string) bool { return ss[0] == "name" })
+	//aboutIdx := slices.IndexFunc(input.Tags, func(ss []string) bool { return ss[0] == "about" })
+	//pictureIdx := slices.IndexFunc(input.Tags, func(ss []string) bool { return ss[0] == "picture" })
+	//if nameIdx == -1 || aboutIdx == -1 || pictureIdx == -1 || len(input.Tags[nameIdx]) < 2 || len(input.Tags[aboutIdx]) < 2 || len(input.Tags[pictureIdx]) < 2 {
+	//	rest.Error(w, "since and until are required", http.StatusBadRequest)
+	//	return
+	//}
 
 	//name := input.Tags[nameIdx][1]
 	//about := input.Tags[aboutIdx][1]

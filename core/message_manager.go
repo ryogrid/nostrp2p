@@ -236,10 +236,13 @@ func (mm *MessageManager) UnicastOwnProfile(pubkey64bit uint64) {
 func GenProfileFromEvent(evt *schema.Np2pEvent) *schema.Np2pProfile {
 	return &schema.Np2pProfile{
 		Pubkey64bit: np2p_util.GetLower64bitUint(evt.Pubkey),
-		Name:        evt.Tags["name"][0].(string),
-		About:       evt.Tags["about"][0].(string),
-		Picture:     evt.Tags["picture"][0].(string),
-		UpdatedAt:   evt.Created_at,
+		//Name:        evt.Tags["name"][0].(string),
+		//About:       evt.Tags["about"][0].(string),
+		//Picture:     evt.Tags["picture"][0].(string),
+		Name:      "",
+		About:     "",
+		Picture:   "",
+		UpdatedAt: evt.Created_at,
 	}
 }
 
