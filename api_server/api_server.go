@@ -14,35 +14,36 @@ import (
 	"math"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type NoArgReq struct {
 }
 
-type PostEventReq struct {
-	Content string
-}
+//type PostEventReq struct {
+//	Content string
+//}
 
-type UpdateProfileReq struct {
-	Name    string
-	About   string
-	Picture string
-}
+//type UpdateProfileReq struct {
+//	Name    string
+//	About   string
+//	Picture string
+//}
 
-type GetProfileReq struct {
-	ShortPkey uint64
-}
+//type GetProfileReq struct {
+//	ShortPkey uint64
+//}
 
-type GetProfileResp struct {
-	Name    string
-	About   string
-	Picture string
-}
+//type GetProfileResp struct {
+//	Name    string
+//	About   string
+//	Picture string
+//}
 
-type GetEventsReq struct {
-	Since int64
-	Until int64
-}
+//type GetEventsReq struct {
+//	Since int64
+//	Until int64
+//}
 
 type Np2pEventForREST struct {
 	Id         string     `json:"id"`         // string of ID (32bytes) in hex
@@ -294,8 +295,14 @@ func (s *ApiServer) getEvents(w rest.ResponseWriter, input *Np2pReqForREST) {
 	//	return
 	//}
 
+	if input.Since == 0 {
+		dt := time.Now()
+		curUnix := dt.Unix()
+		input.Since = curUnix - 10 // 10sec
+	}
+
 	//events := s.buzzPeer.MessageMan.DataMan.GetLatestEvents(int64(input.Since), int64(input.Until))
-	events := s.buzzPeer.MessageMan.DataMan.GetLatestEvents(0, math.MaxInt64)
+	events := s.buzzPeer.MessageMan.DataMan.GetLatestEvents(int64(input.Since), math.MaxInt64)
 
 	retEvents := make([]Np2pEventForREST, 0)
 	for _, evt := range *events {
