@@ -13,7 +13,6 @@ import (
 	"log"
 	"math"
 	"net/http"
-	"reflect"
 	"strings"
 )
 
@@ -88,8 +87,8 @@ func (p *Np2pReqForREST) UnmarshalJSON(data []byte) error {
 			if v == nil {
 				continue
 			}
-			fmt.Println(v)
-			fmt.Println(reflect.TypeOf(v))
+			//fmt.Println(v)
+			//fmt.Println(reflect.TypeOf(v))
 			p.Tag = []string{k}
 			for _, val := range v {
 				p.Tag = append(p.Tag, val)
@@ -132,8 +131,6 @@ func NewNp2pEventFromREST(evt *Np2pEventForREST) *schema.Np2pEvent {
 		panic(err)
 	}
 
-	fmt.Println("evt.Sig: " + evt.Sig)
-
 	lowerSig, err := uint512.FromHex("0x" + strings.TrimLeft(evt.Sig[:64], "0"))
 	if err != nil {
 		panic(err)
@@ -144,8 +141,6 @@ func NewNp2pEventFromREST(evt *Np2pEventForREST) *schema.Np2pEvent {
 	}
 	lowerBytes := lowerSig.Bytes()
 	upperBytes := upperSig.Bytes()
-	fmt.Println(lowerBytes)
-	fmt.Println(upperBytes)
 	allBytes := make([]byte, 0)
 	allBytes = append(allBytes, lowerBytes...)
 	allBytes = append(allBytes, upperBytes...)
