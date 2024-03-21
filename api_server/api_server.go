@@ -13,6 +13,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 )
@@ -243,13 +244,13 @@ func (s *ApiServer) reqHandler(w rest.ResponseWriter, req *rest.Request) {
 		return
 	}
 	//kind, err := strconv.Atoi(strings.Split(input.Kinds, ",")[0])
-	kind := input.Kinds[0]
-	if err != nil {
-		w.WriteJson(&EventsResp{
-			Events: []Np2pEventForREST{},
-		})
-		return
-	}
+	//kind := input.Kinds[0]
+	//if err != nil {
+	//	w.WriteJson(&EventsResp{
+	//		Events: []Np2pEventForREST{},
+	//	})
+	//	return
+	//}
 
 	//fmt.Println(kind)
 	// TODO: need to check Created_at and Sig for authorizaton (ApiServer::reqHandler)
@@ -258,14 +259,11 @@ func (s *ApiServer) reqHandler(w rest.ResponseWriter, req *rest.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Private-Network", "true")
 	//switch input.Kinds[0] {
-	switch kind {
-	case core.KIND_REQ_PROFILE:
+	if slices.Contains(input.Kinds, core.KIND_REQ_SHARE_EVT_DATA) || slices.Contains(input.Kinds, core.KIND_REQ_POST) {
+		s.getEvents(w, &input)
+	} else if slices.Contains(input.Kinds, core.KIND_REQ_PROFILE) {
 		s.getProfile(w, &input)
-	case core.KIND_REQ_SHARE_EVT_DATA:
-		s.getEvents(w, &input)
-	case core.KIND_REQ_POST:
-		s.getEvents(w, &input)
-	default:
+	} else {
 		w.WriteJson(&EventsResp{
 			Events: []Np2pEventForREST{},
 		})
@@ -298,13 +296,19 @@ func (s *ApiServer) getEvents(w rest.ResponseWriter, input *Np2pReqForREST) {
 	if input.Since == 0 {
 		dt := time.Now()
 		curUnix := dt.Unix()
-		input.Since = curUnix - 10 // 10sec
+		input.Since = curUnix - 60*60*24*7 // 1week
 	}
 
 	//events := s.buzzPeer.MessageMan.DataMan.GetLatestEvents(int64(input.Since), int64(input.Until))
 	events := s.buzzPeer.MessageMan.DataMan.GetLatestEvents(int64(input.Since), math.MaxInt64)
 
+	// limit 50
+	if len(*events) > 50 {
+		*events = (*events)[len(*events)-50:]
+	}
+
 	retEvents := make([]Np2pEventForREST, 0)
+
 	for _, evt := range *events {
 		retEvents = append(retEvents, *NewNp2pEventForREST(evt))
 	}
