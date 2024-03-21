@@ -21,31 +21,6 @@ import (
 type NoArgReq struct {
 }
 
-//type PostEventReq struct {
-//	Content string
-//}
-
-//type UpdateProfileReq struct {
-//	Name    string
-//	About   string
-//	Picture string
-//}
-
-//type GetProfileReq struct {
-//	ShortPkey uint64
-//}
-
-//type GetProfileResp struct {
-//	Name    string
-//	About   string
-//	Picture string
-//}
-
-//type GetEventsReq struct {
-//	Since int64
-//	Until int64
-//}
-
 type Np2pEventForREST struct {
 	Id         string     `json:"id"`         // string of ID (32bytes) in hex
 	Pubkey     string     `json:"pubkey"`     // string of Pubkey(encoded 256bit uint (holiman/uint256)) in hex
@@ -206,15 +181,9 @@ func (s *ApiServer) publishHandler(w rest.ResponseWriter, req *rest.Request) {
 		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	//w.WriteJson(&GeneralResp{
-	//	"SUCCESS",
-	//})
-
 }
 
 func (s *ApiServer) sendPost(w rest.ResponseWriter, input *Np2pEventForREST) {
-	// TODO: need to implement post handling (ApiServer::sendPost)
-
 	if input.Content == "" {
 		rest.Error(w, "Content is required", 400)
 		return
@@ -240,25 +209,22 @@ func (s *ApiServer) reqHandler(w rest.ResponseWriter, req *rest.Request) {
 		return
 	}
 	if input.Kinds == nil || len(input.Kinds) == 0 {
-		rest.Error(w, "Kinds is needed", http.StatusBadRequest)
+		//rest.Error(w, "Kinds is needed", http.StatusBadRequest)
+		//return
+
+		// for supporting Nostr clients
+		w.WriteJson(&EventsResp{
+			Events: []Np2pEventForREST{},
+		})
 		return
 	}
-	//kind, err := strconv.Atoi(strings.Split(input.Kinds, ",")[0])
-	//kind := input.Kinds[0]
-	//if err != nil {
-	//	w.WriteJson(&EventsResp{
-	//		Events: []Np2pEventForREST{},
-	//	})
-	//	return
-	//}
 
-	//fmt.Println(kind)
 	// TODO: need to check Created_at and Sig for authorizaton (ApiServer::reqHandler)
 	//       accept only when ((currentTime - Created_at) < 10sec)
 
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Private-Network", "true")
-	//switch input.Kinds[0] {
+	// TODO: need to implement each kind and other fliter condition request handling (ApiServer::reqHandler)
 	if slices.Contains(input.Kinds, core.KIND_REQ_SHARE_EVT_DATA) || slices.Contains(input.Kinds, core.KIND_REQ_POST) {
 		s.getEvents(w, &input)
 	} else if slices.Contains(input.Kinds, core.KIND_REQ_PROFILE) {
@@ -280,7 +246,7 @@ func (s *ApiServer) getProfile(w rest.ResponseWriter, input *Np2pReqForREST) {
 
 	if prof != nil {
 		// TODO: need to set approprivate event data (ApiServer::getProfile)
-		w.WriteJson(&EventsResp{Events: []Np2pEventForREST{*NewNp2pEventForREST(nil)}})
+		w.WriteJson(&EventsResp{Events: []Np2pEventForREST{}})
 	} else {
 		// profile data will be included on response of "getEvents"
 		w.WriteJson(&EventsResp{Events: []Np2pEventForREST{}})
@@ -293,17 +259,23 @@ func (s *ApiServer) getEvents(w rest.ResponseWriter, input *Np2pReqForREST) {
 	//	return
 	//}
 
+	// for supporting Nostr clients
+	isPeriodSpecified := true
 	if input.Since == 0 {
 		dt := time.Now()
 		curUnix := dt.Unix()
 		input.Since = curUnix - 60*60*24*7 // 1week
+		isPeriodSpecified = false
+	}
+	if input.Until == 0 {
+		input.Until = math.MaxInt64
 	}
 
-	//events := s.buzzPeer.MessageMan.DataMan.GetLatestEvents(int64(input.Since), int64(input.Until))
-	events := s.buzzPeer.MessageMan.DataMan.GetLatestEvents(int64(input.Since), math.MaxInt64)
+	events := s.buzzPeer.MessageMan.DataMan.GetLatestEvents(input.Since, input.Until)
 
+	// for supporting Nostr clients
 	// limit 50
-	if len(*events) > 50 {
+	if !isPeriodSpecified && len(*events) > 50 {
 		*events = (*events)[len(*events)-50:]
 	}
 
