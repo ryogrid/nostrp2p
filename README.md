@@ -3,9 +3,10 @@
 - Distributed Microblogging System by All User's Contribution
 
 ## Design Note
-- [here](https://gist.github.com/ryogrid/fa2bfa284784c866ad88e3c38445752a)
+- [here (English)](https://gist.github.com/ryogrid/fa2bfa284784c866ad88e3c38445752a)
+  - English version is latest :)
 - [Japanese version](https://gist.github.com/ryogrid/0ba0d825c3bb840dffa519c5ab91d4ff)
-  - Japanese version is latest :)
+
 
 ## Technical Overview
 - Difference with (general) Nostr
@@ -200,3 +201,5 @@ Flags:
   - No Like feature
   - No data replication
 
+## Trial of current implemented features with Nostr Client (not NostrP2P client) using protcol bridge server
+- Please read [this](https://gist.github.com/ryogrid/5080ff36b6786902d40bb4b91de0766e#file-nostrp2p_demo_v3_procedure-md)
