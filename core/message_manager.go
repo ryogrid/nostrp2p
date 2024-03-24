@@ -63,8 +63,8 @@ func (mm *MessageManager) handleRecvMsgBcastEvt(src mesh.PeerName, pkt *schema.N
 						go mm.UnicastProfileReq(shortId)
 					}
 				}
-				//// display (TEMPORAL IMPL)
-				//mm.DispPostAtStdout(evt)
+			case KIND_EVT_REACTION:
+				// do nothing
 			default:
 				fmt.Println("received unknown kind event: " + strconv.Itoa(int(evt.Kind)))
 			}
