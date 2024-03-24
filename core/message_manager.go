@@ -14,6 +14,7 @@ import (
 const (
 	KIND_EVT_PROFILE        = 0
 	KIND_EVT_POST           = 1
+	KIND_EVT_REACTION       = 7
 	KIND_REQ_PROFILE        = KIND_EVT_PROFILE
 	KIND_REQ_POST           = KIND_EVT_POST
 	KIND_REQ_SHARE_EVT_DATA = 40000

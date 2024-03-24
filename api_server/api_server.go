@@ -84,6 +84,14 @@ func NewNp2pEventForREST(evt *schema.Np2pEvent) *Np2pEventForREST {
 	}
 
 	tagsArr := make([][]string, 0)
+	for k, v := range evt.Tags {
+		tmpArr := make([]string, 0)
+		tmpArr = append(tmpArr, k)
+		for _, val := range v {
+			tmpArr = append(tmpArr, val.(string))
+		}
+		tagsArr = append(tagsArr, tmpArr)
+	}
 
 	return &Np2pEventForREST{
 		Id:         idStr, // remove leading zeros
@@ -98,6 +106,13 @@ func NewNp2pEventForREST(evt *schema.Np2pEvent) *Np2pEventForREST {
 
 func NewNp2pEventFromREST(evt *Np2pEventForREST) *schema.Np2pEvent {
 	tagsMap := make(map[string][]interface{})
+	for _, tag := range evt.Tags {
+		vals := make([]interface{}, 0)
+		for _, val := range tag[1:] {
+			vals = append(vals, val)
+		}
+		tagsMap[tag[0]] = vals
+	}
 
 	pkey, err := uint256.FromHex("0x" + strings.TrimLeft(evt.Pubkey, "0"))
 	if err != nil {
@@ -177,10 +192,20 @@ func (s *ApiServer) publishHandler(w rest.ResponseWriter, req *rest.Request) {
 		s.sendPost(w, &input)
 	case core.KIND_EVT_PROFILE:
 		s.updateProfile(w, &input)
+	case core.KIND_EVT_REACTION:
+		s.sendReaction(w, &input)
 	default:
 		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+}
+
+func (s *ApiServer) sendReaction(w rest.ResponseWriter, input *Np2pEventForREST) {
+	evt := NewNp2pEventFromREST(input)
+	// TODO: need to send reaction event to target event publisher (ApiServer::sendReaction)
+	s.buzzPeer.MessageMan.DataMan.StoreEvent(evt)
+
+	w.WriteJson(&EventsResp{})
 }
 
 func (s *ApiServer) sendPost(w rest.ResponseWriter, input *Np2pEventForREST) {
