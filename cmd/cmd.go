@@ -70,6 +70,8 @@ var serverCmd = &cobra.Command{
 
 		// short pubkey
 		name := pkey256.Uint64()
+		// use 6 bytes only
+		name = name & 0x0000ffffffffffff
 
 		var tmpArr [32]byte
 		pkey256.WriteToArray32(&tmpArr)

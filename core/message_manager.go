@@ -85,6 +85,8 @@ func (mm *MessageManager) handleRecvMsgBcastReq(src mesh.PeerName, pkt *schema.N
 			switch req.Kind {
 			case KIND_REQ_SHARE_EVT_DATA: // need to having event datas
 				go mm.UnicastHavingEvtData(src)
+			case KIND_EVT_REACTION:
+				// do nothing
 			default:
 				fmt.Println("received unknown kind req: " + strconv.Itoa(int(req.Kind)))
 			}
@@ -111,8 +113,9 @@ func (mm *MessageManager) handleRecvMsgUnicast(src mesh.PeerName, pkt *schema.Np
 					// store received profile data
 					mm.DataMan.StoreProfile(GenProfileFromEvent(evt))
 				case KIND_EVT_POST: // response of KIND_REQ_SHARE_EVT_DATA
-					//// display (TEMPORAL IMPL)
-					//mm.DispPostAtStdout(evt)
+					// do nothing
+				case KIND_EVT_REACTION:
+					// do nothing
 				default:
 					fmt.Println("received unknown kind event: " + strconv.Itoa(int(pkt.Events[0].Kind)))
 				}
@@ -140,8 +143,8 @@ func (mm *MessageManager) handleRecvMsgUnicast(src mesh.PeerName, pkt *schema.Np
 	return nil
 }
 
-func (mm *MessageManager) SendMsgUnicast(dst mesh.PeerName, pkt *schema.Np2pPacket) {
-	mm.send.GossipUnicast(dst, pkt.Encode()[0])
+func (mm *MessageManager) SendMsgUnicast(dst mesh.PeerName, pkt *schema.Np2pPacket) error {
+	return mm.send.GossipUnicast(dst, pkt.Encode()[0])
 }
 
 func (mm *MessageManager) SendMsgBroadcast(pkt *schema.Np2pPacket) {
@@ -149,36 +152,10 @@ func (mm *MessageManager) SendMsgBroadcast(pkt *schema.Np2pPacket) {
 }
 
 func (mm *MessageManager) BcastOwnPost(evt *schema.Np2pEvent) {
-	//pubSlice := glo_val.SelfPubkey[:]
-	//var sigBytes [np2p_const.SignatureSize]byte
-	//copy(sigBytes[:], pubSlice)
-	//tagsMap := make(map[string][]interface{})
-	//tagsMap["nickname"] = []interface{}{*glo_val.Nickname}
-	//if np2p_util.IsHit(np2p_const.AttachProfileUpdateProb) && glo_val.ProfileMyOwn.UpdatedAt > 0 {
-	//	tagsMap["u"] = []interface{}{glo_val.ProfileMyOwn.UpdatedAt}
-	//}
-	//event := schema.Np2pEvent{
-	//	Id:         np2p_util.GetRandUint64(),
-	//	Pubkey:     *glo_val.SelfPubkey,
-	//	Created_at: time.Now().Unix(),
-	//	Kind:       KIND_EVT_POST,
-	//	Tags:       tagsMap,
-	//	Content:    content,
-	//	Sig:        &sigBytes,
-	//}
-	//events := []*schema.Np2pEvent{&event}
-
-	//for _, peerId := range s.buzzPeer.GetPeerList() {
-	//	s.buzzPeer.MessageMan.SendMsgUnicast(peerId, schema.NewNp2pPacket(&events, nil, nil))
-	//}
-
 	events := []*schema.Np2pEvent{evt}
 	mm.SendMsgBroadcast(schema.NewNp2pPacket(&events, nil))
 	// store own issued event
 	mm.DataMan.StoreEvent(evt)
-
-	//return &event
-	//fmt.Println(event.Tags["nickname"][0] + "> " + event.Content)
 }
 
 // func (mm *MessageManager) BcastOwnProfile(name *string, about *string, picture *string) *schema.Np2pProfile {
@@ -193,26 +170,6 @@ func (mm *MessageManager) BcastOwnProfile(evt *schema.Np2pEvent) *schema.Np2pPro
 
 	return storeProf
 }
-
-//func (mm *MessageManager) constructProfileEvt(name *string, about *string, picture *string) *schema.Np2pEvent {
-//	pubSlice := glo_val.SelfPubkey[:]
-//	var sigBytes [np2p_const.SignatureSize]byte
-//	copy(sigBytes[:], pubSlice)
-//	tagsMap := make(map[string][]interface{})
-//	tagsMap["name"] = []interface{}{*name}
-//	tagsMap["about"] = []interface{}{*about}
-//	tagsMap["picture"] = []interface{}{*picture}
-//	event := schema.Np2pEvent{
-//		Id:         np2p_util.GetRandUint64(),
-//		Pubkey:     *glo_val.SelfPubkey,
-//		Created_at: time.Now().Unix(),
-//		Kind:       KIND_EVT_PROFILE,
-//		Tags:       tagsMap,
-//		Content:    "",
-//		Sig:        &sigBytes,
-//	}
-//	return &event
-//}
 
 func (mm *MessageManager) UnicastProfileReq(pubkey64bit uint64) {
 	reqs := []*schema.Np2pReq{schema.NewNp2pReq(KIND_REQ_SHARE_EVT_DATA, nil)}
@@ -229,11 +186,7 @@ func (mm *MessageManager) UnicastOwnProfile(pubkey64bit uint64) {
 	}
 }
 
-//// TODO: TEMPORAL IMPL
-//func (mm *MessageManager) DispPostAtStdout(evt *schema.Np2pEvent) {
-//	fmt.Println(evt.Tags["nickname"][0].(string) + "> " + evt.Content)
-//}
-
+// TODO: need to implent MessageManager::GenProfileFromEvent
 func GenProfileFromEvent(evt *schema.Np2pEvent) *schema.Np2pProfile {
 	return &schema.Np2pProfile{
 		Pubkey64bit: np2p_util.GetLower64bitUint(evt.Pubkey),
@@ -262,4 +215,10 @@ func (mm *MessageManager) UnicastHavingEvtData(dest mesh.PeerName) {
 	pkt := schema.NewNp2pPacket(events, nil)
 	mm.SendMsgUnicast(dest, pkt)
 	np2p_util.Np2pDbgPrintln("UnicastHavingEvtData: sent " + strconv.Itoa(len(*events)) + " events")
+}
+
+func (mm *MessageManager) UnicastEventData(destPubHexStr string, evt *schema.Np2pEvent) error {
+	events := []*schema.Np2pEvent{evt}
+	pkt := schema.NewNp2pPacket(&events, nil)
+	return mm.SendMsgUnicast(mesh.PeerName(np2p_util.Get6ByteUint64FromHexPubKeyStr(destPubHexStr)), pkt)
 }

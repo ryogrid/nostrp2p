@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
+	"github.com/holiman/uint256"
 	"github.com/ryogrid/nostrp2p/np2p_const"
 	"io"
 	"math/rand"
@@ -129,4 +130,14 @@ func Gen256bitHash(data []byte) [32]byte {
 
 func ExtractUint64FromBytes(b []byte) uint64 {
 	return binary.LittleEndian.Uint64(b)
+}
+
+func Get6ByteUint64FromHexPubKeyStr(pubKeyStr string) uint64 {
+	pubKeyStr_ := strings.TrimLeft(pubKeyStr, "0")
+	pkey256, err := uint256.FromHex("0x" + pubKeyStr_)
+	if err != nil {
+		fmt.Printf("public key: %s: %v\n", pubKeyStr_, err)
+	}
+
+	return pkey256.Uint64() & 0x0000ffffffffffff
 }

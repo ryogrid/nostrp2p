@@ -202,8 +202,15 @@ func (s *ApiServer) publishHandler(w rest.ResponseWriter, req *rest.Request) {
 
 func (s *ApiServer) sendReaction(w rest.ResponseWriter, input *Np2pEventForREST) {
 	evt := NewNp2pEventFromREST(input)
-	// TODO: need to send reaction event to target event publisher (ApiServer::sendReaction)
-	s.buzzPeer.MessageMan.DataMan.StoreEvent(evt)
+	err := s.buzzPeer.MessageMan.UnicastEventData(evt.Tags["p"][0].(string), evt)
+	if err != nil {
+		fmt.Println(evt.Tags["p"][0].(string))
+		fmt.Println(err)
+	} else {
+		// when data is sent successfully (= target server is online and received the data)
+		// reaction event is stored for myself
+		s.buzzPeer.MessageMan.DataMan.StoreEvent(evt)
+	}
 
 	w.WriteJson(&EventsResp{})
 }
