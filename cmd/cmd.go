@@ -1,8 +1,8 @@
 package cmd
 
 import (
+	"encoding/hex"
 	"fmt"
-	"github.com/holiman/uint256"
 	"github.com/ryogrid/nostrp2p/glo_val"
 	"github.com/ryogrid/nostrp2p/np2p_util"
 	"github.com/ryogrid/nostrp2p/schema"
@@ -61,23 +61,21 @@ var serverCmd = &cobra.Command{
 			logger.Fatalf("port sting coversion error: %s: %v", listenAddrPort, err)
 		}
 
-		//name, err := strconv.ParseUint(publicKey, 16, 64)
-		pkey256, err := uint256.FromHex("0x" + publicKey)
+		fmt.Println("public key: ", publicKey)
+
+		// use 6 bytes only
+		name := np2p_util.Get6ByteUint64FromHexPubKeyStr(publicKey)
+
+		pubKeyBytes, err := hex.DecodeString(publicKey)
 		if err != nil {
 			logger.Fatalf("public key: %s: %v", publicKey, err)
 		}
-		fmt.Println("public key: ", publicKey)
-
-		// short pubkey
-		name := pkey256.Uint64()
-		// use 6 bytes only
-		name = name & 0x0000ffffffffffff
 
 		var tmpArr [32]byte
-		pkey256.WriteToArray32(&tmpArr)
+		copy(tmpArr[:], pubKeyBytes[:32])
 		glo_val.SelfPubkey = &tmpArr
-		glo_val.SelfPubkey64bit = name
-		fmt.Println(fmt.Sprintf("%x", glo_val.SelfPubkey), fmt.Sprintf("%x", name))
+		glo_val.SelfPubkey64bit = np2p_util.GetUint64FromHexPubKeyStr(publicKey)
+		fmt.Println(fmt.Sprintf("%x", *glo_val.SelfPubkey), fmt.Sprintf("%x", name))
 
 		if isEnabledSSL {
 			glo_val.IsEnabledSSL = true
@@ -114,7 +112,6 @@ var serverCmd = &cobra.Command{
 		// if log file exist, load it
 		core.NewRecoveryManager(peer.MessageMan).Recover()
 		time.Sleep(10 * time.Second)
-		fmt.Println(fmt.Sprintf("%x", *glo_val.SelfPubkey), fmt.Sprintf("%x", name))
 
 		gossip, err := router.NewGossip("nostrp2p", peer)
 		if err != nil {

@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ant0ine/go-json-rest/rest"
-	"github.com/holiman/uint256"
-	"github.com/pavelkrolevets/uint512"
 	"github.com/ryogrid/nostrp2p/core"
 	"github.com/ryogrid/nostrp2p/glo_val"
 	"github.com/ryogrid/nostrp2p/schema"
@@ -14,7 +12,6 @@ import (
 	"math"
 	"net/http"
 	"slices"
-	"strings"
 	"time"
 )
 
@@ -77,7 +74,9 @@ func (p *Np2pReqForREST) UnmarshalJSON(data []byte) error {
 }
 
 func NewNp2pEventForREST(evt *schema.Np2pEvent) *Np2pEventForREST {
-	idStr := fmt.Sprintf("%x", evt.Id[:])
+	//idStr := fmt.Sprintf("%x", evt.Id[:])
+	idStr := hex.EncodeToString(evt.Id[:])
+	pubkeyStr := hex.EncodeToString(evt.Pubkey[:])
 	sigStr := ""
 	if evt.Sig != nil {
 		sigStr = hex.EncodeToString(evt.Sig[:])
@@ -94,8 +93,8 @@ func NewNp2pEventForREST(evt *schema.Np2pEvent) *Np2pEventForREST {
 	}
 
 	return &Np2pEventForREST{
-		Id:         idStr, // remove leading zeros
-		Pubkey:     fmt.Sprintf("%x", evt.Pubkey[:]),
+		Id:         idStr,     // remove leading zeros
+		Pubkey:     pubkeyStr, //fmt.Sprintf("%x", evt.Pubkey[:]),
 		Created_at: evt.Created_at,
 		Kind:       evt.Kind,
 		Tags:       tagsArr,
@@ -114,35 +113,30 @@ func NewNp2pEventFromREST(evt *Np2pEventForREST) *schema.Np2pEvent {
 		tagsMap[tag[0]] = vals
 	}
 
-	pkey, err := uint256.FromHex("0x" + strings.TrimLeft(evt.Pubkey, "0"))
+	pkey, err := hex.DecodeString(evt.Pubkey)
 	if err != nil {
 		panic(err)
 	}
-	evtId, err := uint256.FromHex("0x" + strings.TrimLeft(evt.Id, "0"))
+	pkey32 := [32]byte{}
+	copy(pkey32[:], pkey)
+	evtId, err := hex.DecodeString(evt.Id)
 	if err != nil {
 		panic(err)
 	}
+	evtId32 := [32]byte{}
+	copy(evtId32[:], evtId)
 
-	lowerSig, err := uint512.FromHex("0x" + strings.TrimLeft(evt.Sig[:64], "0"))
+	allBytes, err := hex.DecodeString(evt.Sig)
 	if err != nil {
 		panic(err)
 	}
-	upperSig, err := uint512.FromHex("0x" + strings.TrimLeft(evt.Sig[64:128], "0"))
-	if err != nil {
-		panic(err)
-	}
-	lowerBytes := lowerSig.Bytes()
-	upperBytes := upperSig.Bytes()
-	allBytes := make([]byte, 0)
-	allBytes = append(allBytes, lowerBytes...)
-	allBytes = append(allBytes, upperBytes...)
 
 	var sigBytes [64]byte
 	copy(sigBytes[:], allBytes)
 
 	retEvt := &schema.Np2pEvent{
-		Pubkey:     pkey.Bytes32(),
-		Id:         evtId.Bytes32(),
+		Pubkey:     pkey32,  //pkey.Bytes32(),
+		Id:         evtId32, //evtId.Bytes32(),
 		Created_at: evt.Created_at,
 		Kind:       evt.Kind,
 		Tags:       tagsMap,
