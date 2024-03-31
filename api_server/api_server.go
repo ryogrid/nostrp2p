@@ -7,6 +7,7 @@ import (
 	"github.com/ant0ine/go-json-rest/rest"
 	"github.com/ryogrid/nostrp2p/core"
 	"github.com/ryogrid/nostrp2p/glo_val"
+	"github.com/ryogrid/nostrp2p/np2p_util"
 	"github.com/ryogrid/nostrp2p/schema"
 	"log"
 	"math"
@@ -264,18 +265,16 @@ func (s *ApiServer) reqHandler(w rest.ResponseWriter, req *rest.Request) {
 }
 
 func (s *ApiServer) getProfile(w rest.ResponseWriter, input *Np2pReqForREST) {
-	// TODO: need to implement profile request handling (ApiServer::getProfile)
+	shortPkey := np2p_util.GetUint64FromHexPubKeyStr(input.Authors[0])
+	profEvt := s.buzzPeer.MessageMan.DataMan.GetProfileLocal(shortPkey)
 
-	prof := s.buzzPeer.MessageMan.DataMan.GetProfileLocal(math.MaxUint64)
-	//prof := s.buzzPeer.MessageMan.DataMan.GetProfileLocal(input.ShortPkey)
-	// TODO: when profile is not found, request latest profile (ApiServer::getProfile)
-
-	if prof != nil {
-		// TODO: need to set approprivate event data (ApiServer::getProfile)
-		w.WriteJson(&EventsResp{Events: []Np2pEventForREST{}})
+	if profEvt != nil {
+		w.WriteJson(&EventsResp{Events: []Np2pEventForREST{*NewNp2pEventForREST(profEvt)}})
 	} else {
 		// profile data will be included on response of "getEvents"
 		w.WriteJson(&EventsResp{Events: []Np2pEventForREST{}})
+		// request profile data for future
+		s.buzzPeer.MessageMan.UnicastProfileReq(shortPkey)
 	}
 }
 
@@ -341,9 +340,11 @@ func (s *ApiServer) updateProfile(w rest.ResponseWriter, input *Np2pEventForREST
 	}
 
 	evt := NewNp2pEventFromREST(input)
-	prof := s.buzzPeer.MessageMan.BcastOwnProfile(evt)
-	// update local profile
-	glo_val.ProfileMyOwn = prof
+	if *glo_val.SelfPubkey == evt.Pubkey {
+		s.buzzPeer.MessageMan.BcastProfile(evt)
+		// update local profile
+		glo_val.CurrentProfileEvt = evt
+	}
 
 	w.WriteJson(&GeneralResp{
 		"SUCCESS",

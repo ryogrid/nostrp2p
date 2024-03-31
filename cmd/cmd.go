@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/ryogrid/nostrp2p/glo_val"
 	"github.com/ryogrid/nostrp2p/np2p_util"
-	"github.com/ryogrid/nostrp2p/schema"
 	"io/ioutil"
 	"log"
 	"net"
@@ -98,14 +97,15 @@ var serverCmd = &cobra.Command{
 			logger.Fatalf("Could not create router: %v", err)
 		}
 
-		glo_val.Nickname = &nickname
-		glo_val.ProfileMyOwn = &schema.Np2pProfile{
-			Pubkey64bit: name,
-			Name:        nickname,
-			About:       "brank yet",
-			Picture:     "http://robohash.org/" + strconv.Itoa(int(name)) + ".png?size=200x200",
-			UpdatedAt:   0,
-		} // initialized at server restart or update request
+		//// initialized at server restart or update request
+		//glo_val.Nickname = &nickname
+		//glo_val.ProfileMyOwn = &schema.Np2pProfile{
+		//	Pubkey64bit: name,
+		//	Name:        nickname,
+		//	About:       "brank yet",
+		//	Picture:     "http://robohash.org/" + strconv.Itoa(int(name)) + ".png?size=200x200",
+		//	UpdatedAt:   0,
+		//}
 
 		peer := core.NewPeer(mesh.PeerName(name), logger)
 

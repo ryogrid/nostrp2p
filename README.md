@@ -1,14 +1,29 @@
+- [What is NostrP2P?](#what-is-nostrp2p)
+- [Design Note](#design-note)
+- [Technical Overview](#technical-overview)
+  - [(General) Nostr Architecture](#general-nostr-architecture)
+  - [NostrP2P Architecture](#nostrp2p-architecture)
+- [Build](#build)
+- [NostrP2P command usage](#nostrp2p-command-usage)
+- [Examples](#examples)
+  - [Generate key pair](#generate-key-pair)
+  - [Server launch](#server-launch)
+- [Bootstrap Server](#bootstrap-server)
+- [Client](#client)
+- [Trial of current implemented featues on trial NW](#trial-of-current-implemented-featues-on-trial-nw)
+- [Trial of current implemented features with Nostr Client (not NostrP2P client) using protcol bridge server](#trial-of-current-implemented-features-with-nostr-client-not-nostrp2p-client-using-protcol-bridge-server)
+
 # What is NostrP2P?
 - Pure Peer-to-Peer Distributed Microblogging System on NAT Transparent Overlay Network Based on Idea of [Nostr](https://en.wikipedia.org/wiki/Nostr)
 - Distributed Microblogging System by All User's Contribution
 
-## Design Note
+# Design Note
 - [here (English)](https://gist.github.com/ryogrid/fa2bfa284784c866ad88e3c38445752a)
   - English version is latest :)
 - [Japanese version](https://gist.github.com/ryogrid/0ba0d825c3bb840dffa519c5ab91d4ff)
 
 
-## Technical Overview
+# Technical Overview
 - Difference with (general) Nostr
   - Server (Relay server)
     - Firstly, in NostrP2P, servers communicate with each other on pure peer-to-peer manner. Clients does not
@@ -37,7 +52,7 @@
     - (flexibility may be low compared with general Nostr...)
   
 　　  
-### (General) Nostr Architecture
+## (General) Nostr Architecture
 
 ```mermaid
 
@@ -73,7 +88,7 @@ classDiagram
     }
 ```
   
-### NostrP2P Architecture
+## NostrP2P Architecture
 ```mermaid
 classDiagram
     ServerA <|--|> ServerB : coodinate
@@ -117,12 +132,12 @@ classDiagram
 ```
 
 
-## Build
+# Build
 ```bash
 $ go build -o nostrp2p main.go
 ```
 
-## NostrP2P command usage
+# NostrP2P command usage
 ```
 Usage:
   nostrp2p [flags]
@@ -149,11 +164,11 @@ Flags:
   -n, --nickname            string   Your nickname on NostrP2P (required) [TEMPORAL]
   -d, --debug               bool     If true, debug log is output to stderr (default: false)
 ```
-
-## Examples (Generate key pair)
+# Examples
+## Generate key pair
 - Under construction
 
-## Examples (Server launch)
+## Server launch
 ```bash
 # 4 servers network on local network (4 shells are needed...)
 ./nostrp2p server  -l 0.0.0.0:20000 -p <public key in hex> -n origin
@@ -178,17 +193,17 @@ Flags:
 ./nostrp2p server -l 0.0.0.0:20000 -p <public key in hex> -n tom -b redsky.social:7777
 ```
 
-## Bootstrap Server
+# Bootstrap Server
 - currently, running server which is accessible from The Internet is below
   - ryogrid.net:8888
     - this address including port number shoud be specified at launching of your server with -b option
 - **These servers don't response to write kind REST API requests from clients. A server for yourself is also needed to use NostrP2P!** 
 
-## Client
+# Client
 - [here](https://github.com/ryogrid/flustr-for-nosp2p)
 <img src="https://i.gyazo.com/fbed4277dcada30d22fb0c7be7401e7c.png" height="50%" width="50%" />
 
-## Trial of current implemented featues on trial NW
+# Trial of current implemented featues on trial NW
 - Please read [this](https://gist.github.com/ryogrid/5080ff36b6786902d40bb4b91de0766e)
   - NAT transparent overlay has been implented
   - Posting to overlay NW has been implemented
@@ -201,5 +216,5 @@ Flags:
   - No Like feature
   - No data replication
 
-## Trial of current implemented features with Nostr Client (not NostrP2P client) using protcol bridge server
+# Trial of current implemented features with Nostr Client (not NostrP2P client) using protcol bridge server
 - Please read [this](https://gist.github.com/ryogrid/5080ff36b6786902d40bb4b91de0766e#file-nostrp2p_demo_v3_procedure-md)

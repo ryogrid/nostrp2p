@@ -37,11 +37,11 @@ func (mm *MessageManager) handleRecvMsgBcastEvt(src mesh.PeerName, pkt *schema.N
 			switch evt.Kind {
 			case KIND_EVT_PROFILE: // profile
 				// store received profile data
-				prof := GenProfileFromEvent(evt)
-				mm.DataMan.StoreProfile(prof)
-				if prof.Pubkey64bit == glo_val.SelfPubkey64bit && glo_val.ProfileMyOwn.UpdatedAt < evt.Created_at {
+
+				mm.DataMan.StoreProfile(evt)
+				if evt.Pubkey == *glo_val.SelfPubkey && (glo_val.CurrentProfileEvt == nil || glo_val.CurrentProfileEvt.Created_at < evt.Created_at) {
 					// this route works only when recovery
-					glo_val.ProfileMyOwn = prof
+					//glo_val.ProfileMyOwn = prof
 					glo_val.CurrentProfileEvt = evt
 				}
 			case KIND_EVT_POST: // post
@@ -57,10 +57,10 @@ func (mm *MessageManager) handleRecvMsgBcastEvt(src mesh.PeerName, pkt *schema.N
 					recvdTime := val[0].(int64)
 					shortId := np2p_util.GetLower64bitUint(evt.Pubkey)
 					if mm.DataMan.GetProfileLocal(shortId) == nil ||
-						recvdTime > mm.DataMan.GetProfileLocal(np2p_util.GetLower64bitUint(evt.Pubkey)).UpdatedAt {
+						recvdTime > mm.DataMan.GetProfileLocal(shortId).Created_at {
 						// TODO: need to implement limitation of request times (MessageManager::handleRecvMsgBcastEvt)
 						// profile is updated. request latest profile asynchronous.
-						go mm.UnicastProfileReq(shortId)
+						go mm.UnicastProfileReq(shortId & 0x0000ffffffffffff)
 					}
 				}
 			case KIND_EVT_REACTION:
@@ -111,7 +111,7 @@ func (mm *MessageManager) handleRecvMsgUnicast(src mesh.PeerName, pkt *schema.Np
 				switch evt.Kind {
 				case KIND_EVT_PROFILE: // response of KIND_REQ_PROFILE or KIND_REQ_SHARE_EVT_DATA
 					// store received profile data
-					mm.DataMan.StoreProfile(GenProfileFromEvent(evt))
+					mm.DataMan.StoreProfile(evt)
 				case KIND_EVT_POST: // response of KIND_REQ_SHARE_EVT_DATA
 					// do nothing
 				case KIND_EVT_REACTION:
@@ -158,31 +158,29 @@ func (mm *MessageManager) BcastOwnPost(evt *schema.Np2pEvent) {
 	mm.DataMan.StoreEvent(evt)
 }
 
-// func (mm *MessageManager) BcastOwnProfile(name *string, about *string, picture *string) *schema.Np2pProfile {
-func (mm *MessageManager) BcastOwnProfile(evt *schema.Np2pEvent) *schema.Np2pProfile {
+// func (mm *MessageManager) BcastProfile(name *string, about *string, picture *string) *schema.Np2pProfile {
+func (mm *MessageManager) BcastProfile(evt *schema.Np2pEvent) {
 	//event := mm.constructProfileEvt(name, about, picture)
 	events := []*schema.Np2pEvent{evt}
 	mm.SendMsgBroadcast(schema.NewNp2pPacket(&events, nil))
 	mm.DataMan.StoreEvent(evt)
 
-	storeProf := GenProfileFromEvent(evt)
-	mm.DataMan.StoreProfile(storeProf)
-
-	return storeProf
+	//storeProf := GenProfileFromEvent(evt)
+	mm.DataMan.StoreProfile(evt)
 }
 
 func (mm *MessageManager) UnicastProfileReq(pubkey64bit uint64) {
-	reqs := []*schema.Np2pReq{schema.NewNp2pReq(KIND_REQ_SHARE_EVT_DATA, nil)}
+	reqs := []*schema.Np2pReq{schema.NewNp2pReq(KIND_REQ_PROFILE, nil)}
 	pkt := schema.NewNp2pPacket(nil, &reqs)
 	mm.SendMsgUnicast(mesh.PeerName(pubkey64bit), pkt)
 }
 
 // used for response of profile request
-func (mm *MessageManager) UnicastOwnProfile(pubkey64bit uint64) {
+func (mm *MessageManager) UnicastOwnProfile(dest uint64) {
 	if glo_val.CurrentProfileEvt != nil {
 		// send latest profile data
 		events := []*schema.Np2pEvent{glo_val.CurrentProfileEvt}
-		mm.SendMsgUnicast(mesh.PeerName(pubkey64bit), schema.NewNp2pPacket(&events, nil))
+		mm.SendMsgUnicast(mesh.PeerName(dest), schema.NewNp2pPacket(&events, nil))
 	}
 }
 

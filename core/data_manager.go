@@ -3,6 +3,7 @@ package core
 import (
 	"github.com/chenjiandongx/mandodb/pkg/sortedlist"
 	"github.com/ryogrid/nostrp2p/glo_val"
+	"github.com/ryogrid/nostrp2p/np2p_util"
 	"github.com/ryogrid/nostrp2p/schema"
 	"strconv"
 	"sync"
@@ -16,7 +17,7 @@ type DataManager struct {
 	EvtListTimeKeyMtx *sync.Mutex
 	EvtMapIdKey       sync.Map // [32]byte -> *schema.Np2pEvent
 	// latest profile only stored
-	ProfMap   sync.Map // pubkey lower 64bit (uint64) -> *schema.Np2pProfile
+	ProfMap   sync.Map // pubkey lower 64bit (uint64) -> *schema.Np2pEvent
 	EvtLogger *EventDataLogger
 }
 
@@ -56,13 +57,13 @@ func (dman *DataManager) StoreEvent(evt *schema.Np2pEvent) {
 	}
 }
 
-func (dman *DataManager) StoreProfile(prof *schema.Np2pProfile) {
-	dman.ProfMap.Store(prof.Pubkey64bit, prof)
+func (dman *DataManager) StoreProfile(evt *schema.Np2pEvent) {
+	dman.ProfMap.Store(np2p_util.GetLower64bitUint(evt.Pubkey), evt)
 }
 
-func (dman *DataManager) GetProfileLocal(pubkey64bit uint64) *schema.Np2pProfile {
+func (dman *DataManager) GetProfileLocal(pubkey64bit uint64) *schema.Np2pEvent {
 	if val, ok := dman.ProfMap.Load(pubkey64bit); ok {
-		return val.(*schema.Np2pProfile)
+		return val.(*schema.Np2pEvent)
 	}
 	return nil
 }
