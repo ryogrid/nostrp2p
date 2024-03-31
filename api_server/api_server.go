@@ -86,7 +86,9 @@ func NewNp2pEventForREST(evt *schema.Np2pEvent) *Np2pEventForREST {
 	tagsArr := make([][]string, 0)
 	for k, v := range evt.Tags {
 		tmpArr := make([]string, 0)
-		tmpArr = append(tmpArr, k)
+		r := []rune(k)
+		// remove duplicated tag suffix (ex: "p_0" -> "p")
+		tmpArr = append(tmpArr, string(r[0]))
 		for _, val := range v {
 			tmpArr = append(tmpArr, val.(string))
 		}
@@ -106,12 +108,21 @@ func NewNp2pEventForREST(evt *schema.Np2pEvent) *Np2pEventForREST {
 
 func NewNp2pEventFromREST(evt *Np2pEventForREST) *schema.Np2pEvent {
 	tagsMap := make(map[string][]interface{})
+	tagCntMap := make(map[string]int)
 	for _, tag := range evt.Tags {
 		vals := make([]interface{}, 0)
 		for _, val := range tag[1:] {
 			vals = append(vals, val)
 		}
-		tagsMap[tag[0]] = vals
+		if _, ok := tagCntMap[tag[0]]; ok {
+			tagCntMap[tag[0]]++
+			tag[0] = fmt.Sprintf("%s_%d", tag[0], tagCntMap[tag[0]])
+			tagsMap[tag[0]] = vals
+		} else {
+			tagCntMap[tag[0]] = 0
+			tagsMap[tag[0]+"_0"] = vals
+		}
+
 	}
 
 	pkey, err := hex.DecodeString(evt.Pubkey)
@@ -187,12 +198,64 @@ func (s *ApiServer) publishHandler(w rest.ResponseWriter, req *rest.Request) {
 		s.sendPost(w, &input)
 	case core.KIND_EVT_PROFILE:
 		s.updateProfile(w, &input)
+	case core.KIND_EVT_FOLLOW_LIST:
+		s.setOrUpdateFollowList(w, &input)
 	case core.KIND_EVT_REACTION:
 		s.sendReaction(w, &input)
 	default:
 		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+}
+
+func (s *ApiServer) sendPost(w rest.ResponseWriter, input *Np2pEventForREST) {
+	if input.Content == "" {
+		rest.Error(w, "Content is required", 400)
+		return
+	}
+
+	evt := NewNp2pEventFromREST(input)
+	s.buzzPeer.MessageMan.BcastOwnPost(evt)
+	// store for myself
+	s.buzzPeer.MessageMan.DataMan.StoreEvent(evt)
+
+	w.WriteJson(&EventsResp{})
+}
+
+func (s *ApiServer) updateProfile(w rest.ResponseWriter, input *Np2pEventForREST) {
+	if input.Tags == nil {
+		rest.Error(w, "Tags is null", http.StatusBadRequest)
+		return
+	}
+
+	evt := NewNp2pEventFromREST(input)
+	if *glo_val.SelfPubkey == evt.Pubkey {
+		s.buzzPeer.MessageMan.BcastProfile(evt)
+		// update local profile
+		glo_val.CurrentProfileEvt = evt
+	}
+
+	w.WriteJson(&GeneralResp{
+		"SUCCESS",
+	})
+}
+
+func (s *ApiServer) setOrUpdateFollowList(w rest.ResponseWriter, input *Np2pEventForREST) {
+	if input.Tags == nil {
+		rest.Error(w, "Tags is null", http.StatusBadRequest)
+		return
+	}
+
+	evt := NewNp2pEventFromREST(input)
+	if *glo_val.SelfPubkey == evt.Pubkey {
+		s.buzzPeer.MessageMan.DataMan.StoreEvent(evt)
+		// update local profile
+		glo_val.CurrentFollowListEvt = evt
+	}
+
+	w.WriteJson(&GeneralResp{
+		"SUCCESS",
+	})
 }
 
 func (s *ApiServer) sendReaction(w rest.ResponseWriter, input *Np2pEventForREST) {
@@ -206,20 +269,6 @@ func (s *ApiServer) sendReaction(w rest.ResponseWriter, input *Np2pEventForREST)
 		// reaction event is stored for myself
 		s.buzzPeer.MessageMan.DataMan.StoreEvent(evt)
 	}
-
-	w.WriteJson(&EventsResp{})
-}
-
-func (s *ApiServer) sendPost(w rest.ResponseWriter, input *Np2pEventForREST) {
-	if input.Content == "" {
-		rest.Error(w, "Content is required", 400)
-		return
-	}
-
-	evt := NewNp2pEventFromREST(input)
-	s.buzzPeer.MessageMan.BcastOwnPost(evt)
-	// store for myself
-	s.buzzPeer.MessageMan.DataMan.StoreEvent(evt)
 
 	w.WriteJson(&EventsResp{})
 }
@@ -256,7 +305,10 @@ func (s *ApiServer) reqHandler(w rest.ResponseWriter, req *rest.Request) {
 		s.getEvents(w, &input)
 	} else if slices.Contains(input.Kinds, core.KIND_REQ_PROFILE) {
 		s.getProfile(w, &input)
+	} else if slices.Contains(input.Kinds, core.KIND_REQ_FOLLOW_LIST) {
+		s.getFollowList(w, &input)
 	} else {
+
 		w.WriteJson(&EventsResp{
 			Events: []Np2pEventForREST{},
 		})
@@ -274,16 +326,25 @@ func (s *ApiServer) getProfile(w rest.ResponseWriter, input *Np2pReqForREST) {
 		// profile data will be included on response of "getEvents"
 		w.WriteJson(&EventsResp{Events: []Np2pEventForREST{}})
 		// request profile data for future
-		s.buzzPeer.MessageMan.UnicastProfileReq(shortPkey)
+		s.buzzPeer.MessageMan.UnicastProfileReq(shortPkey & 0x0000ffffffffffff)
+	}
+}
+
+func (s *ApiServer) getFollowList(w rest.ResponseWriter, input *Np2pReqForREST) {
+	shortPkey := np2p_util.GetUint64FromHexPubKeyStr(input.Authors[0])
+	fListEvt := s.buzzPeer.MessageMan.DataMan.GetFollowListLocal(shortPkey)
+
+	if fListEvt != nil {
+		w.WriteJson(&EventsResp{Events: []Np2pEventForREST{*NewNp2pEventForREST(fListEvt)}})
+	} else {
+		// follow list data will be included on response of "getEvents"
+		w.WriteJson(&EventsResp{Events: []Np2pEventForREST{}})
+		// request profile data for future
+		s.buzzPeer.MessageMan.UnicastFollowListReq(shortPkey & 0x0000ffffffffffff)
 	}
 }
 
 func (s *ApiServer) getEvents(w rest.ResponseWriter, input *Np2pReqForREST) {
-	//if input.Since == 0 || input.Until == 0 {
-	//	rest.Error(w, "value of since and untile is invalid", http.StatusBadRequest)
-	//	return
-	//}
-
 	// for supporting Nostr clients
 	isPeriodSpecified := true
 	if input.Since == 0 {
@@ -327,24 +388,6 @@ func (s *ApiServer) gatherData(w rest.ResponseWriter, req *rest.Request) {
 	}
 
 	s.buzzPeer.MessageMan.BcastShareEvtDataReq()
-
-	w.WriteJson(&GeneralResp{
-		"SUCCESS",
-	})
-}
-
-func (s *ApiServer) updateProfile(w rest.ResponseWriter, input *Np2pEventForREST) {
-	if input.Tags == nil {
-		rest.Error(w, "Tags is null", http.StatusBadRequest)
-		return
-	}
-
-	evt := NewNp2pEventFromREST(input)
-	if *glo_val.SelfPubkey == evt.Pubkey {
-		s.buzzPeer.MessageMan.BcastProfile(evt)
-		// update local profile
-		glo_val.CurrentProfileEvt = evt
-	}
 
 	w.WriteJson(&GeneralResp{
 		"SUCCESS",

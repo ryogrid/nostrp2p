@@ -14,9 +14,11 @@ import (
 const (
 	KIND_EVT_PROFILE        = 0
 	KIND_EVT_POST           = 1
+	KIND_EVT_FOLLOW_LIST    = 3
 	KIND_EVT_REACTION       = 7
 	KIND_REQ_PROFILE        = KIND_EVT_PROFILE
 	KIND_REQ_POST           = KIND_EVT_POST
+	KIND_REQ_FOLLOW_LIST    = KIND_EVT_FOLLOW_LIST
 	KIND_REQ_SHARE_EVT_DATA = 40000
 )
 
@@ -62,6 +64,13 @@ func (mm *MessageManager) handleRecvMsgBcastEvt(src mesh.PeerName, pkt *schema.N
 						// profile is updated. request latest profile asynchronous.
 						go mm.UnicastProfileReq(shortId & 0x0000ffffffffffff)
 					}
+				}
+			case KIND_EVT_FOLLOW_LIST:
+				mm.DataMan.StoreFollowList(evt)
+				if evt.Pubkey == *glo_val.SelfPubkey && (glo_val.CurrentFollowListEvt == nil || glo_val.CurrentFollowListEvt.Created_at < evt.Created_at) {
+					// this route works only when recovery
+					//glo_val.ProfileMyOwn = prof
+					glo_val.CurrentProfileEvt = evt
 				}
 			case KIND_EVT_REACTION:
 				// do nothing
@@ -114,6 +123,8 @@ func (mm *MessageManager) handleRecvMsgUnicast(src mesh.PeerName, pkt *schema.Np
 					mm.DataMan.StoreProfile(evt)
 				case KIND_EVT_POST: // response of KIND_REQ_SHARE_EVT_DATA
 					// do nothing
+				case KIND_EVT_FOLLOW_LIST: // response of KIND_REQ_FOLLOW_LIST
+					mm.DataMan.StoreFollowList(evt) // store received follow list data
 				case KIND_EVT_REACTION:
 					// do nothing
 				default:
@@ -172,7 +183,13 @@ func (mm *MessageManager) BcastProfile(evt *schema.Np2pEvent) {
 func (mm *MessageManager) UnicastProfileReq(pubkey64bit uint64) {
 	reqs := []*schema.Np2pReq{schema.NewNp2pReq(KIND_REQ_PROFILE, nil)}
 	pkt := schema.NewNp2pPacket(nil, &reqs)
-	mm.SendMsgUnicast(mesh.PeerName(pubkey64bit), pkt)
+	mm.SendMsgUnicast(mesh.PeerName(pubkey64bit&0x0000ffffffffffff), pkt)
+}
+
+func (mm *MessageManager) UnicastFollowListReq(pubkey64bit uint64) {
+	reqs := []*schema.Np2pReq{schema.NewNp2pReq(KIND_REQ_FOLLOW_LIST, nil)}
+	pkt := schema.NewNp2pPacket(nil, &reqs)
+	mm.SendMsgUnicast(mesh.PeerName(pubkey64bit&0x0000ffffffffffff), pkt)
 }
 
 // used for response of profile request
@@ -180,7 +197,7 @@ func (mm *MessageManager) UnicastOwnProfile(dest uint64) {
 	if glo_val.CurrentProfileEvt != nil {
 		// send latest profile data
 		events := []*schema.Np2pEvent{glo_val.CurrentProfileEvt}
-		mm.SendMsgUnicast(mesh.PeerName(dest), schema.NewNp2pPacket(&events, nil))
+		mm.SendMsgUnicast(mesh.PeerName(dest&0x0000ffffffffffff), schema.NewNp2pPacket(&events, nil))
 	}
 }
 

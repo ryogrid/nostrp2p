@@ -17,8 +17,9 @@ type DataManager struct {
 	EvtListTimeKeyMtx *sync.Mutex
 	EvtMapIdKey       sync.Map // [32]byte -> *schema.Np2pEvent
 	// latest profile only stored
-	ProfMap   sync.Map // pubkey lower 64bit (uint64) -> *schema.Np2pEvent
-	EvtLogger *EventDataLogger
+	ProfEvtMap       sync.Map // pubkey lower 64bit (uint64) -> *schema.Np2pEvent
+	FollowListEvtMap sync.Map // pubkey lower 64bit (uint64) -> *schema.Np2pEvent
+	EvtLogger        *EventDataLogger
 }
 
 func NewDataManager() *DataManager {
@@ -26,7 +27,8 @@ func NewDataManager() *DataManager {
 		EvtListTimeKey:    sortedlist.NewTree(),
 		EvtListTimeKeyMtx: &sync.Mutex{},
 		EvtMapIdKey:       sync.Map{},
-		ProfMap:           sync.Map{},
+		ProfEvtMap:        sync.Map{}, // pubkey lower 64bit (uint64) -> *schema.Np2pEvent
+		FollowListEvtMap:  sync.Map{}, // pubkey lower 64bit (uint64) -> *schema.Np2pEvent
 		EvtLogger:         NewEventDataLogger("./" + strconv.FormatUint(glo_val.SelfPubkey64bit, 16) + ".evtlog"),
 	}
 }
@@ -38,7 +40,7 @@ func (dman *DataManager) StoreEvent(evt *schema.Np2pEvent) {
 	dman.EvtListTimeKey.Add(evt.Created_at, evt)
 	dman.EvtListTimeKeyMtx.Unlock()
 	if _, ok := dman.EvtMapIdKey.Load(evt.Id); ok {
-		dman.EvtMapIdKey.Store(evt.Id, evt)
+		// do nothing when it is duplicated
 	} else {
 		dman.EvtMapIdKey.Store(evt.Id, evt)
 		// log event data when it is not duplicated
@@ -58,11 +60,11 @@ func (dman *DataManager) StoreEvent(evt *schema.Np2pEvent) {
 }
 
 func (dman *DataManager) StoreProfile(evt *schema.Np2pEvent) {
-	dman.ProfMap.Store(np2p_util.GetLower64bitUint(evt.Pubkey), evt)
+	dman.ProfEvtMap.Store(np2p_util.GetLower64bitUint(evt.Pubkey), evt)
 }
 
 func (dman *DataManager) GetProfileLocal(pubkey64bit uint64) *schema.Np2pEvent {
-	if val, ok := dman.ProfMap.Load(pubkey64bit); ok {
+	if val, ok := dman.ProfEvtMap.Load(pubkey64bit); ok {
 		return val.(*schema.Np2pEvent)
 	}
 	return nil
@@ -72,11 +74,21 @@ func (dman *DataManager) GetLatestEvents(since int64, until int64) *[]*schema.Np
 	dman.EvtListTimeKeyMtx.Lock()
 	defer dman.EvtListTimeKeyMtx.Unlock()
 	itr := dman.EvtListTimeKey.Range(since, until)
-
 	ret := make([]*schema.Np2pEvent, 0)
 	for itr.Next() {
 		val := itr.Value()
 		ret = append(ret, val.(*schema.Np2pEvent))
 	}
 	return &ret
+}
+
+func (dman *DataManager) StoreFollowList(evt *schema.Np2pEvent) {
+	dman.FollowListEvtMap.Store(np2p_util.GetLower64bitUint(evt.Pubkey), evt)
+}
+
+func (dman *DataManager) GetFollowListLocal(pubkey64bit uint64) *schema.Np2pEvent {
+	if val, ok := dman.FollowListEvtMap.Load(pubkey64bit); ok {
+		return val.(*schema.Np2pEvent)
+	}
+	return nil
 }
