@@ -1,6 +1,7 @@
 - [What is NostrP2P?](#what-is-nostrp2p)
 - [Design Note](#design-note)
 - [Technical Overview](#technical-overview)
+  - [Difference and Commpon Points with (General) Nostr](#difference-and-commpon-points-with-general-nostr)
   - [(General) Nostr Architecture](#general-nostr-architecture)
   - [NostrP2P Architecture](#nostrp2p-architecture)
 - [Build](#build)
@@ -24,6 +25,7 @@
 
 
 # Technical Overview
+## Difference and Commpon Points with (General) Nostr
 - Difference with (general) Nostr
   - Server (Relay server)
     - Firstly, in NostrP2P, servers communicate with each other on pure peer-to-peer manner. Clients does not
