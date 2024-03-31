@@ -7,8 +7,8 @@
 - [Build](#build)
 - [NostrP2P Command Usage](#nostrp2p-command-usage)
 - [Examples](#examples)
-  - [Generate key pair](#generate-key-pair)
-  - [Server launch](#server-launch)
+  - [Generate Key Pair](#generate-key-pair)
+  - [Server Launch](#server-launch)
 - [Bootstrap Server](#bootstrap-server)
 - [Client](#client)
 - [Trial of Current Implemented Featues on Dedicated NW](#trial-of-current-implemented-featues-on-dedicated-nw)
@@ -167,10 +167,10 @@ Flags:
   -d, --debug               bool     If true, debug log is output to stderr (default: false)
 ```
 # Examples
-## Generate key pair
+## Generate Key Pair
 - Under construction
 
-## Server launch
+## Server Launch
 ```bash
 # 4 servers network on local network (4 shells are needed...)
 ./nostrp2p server  -l 0.0.0.0:20000 -p <public key in hex> -n origin
