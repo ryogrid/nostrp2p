@@ -5,14 +5,14 @@
   - [(General) Nostr Architecture](#general-nostr-architecture)
   - [NostrP2P Architecture](#nostrp2p-architecture)
 - [Build](#build)
-- [NostrP2P command usage](#nostrp2p-command-usage)
+- [NostrP2P Command Usage](#nostrp2p-command-usage)
 - [Examples](#examples)
   - [Generate key pair](#generate-key-pair)
   - [Server launch](#server-launch)
 - [Bootstrap Server](#bootstrap-server)
 - [Client](#client)
-- [Trial of current implemented featues on trial NW](#trial-of-current-implemented-featues-on-trial-nw)
-- [Trial of current implemented features with Nostr Client (not NostrP2P client) using protcol bridge server](#trial-of-current-implemented-features-with-nostr-client-not-nostrp2p-client-using-protcol-bridge-server)
+- [Trial of Current Implemented Featues on Dedicated NW](#trial-of-current-implemented-featues-on-dedicated-nw)
+- [Trial of Current Implemented Features with Nostr Client (Not NostrP2P Client) Using a Protcol Bridge Server](#trial-of-current-implemented-features-with-nostr-client-not-nostrp2p-client-using-a-protcol-bridge-server)
 
 # What is NostrP2P?
 - Pure Peer-to-Peer Distributed Microblogging System on NAT Transparent Overlay Network Based on Idea of [Nostr](https://en.wikipedia.org/wiki/Nostr)
@@ -139,7 +139,7 @@ classDiagram
 $ go build -o nostrp2p main.go
 ```
 
-# NostrP2P command usage
+# NostrP2P Command Usage
 ```
 Usage:
   nostrp2p [flags]
@@ -205,7 +205,7 @@ Flags:
 - [here](https://github.com/ryogrid/flustr-for-nosp2p)
 <img src="https://i.gyazo.com/fbed4277dcada30d22fb0c7be7401e7c.png" height="50%" width="50%" />
 
-# Trial of current implemented featues on trial NW
+# Trial of Current Implemented Featues on Dedicated NW
 - Please read [this](https://gist.github.com/ryogrid/5080ff36b6786902d40bb4b91de0766e)
   - NAT transparent overlay has been implented
   - Posting to overlay NW has been implemented
@@ -218,5 +218,5 @@ Flags:
   - No Like feature
   - No data replication
 
-# Trial of current implemented features with Nostr Client (not NostrP2P client) using protcol bridge server
+# Trial of Current Implemented Features with Nostr Client (Not NostrP2P Client) Using a Protcol Bridge Server
 - Please read [this](https://gist.github.com/ryogrid/5080ff36b6786902d40bb4b91de0766e#file-nostrp2p_demo_v3_procedure-md)
