@@ -11,8 +11,9 @@
   - [Server Launch](#server-launch)
 - [Bootstrap Server](#bootstrap-server)
 - [Client](#client)
-- [Trial of Current Implemented Featues on Dedicated NW](#trial-of-current-implemented-featues-on-dedicated-nw)
-- [Trial of Current Implemented Features with Nostr Client (Not NostrP2P Client) Using a Protcol Bridge Server](#trial-of-current-implemented-features-with-nostr-client-not-nostrp2p-client-using-a-protcol-bridge-server)
+- [Trial](#trial)
+  - [Current Implemented Featues on Dedicated NW](#current-implemented-featues-on-dedicated-nw)
+  - [Current Implemented Features with Nostr Client (Not NostrP2P Client) Using a Protcol Bridge Server](#current-implemented-features-with-nostr-client-not-nostrp2p-client-using-a-protcol-bridge-server)
 - [Roadmap (Server\&Client)](#roadmap-serverclient)
 
 # What is NostrP2P?
@@ -206,7 +207,8 @@ Flags:
 - [here](https://github.com/ryogrid/flustr-for-nosp2p)
 <img src="https://i.gyazo.com/fbed4277dcada30d22fb0c7be7401e7c.png" height="50%" width="50%" />
 
-# Trial of Current Implemented Featues on Dedicated NW
+# Trial
+## Current Implemented Featues on Dedicated NW
 - Please read [this](https://gist.github.com/ryogrid/5080ff36b6786902d40bb4b91de0766e)
   - NAT transparent overlay has been implented
   - Posting to overlay NW has been implemented
@@ -216,7 +218,7 @@ Flags:
   - No signature validation
   - No reply featue
 
-# Trial of Current Implemented Features with Nostr Client (Not NostrP2P Client) Using a Protcol Bridge Server
+## Current Implemented Features with Nostr Client (Not NostrP2P Client) Using a Protcol Bridge Server
 - Please read [this](https://gist.github.com/ryogrid/5080ff36b6786902d40bb4b91de0766e#file-nostrp2p_demo_v3_procedure-md)
 
 # Roadmap (Server&Client)
