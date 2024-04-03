@@ -233,7 +233,6 @@ Flags:
   - If broadcasting design reaches limit of scalability, this mode will be activated
 - [ ] Optimization of Transfered Data Size between Servers
   - Changing serialization format from MessagePack to Protocol Buffers
-    - Including data storeing on server
 - [ ] Restriction of Memory Usage on Server
 - [ ] Optimization of Data Size between Client and Server
   - Changing serialization format from JSON Text to Protocol Buffers
