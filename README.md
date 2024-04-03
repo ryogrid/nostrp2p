@@ -214,10 +214,7 @@ Flags:
   - Simple client has been implemented with flutter
   - Event data persistence has been implemented (only server now)
   - No signature validation
-  - No follow feature (global TL only)
   - No reply featue
-  - No Like feature
-  - No data replication
 
 # Trial of Current Implemented Features with Nostr Client (Not NostrP2P Client) Using a Protcol Bridge Server
 - Please read [this](https://gist.github.com/ryogrid/5080ff36b6786902d40bb4b91de0766e#file-nostrp2p_demo_v3_procedure-md)
