@@ -30,7 +30,7 @@
 - Difference with (general) Nostr
   - Server (Relay server)
     - Firstly, in NostrP2P, servers communicate with each other on pure peer-to-peer manner. Clients does not
-      - This means that NostrP2P have client-server architecture also
+      - This means that NostrP2P has client-server architecture also
     - Servers of NostrP2P are correspond and similar to Relay server of Nostr but these are more distributed and coodinate with each other
     - Servers handle each recieved event data in a different way though these are not special kind one (ex: replacable events) on Nostr because optimization for pure peer-to-peer network architecture is needed
     - Supporse large number of servers because each user of NostrP2P need my server
