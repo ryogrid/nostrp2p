@@ -13,6 +13,7 @@
 - [Client](#client)
 - [Trial of Current Implemented Featues on Dedicated NW](#trial-of-current-implemented-featues-on-dedicated-nw)
 - [Trial of Current Implemented Features with Nostr Client (Not NostrP2P Client) Using a Protcol Bridge Server](#trial-of-current-implemented-features-with-nostr-client-not-nostrp2p-client-using-a-protcol-bridge-server)
+- [Roadmap (Server\&Client)](#roadmap-serverclient)
 
 # What is NostrP2P?
 - Pure Peer-to-Peer Distributed Microblogging System on NAT Transparent Overlay Network Based on Idea of [Nostr](https://en.wikipedia.org/wiki/Nostr)
@@ -220,3 +221,21 @@ Flags:
 
 # Trial of Current Implemented Features with Nostr Client (Not NostrP2P Client) Using a Protcol Bridge Server
 - Please read [this](https://gist.github.com/ryogrid/5080ff36b6786902d40bb4b91de0766e#file-nostrp2p_demo_v3_procedure-md)
+
+# Roadmap (Server&Client)
+- [x] Messaging on NAT Transparent Overlay Network
+- [x] Posting with Client
+- [x] Reaction
+- [x] Following
+- [ ] Reply
+- [ ] Server Side Signature Validation  
+- [ ] Follower Multicast Mode
+  - In this mode, posted messages are not broadcasted and server of follower should register to followee's server
+  - If broadcasting design reaches limit of scalability, this mode will be activated
+- [ ] Optimization of Transfered Data Size between Servers
+  - Changing serialization format from MessagePack to Protocol Buffers
+    - Including data storeing on server
+- [ ] Restriction of Memory Usage on Server
+- [ ] Optimization of Data Size between Client and Server
+  - Changing serialization format from JSON Text to Protocol Buffers
+    - Format conversion must be needed both side
