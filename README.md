@@ -226,7 +226,10 @@ Flags:
 - [x] Posting with Client
 - [x] Reaction
 - [x] Following
+- [ ] Mention
 - [ ] Reply
+- [ ] Quote Repost
+- [ ] Repost
 - [ ] Server Side Signature Validation  
 - [ ] Follower Multicast Mode
   - In this mode, posted messages are not broadcasted and server of follower should register to followee's server
