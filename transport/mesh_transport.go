@@ -10,6 +10,7 @@ import (
 type MeshTransport struct {
 	peer *core.Np2pPeer
 	send mesh.Gossip
+	rourer *mesh.Router
 }
 
 func NewMeshTransport(peer *core.Np2pPeer) *MeshTransport {
@@ -64,4 +65,8 @@ func (mt *MeshTransport) SendMsgUnicast(dst uint64, pkt schema.EncodableAndMerge
 
 func (mt *MeshTransport) SendMsgBroadcast(pkt schema.EncodableAndMergeable) {
 	mt.send.GossipBroadcast(pkt.(mesh.GossipData))
+}
+
+func (mt *MeshTransport) SetRouter(router *mesh.Routet) {
+	mt.router = router
 }
