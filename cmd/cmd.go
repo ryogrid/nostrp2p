@@ -72,6 +72,7 @@ var serverCmd = &cobra.Command{
 
 		var tmpArr [32]byte
 		copy(tmpArr[:], pubKeyBytes[:32])
+		glo_val.SelfPubkeyStr = publicKey
 		glo_val.SelfPubkey = &tmpArr
 		glo_val.SelfPubkey64bit = np2p_util.GetUint64FromHexPubKeyStr(publicKey)
 		fmt.Println(fmt.Sprintf("%x", *glo_val.SelfPubkey), fmt.Sprintf("%x", name))

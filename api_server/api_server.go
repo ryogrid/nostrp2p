@@ -214,8 +214,27 @@ func (s *ApiServer) sendPost(w rest.ResponseWriter, input *Np2pEventForREST) {
 		return
 	}
 
+	// if mention or reply, extract related user's pubkey
+	sendDests := make([]string, 0)
+	if input.Tags != nil {
+		for _, tag := range input.Tags {
+			if tag[0] == "p" && tag[1] != glo_val.SelfPubkeyStr {
+				// extract short pubkey from p tags hex string value
+				sendDests = append(sendDests, tag[1])
+			}
+		}
+	}
+
 	evt := NewNp2pEventFromREST(input)
-	s.buzzPeer.MessageMan.BcastOwnPost(evt)
+	if len(sendDests) > 0 {
+		// send to specified users because post is mention or reply
+		for _, dest := range sendDests {
+			s.buzzPeer.MessageMan.UnicastEventData(dest, evt)
+		}
+	} else {
+		s.buzzPeer.MessageMan.BcastOwnPost(evt)
+	}
+
 	// store for myself
 	s.buzzPeer.MessageMan.DataMan.StoreEvent(evt)
 

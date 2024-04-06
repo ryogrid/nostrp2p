@@ -28,7 +28,7 @@ type MessageManager struct {
 }
 
 // when recovery, src is math.MaxUint64
-func (mm *MessageManager) handleRecvMsgBcastEvt(src mesh.PeerName, pkt *schema.Np2pPacket, evt *schema.Np2pEvent) error {
+func (mm *MessageManager) handleRecvMsgBcastEvt(src uint64, pkt *schema.Np2pPacket, evt *schema.Np2pEvent) error {
 	// TODO: need to use on-disk DB (DataManager::mergeReceived)
 	np2p_util.Np2pDbgPrintln("handleRecvMsgBcastEvt: received from " + strconv.Itoa(int(src)))
 	np2p_util.Np2pDbgPrintln("handleRecvMsgBcastEvt: ", pkt)
@@ -88,9 +88,9 @@ func (mm *MessageManager) handleRecvMsgBcastEvt(src mesh.PeerName, pkt *schema.N
 }
 
 // when recovery, src is math.MaxUint64
-func (mm *MessageManager) handleRecvMsgBcastReq(src mesh.PeerName, pkt *schema.Np2pPacket, req *schema.Np2pReq) error {
+func (mm *MessageManager) handleRecvMsgBcastReq(src uint64, pkt *schema.Np2pPacket, req *schema.Np2pReq) error {
 	go func() {
-		if src != mesh.PeerName(glo_val.SelfPubkey64bit) {
+		if src != glo_val.SelfPubkey64bit {
 			switch req.Kind {
 			case KIND_REQ_SHARE_EVT_DATA: // need to having event datas
 				go mm.UnicastHavingEvtData(src)
@@ -107,7 +107,7 @@ func (mm *MessageManager) handleRecvMsgBcastReq(src mesh.PeerName, pkt *schema.N
 	return nil
 }
 
-func (mm *MessageManager) handleRecvMsgUnicast(src mesh.PeerName, pkt *schema.Np2pPacket) error {
+func (mm *MessageManager) handleRecvMsgUnicast(src uint64, pkt *schema.Np2pPacket) error {
 	if pkt.Events != nil && len(pkt.Events) > 0 {
 		// handle with new goroutine
 		go func() {
@@ -154,12 +154,12 @@ func (mm *MessageManager) handleRecvMsgUnicast(src mesh.PeerName, pkt *schema.Np
 	return nil
 }
 
-func (mm *MessageManager) SendMsgUnicast(dst mesh.PeerName, pkt *schema.Np2pPacket) error {
-	return mm.send.GossipUnicast(dst, pkt.Encode()[0])
+func (mm *MessageManager) SendMsgUnicast(dst uint64, pkt *schema.Np2pPacket) error {
+	return mm.send.GossipUnicast(mesh.PeerName(dst), pkt.Encode()[0])
 }
 
-func (mm *MessageManager) SendMsgBroadcast(pkt *schema.Np2pPacket) {
-	mm.send.GossipBroadcast(pkt)
+func (mm *MessageManager) SendMsgBroadcast(pkt schema.EncodableAndMergeable) {
+	mm.send.GossipBroadcast(pkt.(mesh.GossipData))
 }
 
 func (mm *MessageManager) BcastOwnPost(evt *schema.Np2pEvent) {
@@ -183,13 +183,13 @@ func (mm *MessageManager) BcastProfile(evt *schema.Np2pEvent) {
 func (mm *MessageManager) UnicastProfileReq(pubkey64bit uint64) {
 	reqs := []*schema.Np2pReq{schema.NewNp2pReq(KIND_REQ_PROFILE, nil)}
 	pkt := schema.NewNp2pPacket(nil, &reqs)
-	mm.SendMsgUnicast(mesh.PeerName(pubkey64bit&0x0000ffffffffffff), pkt)
+	mm.SendMsgUnicast(pubkey64bit&0x0000ffffffffffff, pkt)
 }
 
 func (mm *MessageManager) UnicastFollowListReq(pubkey64bit uint64) {
 	reqs := []*schema.Np2pReq{schema.NewNp2pReq(KIND_REQ_FOLLOW_LIST, nil)}
 	pkt := schema.NewNp2pPacket(nil, &reqs)
-	mm.SendMsgUnicast(mesh.PeerName(pubkey64bit&0x0000ffffffffffff), pkt)
+	mm.SendMsgUnicast(pubkey64bit&0x0000ffffffffffff, pkt)
 }
 
 // used for response of profile request
@@ -197,7 +197,7 @@ func (mm *MessageManager) UnicastOwnProfile(dest uint64) {
 	if glo_val.CurrentProfileEvt != nil {
 		// send latest profile data
 		events := []*schema.Np2pEvent{glo_val.CurrentProfileEvt}
-		mm.SendMsgUnicast(mesh.PeerName(dest&0x0000ffffffffffff), schema.NewNp2pPacket(&events, nil))
+		mm.SendMsgUnicast(dest&0x0000ffffffffffff, schema.NewNp2pPacket(&events, nil))
 	}
 }
 
@@ -225,7 +225,7 @@ func (mm *MessageManager) BcastShareEvtDataReq() {
 
 // TODO: TEMPORAL IMPL
 // send latest 3days events
-func (mm *MessageManager) UnicastHavingEvtData(dest mesh.PeerName) {
+func (mm *MessageManager) UnicastHavingEvtData(dest uint64) {
 	events := mm.DataMan.GetLatestEvents(time.Now().Unix()-3*24*3600, math.MaxInt64)
 	pkt := schema.NewNp2pPacket(events, nil)
 	mm.SendMsgUnicast(dest, pkt)
@@ -235,5 +235,5 @@ func (mm *MessageManager) UnicastHavingEvtData(dest mesh.PeerName) {
 func (mm *MessageManager) UnicastEventData(destPubHexStr string, evt *schema.Np2pEvent) error {
 	events := []*schema.Np2pEvent{evt}
 	pkt := schema.NewNp2pPacket(&events, nil)
-	return mm.SendMsgUnicast(mesh.PeerName(np2p_util.Get6ByteUint64FromHexPubKeyStr(destPubHexStr)), pkt)
+	return mm.SendMsgUnicast(np2p_util.Get6ByteUint64FromHexPubKeyStr(destPubHexStr), pkt)
 }
