@@ -23,7 +23,7 @@ type Np2pPeer struct {
 	MessageMan      *MessageManager
 	SelfId          uint64 //mesh.PeerName
 	SelfPubkey      [np2p_const.PubkeySize]byte
-	Router          *mesh.Router // TODO: need to modify
+	//Router          *mesh.Router // TODO: need to modify
 	recvedEvtReqMap map[uint64]struct{}
 }
 
@@ -146,7 +146,7 @@ func (p *Np2pPeer) OnRecvUnicast(src uint64, buf []byte) (err error) {
 
 	return nil
 }
-
+/*
 func (p *Np2pPeer) GetPeerList() []mesh.PeerName {
 	tmpMap := p.Router.Routes.PeerNames()
 	retArr := make([]mesh.PeerName, 0)
@@ -155,3 +155,4 @@ func (p *Np2pPeer) GetPeerList() []mesh.PeerName {
 	}
 	return retArr
 }
+*/
