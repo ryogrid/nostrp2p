@@ -3,11 +3,12 @@ package schema
 import (
 	"github.com/ryogrid/nostrp2p/np2p_const"
 	"github.com/vmihailenco/msgpack/v5"
+	"github.com/weaveworks/mesh"
 )
 
 type EncodableAndMergeable interface {
 	Encode() [][]byte
-	Merge(EncodableAndMergeable) EncodableAndMergeable
+	Merge(data mesh.GossipData) mesh.GossipData
 }
 
 // Np2pPacket is an implementation of GossipData
@@ -66,8 +67,7 @@ func (pkt *Np2pPacket) Encode() [][]byte {
 
 // Merge merges the other GossipData into this one,
 // and returns our resulting, complete Np2pPacket.
-// func (st *Np2pPacket) Merge(other mesh.GossipData) (complete mesh.GossipData) {
-func (st *Np2pPacket) Merge(other EncodableAndMergeable) (complete EncodableAndMergeable) {
+func (st *Np2pPacket) Merge(other mesh.GossipData) (complete mesh.GossipData) {
 	if st.Events != nil && other.(*Np2pPacket).Events != nil {
 		st.Events = append(st.Events, other.(*Np2pPacket).Events...)
 	} else if st.Events == nil && other.(*Np2pPacket).Events != nil {

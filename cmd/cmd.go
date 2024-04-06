@@ -118,14 +118,15 @@ var serverCmd = &cobra.Command{
 
 			router.ConnectionMaker.InitiateConnections(peers.Slice(), true)
 			tport.SetRouter(router)
+			return router
 		}
 		router := setupMeshTransport()
-		
+
 		defer func() {
-				logger.Printf("mesh router stopping")
-				router.Stop()
+			logger.Printf("mesh router stopping")
+			router.Stop()
 		}()
-		
+
 		// if log file exist, load it
 		core.NewRecoveryManager(peer.MessageMan).Recover()
 		time.Sleep(10 * time.Second)

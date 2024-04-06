@@ -120,7 +120,7 @@ func NewNp2pEventFromREST(evt *Np2pEventForREST) *schema.Np2pEvent {
 			tagsMap[tag[0]] = vals
 		} else {
 			tagCntMap[tag[0]] = 0
-			tagsMap[tag[0]+"_0"] = vals
+			tagsMap[tag[0]] = vals
 		}
 
 	}

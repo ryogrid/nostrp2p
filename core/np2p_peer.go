@@ -6,7 +6,6 @@ import (
 	"github.com/ryogrid/nostrp2p/np2p_const"
 	"github.com/ryogrid/nostrp2p/np2p_util"
 	"github.com/ryogrid/nostrp2p/schema"
-	"github.com/weaveworks/mesh"
 	"log"
 )
 
@@ -16,13 +15,13 @@ import (
 // before calling mesh.Router.Start.
 type Np2pPeer struct {
 	//send            *mesh.Gossip
-	Actions         chan<- func()
-	quit            chan struct{}
-	logger          *log.Logger
-	dataMan         *DataManager
-	MessageMan      *MessageManager
-	SelfId          uint64 //mesh.PeerName
-	SelfPubkey      [np2p_const.PubkeySize]byte
+	Actions    chan<- func()
+	quit       chan struct{}
+	logger     *log.Logger
+	dataMan    *DataManager
+	MessageMan *MessageManager
+	SelfId     uint64 //mesh.PeerName
+	SelfPubkey [np2p_const.PubkeySize]byte
 	//Router          *mesh.Router // TODO: need to modify
 	recvedEvtReqMap map[uint64]struct{}
 }
@@ -146,6 +145,7 @@ func (p *Np2pPeer) OnRecvUnicast(src uint64, buf []byte) (err error) {
 
 	return nil
 }
+
 /*
 func (p *Np2pPeer) GetPeerList() []mesh.PeerName {
 	tmpMap := p.Router.Routes.PeerNames()
