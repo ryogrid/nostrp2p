@@ -244,3 +244,8 @@ func (mm *MessageManager) UnicastEventData(destPubHexStr string, evt *schema.Np2
 	pkt := schema.NewNp2pPacket(&events, nil)
 	return mm.SendMsgUnicast(np2p_util.Get6ByteUint64FromHexPubKeyStr(destPubHexStr), pkt)
 }
+
+
+func (mm *MessageManager) SetTransport(tport Np2pTransport) {
+        mm.send = tport
+}
