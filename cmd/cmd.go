@@ -87,7 +87,7 @@ var serverCmd = &cobra.Command{
 
 		peer := core.NewPeer(name, logger)
 
-		setupMeshTransport := func() {
+		setupMeshTransport := func() *mesh.Router {
 			router, err := mesh.NewRouter(mesh.Config{
 				Host:               host,
 				Port:               port,
@@ -105,6 +105,7 @@ var serverCmd = &cobra.Command{
 			tport := transport.NewMeshTransport(peer)
 			gossip, err := router.NewGossip("nostrp2p", tport)
 			tport.Register(gossip)
+			peer.MessageMan.SetTransport(tport)
 			if err != nil {
 				logger.Fatalf("Could not create gossip: %v", err)
 			}
@@ -114,16 +115,17 @@ var serverCmd = &cobra.Command{
 				logger.Printf("mesh router starting (%s)", listenAddrPort)
 				router.Start()
 			}()
-			defer func() {
-				logger.Printf("mesh router stopping")
-				router.Stop()
-			}()
 
 			router.ConnectionMaker.InitiateConnections(peers.Slice(), true)
-			peer.Router = router
+			tport.SetRouter(router)
 		}
-		setupMeshTransport()
-
+		router := setupMeshTransport()
+		
+		defer func() {
+				logger.Printf("mesh router stopping")
+				router.Stop()
+		}()
+		
 		// if log file exist, load it
 		core.NewRecoveryManager(peer.MessageMan).Recover()
 		time.Sleep(10 * time.Second)
