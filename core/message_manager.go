@@ -5,11 +5,15 @@ import (
 	"github.com/ryogrid/nostrp2p/glo_val"
 	"github.com/ryogrid/nostrp2p/np2p_util"
 	"github.com/ryogrid/nostrp2p/schema"
-	"github.com/weaveworks/mesh"
 	"math"
 	"strconv"
 	"time"
 )
+
+type Np2pTransport interface {
+	SendMsgBroadcast(schema.EncodableAndMergeable)
+	SendMsgUnicast(uint64, []byte) error
+}
 
 const (
 	KIND_EVT_PROFILE        = 0
@@ -24,7 +28,8 @@ const (
 
 type MessageManager struct {
 	DataMan *DataManager
-	send    mesh.Gossip // set by Np2pPeer.Register
+	//send    mesh.Gossip // set by Np2pPeer.Register
+	send Np2pTransport // set by Np2pPeer.Register
 }
 
 // when recovery, src is math.MaxUint64
@@ -155,11 +160,13 @@ func (mm *MessageManager) handleRecvMsgUnicast(src uint64, pkt *schema.Np2pPacke
 }
 
 func (mm *MessageManager) SendMsgUnicast(dst uint64, pkt *schema.Np2pPacket) error {
-	return mm.send.GossipUnicast(mesh.PeerName(dst), pkt.Encode()[0])
+	//return mm.send.GossipUnicast(mesh.PeerName(dst), pkt.Encode()[0])
+	return mm.send.SendMsgUnicast(dst, pkt.Encode()[0])
 }
 
 func (mm *MessageManager) SendMsgBroadcast(pkt schema.EncodableAndMergeable) {
-	mm.send.GossipBroadcast(pkt.(mesh.GossipData))
+	//mm.send.GossipBroadcast(pkt.(mesh.GossipData))
+	mm.send.SendMsgBroadcast(pkt)
 }
 
 func (mm *MessageManager) BcastOwnPost(evt *schema.Np2pEvent) {

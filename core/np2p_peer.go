@@ -15,32 +15,29 @@ import (
 // and the resulting Gossip registered in turn,
 // before calling mesh.Router.Start.
 type Np2pPeer struct {
-	//Send            *mesh.Gossip
-	actions         chan<- func()
+	//send            *mesh.Gossip
+	Actions         chan<- func()
 	quit            chan struct{}
 	logger          *log.Logger
 	dataMan         *DataManager
 	MessageMan      *MessageManager
-	SelfId          mesh.PeerName
+	SelfId          uint64 //mesh.PeerName
 	SelfPubkey      [np2p_const.PubkeySize]byte
-	Router          *mesh.Router
+	Router          *mesh.Router // TODO: need to modify
 	recvedEvtReqMap map[uint64]struct{}
 }
-
-// Np2pPeer implements mesh.Gossiper.
-var _ mesh.Gossiper = &Np2pPeer{}
 
 // Construct a Np2pPeer with empty state.
 // Be sure to Register a channel, later,
 // so we can make outbound communication.
-func NewPeer(self mesh.PeerName, logger *log.Logger) *Np2pPeer {
+func NewPeer(self uint64, logger *log.Logger) *Np2pPeer {
 	actions := make(chan func())
 	dataMan := NewDataManager()
 	msgMan := &MessageManager{DataMan: dataMan}
 
 	p := &Np2pPeer{
-		//Send:            nil, // must .Register() later
-		actions:         actions,
+		//send:            nil, // must .Register() later
+		Actions:         actions,
 		quit:            make(chan struct{}),
 		logger:          logger,
 		dataMan:         dataMan,
@@ -63,32 +60,8 @@ func (p *Np2pPeer) loop(actions <-chan func()) {
 	}
 }
 
-// Register the result of a mesh.Router.NewGossip.
-func (p *Np2pPeer) Register(send mesh.Gossip) {
-	p.actions <- func() {
-		//p.Send = &send
-		p.MessageMan.send = send
-	}
-}
-
 func (p *Np2pPeer) stop() {
 	close(p.quit)
-}
-
-// Return a copy of our complete state.
-func (p *Np2pPeer) Gossip() (complete mesh.GossipData) {
-	np2p_util.Np2pDbgPrintln("Gossip called")
-	//return &schema.Np2pPacket{}
-	return nil
-}
-
-// Merge the gossiped data represented by buf into our state.
-// Return the state information that was modified.
-func (p *Np2pPeer) OnGossip(buf []byte) (delta mesh.GossipData, err error) {
-	np2p_util.Np2pDbgPrintln("OnGossip called")
-	//return &schema.Np2pPacket{}, nil
-	var retData schema.EncodableAndMergeable = &schema.Np2pPacket{}
-	return retData.(mesh.GossipData), nil
 }
 
 func (p *Np2pPeer) OnRecvBroadcast(src uint64, buf []byte) (received schema.EncodableAndMergeable, err error) {
@@ -150,14 +123,6 @@ func (p *Np2pPeer) OnRecvBroadcast(src uint64, buf []byte) (received schema.Enco
 	//return &schema.Np2pPacket{}, nil
 }
 
-// Merge the gossiped data represented by buf into our state.
-// Return the state information that was modified.
-func (p *Np2pPeer) OnGossipBroadcast(src mesh.PeerName, buf []byte) (received mesh.GossipData, err error) {
-	np2p_util.Np2pDbgPrintln("OnGossipBroadcast called")
-	recved, err_ := p.OnRecvBroadcast(uint64(src), buf)
-	return recved.(mesh.GossipData), err_
-}
-
 func (p *Np2pPeer) OnRecvUnicast(src uint64, buf []byte) (err error) {
 	//var pkt schema.Np2pPacket
 	//if err_ := gob.NewDecoder(bytes.NewReader(buf)).Decode(&pkt); err_ != nil {
@@ -180,12 +145,6 @@ func (p *Np2pPeer) OnRecvUnicast(src uint64, buf []byte) (err error) {
 	}
 
 	return nil
-}
-
-// Merge the gossiped data represented by buf into our state.
-func (p *Np2pPeer) OnGossipUnicast(src mesh.PeerName, buf []byte) error {
-	np2p_util.Np2pDbgPrintln("OnGossipUnicast called")
-	return p.OnRecvUnicast(uint64(src), buf)
 }
 
 func (p *Np2pPeer) GetPeerList() []mesh.PeerName {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/ryogrid/nostrp2p/glo_val"
 	"github.com/ryogrid/nostrp2p/np2p_util"
+	"github.com/ryogrid/nostrp2p/transport"
 	"io/ioutil"
 	"log"
 	"net"
@@ -84,54 +85,48 @@ var serverCmd = &cobra.Command{
 		// initializa rand generator
 		np2p_util.InitializeRandGen(-1 * int64(name))
 
-		router, err := mesh.NewRouter(mesh.Config{
-			Host:               host,
-			Port:               port,
-			ProtocolMinVersion: mesh.ProtocolMaxVersion,
-			Password:           nil,
-			ConnLimit:          64,
-			PeerDiscovery:      true,
-			TrustedSubnets:     []*net.IPNet{},
-		}, mesh.PeerName(name), nickname, mesh.NullOverlay{}, log.New(ioutil.Discard, "", 0))
+		peer := core.NewPeer(name, logger)
 
-		if err != nil {
-			logger.Fatalf("Could not create router: %v", err)
+		setupMeshTransport := func() {
+			router, err := mesh.NewRouter(mesh.Config{
+				Host:               host,
+				Port:               port,
+				ProtocolMinVersion: mesh.ProtocolMaxVersion,
+				Password:           nil,
+				ConnLimit:          64,
+				PeerDiscovery:      true,
+				TrustedSubnets:     []*net.IPNet{},
+			}, mesh.PeerName(name), nickname, mesh.NullOverlay{}, log.New(ioutil.Discard, "", 0))
+
+			if err != nil {
+				logger.Fatalf("Could not create router: %v", err)
+			}
+
+			tport := transport.NewMeshTransport(peer)
+			gossip, err := router.NewGossip("nostrp2p", tport)
+			tport.Register(gossip)
+			if err != nil {
+				logger.Fatalf("Could not create gossip: %v", err)
+			}
+			//peer.Register(gossip)
+
+			go func() {
+				logger.Printf("mesh router starting (%s)", listenAddrPort)
+				router.Start()
+			}()
+			defer func() {
+				logger.Printf("mesh router stopping")
+				router.Stop()
+			}()
+
+			router.ConnectionMaker.InitiateConnections(peers.Slice(), true)
+			peer.Router = router
 		}
-
-		//// initialized at server restart or update request
-		//glo_val.Nickname = &nickname
-		//glo_val.ProfileMyOwn = &schema.Np2pProfile{
-		//	Pubkey64bit: name,
-		//	Name:        nickname,
-		//	About:       "brank yet",
-		//	Picture:     "http://robohash.org/" + strconv.Itoa(int(name)) + ".png?size=200x200",
-		//	UpdatedAt:   0,
-		//}
-
-		peer := core.NewPeer(mesh.PeerName(name), logger)
+		setupMeshTransport()
 
 		// if log file exist, load it
 		core.NewRecoveryManager(peer.MessageMan).Recover()
 		time.Sleep(10 * time.Second)
-
-		gossip, err := router.NewGossip("nostrp2p", peer)
-		if err != nil {
-			logger.Fatalf("Could not create gossip: %v", err)
-		}
-
-		peer.Register(gossip)
-
-		go func() {
-			logger.Printf("mesh router starting (%s)", listenAddrPort)
-			router.Start()
-		}()
-		defer func() {
-			logger.Printf("mesh router stopping")
-			router.Stop()
-		}()
-
-		router.ConnectionMaker.InitiateConnections(peers.Slice(), true)
-		peer.Router = router
 
 		if !glo_val.DenyWriteMode {
 			apiServ := api_server.NewApiServer(peer)
