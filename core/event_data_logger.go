@@ -9,73 +9,87 @@ import (
 	"sync"
 )
 
-type EventDataLogger struct {
-	logFile     *os.File
-	logFileMtx  *sync.Mutex
+type LogFile struct {
+	file        *os.File
+	fileMtx     *sync.Mutex
 	curSize     int64
 	lastReadPos int64
 }
 
-func NewEventDataLogger(logFilename string) *EventDataLogger {
-	file, err := os.OpenFile(logFilename, os.O_RDWR|os.O_CREATE, 0666)
+type EventDataLogger struct {
+	eventLogFile             *LogFile
+	reSendNeededEvtLogFile   *LogFile
+	reSendFinishedEvtLogFile *LogFile
+}
+
+func NewEventDataLogger(logFnameBase string) *EventDataLogger {
+	return &EventDataLogger{
+		eventLogFile:             newLogFile(logFnameBase + ".evtlog"),
+		reSendNeededEvtLogFile:   newLogFile(logFnameBase + ".rsevtlog"),
+		reSendFinishedEvtLogFile: newLogFile(logFnameBase + ".rsfevtlog"),
+	}
+}
+
+func newLogFile(logFnameBase string) *LogFile {
+	file, err := os.OpenFile(logFnameBase, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
-		log.Fatalln("can't open db file: " + logFilename)
+		log.Fatalln("can't open log file: " + logFnameBase)
 		return nil
 	}
 	file.Seek(io.SeekStart, 0)
-	return &EventDataLogger{
-		logFile:     file,
-		logFileMtx:  &sync.Mutex{},
+	return &LogFile{
+		file:        file,
+		fileMtx:     &sync.Mutex{},
 		curSize:     -1,
 		lastReadPos: 0,
 	}
 }
 
-func (l *EventDataLogger) GetLogfileSize() int64 {
-	fi, err := l.logFile.Stat()
+func (l *EventDataLogger) GetLogfileSize(lfile *LogFile) int64 {
+	fi, err := lfile.file.Stat()
 	if err != nil {
 		panic(err)
 	}
 	return fi.Size()
 }
 
-func (l *EventDataLogger) WriteLog(data []byte) error {
-	l.logFileMtx.Lock()
-	defer l.logFileMtx.Unlock()
-	if l.curSize < 0 {
-		fileInfo, err := l.logFile.Stat()
+func (l *EventDataLogger) WriteLog(lfile *LogFile, data []byte) error {
+	lfile.fileMtx.Lock()
+	defer lfile.fileMtx.Unlock()
+	if lfile.curSize < 0 {
+		fileInfo, err := lfile.file.Stat()
 		if err != nil {
 			return err
 		}
-		l.curSize = fileInfo.Size()
-		l.logFile.Seek(l.curSize, 0)
+		lfile.curSize = fileInfo.Size()
+		lfile.file.Seek(lfile.curSize, 0)
 	}
 	sizeBuf := make([]byte, 0)
 	sizeBuf = binary.LittleEndian.AppendUint32(sizeBuf, uint32(len(data)))
 	// each log entry is prefixed with a 4-byte size
-	n, err := l.logFile.Write(sizeBuf)
+	n, err := lfile.file.Write(sizeBuf)
 	if err != nil || n != 4 {
 		panic(err)
 	}
-	n, err = l.logFile.Write(data)
+	n, err = lfile.file.Write(data)
 	if err != nil || n != len(data) {
 		panic(err)
 	}
-	err = l.logFile.Sync()
+	err = lfile.file.Sync()
 	if err != nil {
 		panic(err)
 	}
-	l.curSize += int64(n + 4)
+	lfile.curSize += int64(n + 4)
 
 	return err
 }
 
 // read a log entry
-func (l *EventDataLogger) ReadLog() (int, []byte, error) {
-	l.logFileMtx.Lock()
-	defer l.logFileMtx.Unlock()
+func (l *EventDataLogger) ReadLog(lfile *LogFile) (int, []byte, error) {
+	lfile.fileMtx.Lock()
+	defer lfile.fileMtx.Unlock()
 	sizeBuf := make([]byte, 4)
-	n, err := l.logFile.Read(sizeBuf)
+	n, err := lfile.file.Read(sizeBuf)
 	if err != nil || n != 4 {
 		if errors.Is(err, io.EOF) {
 			// we have reached the end of the file
@@ -83,14 +97,14 @@ func (l *EventDataLogger) ReadLog() (int, []byte, error) {
 		} else {
 			// file broken (I/O error while writing log at last launch)
 			// set lastReadPos to the next log writing point
-			l.logFile.Seek(l.lastReadPos, 0)
+			lfile.file.Seek(lfile.lastReadPos, 0)
 			return -1, nil, err
 		}
 	}
-	l.lastReadPos += int64(4)
+	lfile.lastReadPos += int64(4)
 	size := int(binary.LittleEndian.Uint32(sizeBuf))
 	data := make([]byte, size)
-	n, err = l.logFile.Read(data)
+	n, err = lfile.file.Read(data)
 	if err != nil || n != size {
 		if errors.Is(err, io.EOF) {
 			// we have reached the end of the file
@@ -98,10 +112,10 @@ func (l *EventDataLogger) ReadLog() (int, []byte, error) {
 		} else {
 			// file broken (I/O error while writing log at last launch)
 			// set lastReadPos to the next log writing point
-			l.logFile.Seek(l.lastReadPos-4, 0)
+			lfile.file.Seek(lfile.lastReadPos-4, 0)
 			return -1, nil, err
 		}
 	}
-	l.lastReadPos += int64(size)
+	lfile.lastReadPos += int64(size)
 	return n, data, nil
 }

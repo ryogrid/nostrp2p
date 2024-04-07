@@ -15,13 +15,13 @@ func NewRecoveryManager(messageMan *MessageManager) *RecoveryManager {
 }
 
 func (rm *RecoveryManager) Recover() {
-	if rm.messageMan.DataMan.EvtLogger.GetLogfileSize() == 0 {
+	if rm.messageMan.DataMan.EvtLogger.GetLogfileSize(rm.messageMan.DataMan.EvtLogger.eventLogFile) == 0 {
 		return
 	}
 
 	fmt.Println("Recovering from log file...")
 	// do recovery
-	_, buf, err := rm.messageMan.DataMan.EvtLogger.ReadLog()
+	_, buf, err := rm.messageMan.DataMan.EvtLogger.ReadLog(rm.messageMan.DataMan.EvtLogger.eventLogFile)
 	for err == nil {
 		evt, err_ := schema.NewNp2pEventFromBytes(buf)
 		if evt.Tags != nil {
@@ -36,6 +36,6 @@ func (rm *RecoveryManager) Recover() {
 		}
 		pkt := schema.NewNp2pPacket(&[]*schema.Np2pEvent{evt}, nil)
 		rm.messageMan.handleRecvMsgBcastEvt(math.MaxUint64, pkt, evt)
-		_, buf, err = rm.messageMan.DataMan.EvtLogger.ReadLog()
+		_, buf, err = rm.messageMan.DataMan.EvtLogger.ReadLog(rm.messageMan.DataMan.EvtLogger.eventLogFile)
 	}
 }
