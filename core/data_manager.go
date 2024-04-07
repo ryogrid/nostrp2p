@@ -1,16 +1,14 @@
 package core
 
 import (
+	"encoding/binary"
 	"github.com/chenjiandongx/mandodb/pkg/sortedlist"
 	"github.com/ryogrid/nostrp2p/glo_val"
 	"github.com/ryogrid/nostrp2p/np2p_util"
 	"github.com/ryogrid/nostrp2p/schema"
 	"strconv"
 	"sync"
-	"time"
 )
-
-const profReqInterval = 30 * time.Second
 
 type DataManager struct {
 	EvtListTimeKey    sortedlist.List // timestamp(int64) -> *schema.Np2pEvent
@@ -20,25 +18,25 @@ type DataManager struct {
 	ProfEvtMap             sync.Map // pubkey lower 64bit (uint64) -> *schema.Np2pEvent
 	FollowListEvtMap       sync.Map // pubkey lower 64bit (uint64) -> *schema.Np2pEvent
 	EvtLogger              *EventDataLogger
-	reSendNeededEvtList    sortedlist.List // timestamp(int64) -> *[32]byte (event id)
+	reSendNeededEvtList    sortedlist.List // timestamp(int64) -> *schema.ResendEvent
 	reSendNeededEvtListMtx *sync.Mutex
-	// Attention: in log file of reSendNeededEvtList, re-send finished events are not removed currently
-	reSendFinishedEvtList    sortedlist.List // timestamp(int64) -> *[32]byte (event id)
-	reSendFinishedEvtListMtx *sync.Mutex
+	//// Attention: in log file of reSendNeededEvtList, re-send finished events are not removed currently
+	//reSendFinishedEvtList    sortedlist.List // timestamp(int64) -> created_at(int64)
+	//reSendFinishedEvtListMtx *sync.Mutex
 }
 
 func NewDataManager() *DataManager {
 	return &DataManager{
-		EvtListTimeKey:           sortedlist.NewTree(),
-		EvtListTimeKeyMtx:        &sync.Mutex{},
-		EvtMapIdKey:              sync.Map{},
-		ProfEvtMap:               sync.Map{}, // pubkey lower 64bit (uint64) -> *schema.Np2pEvent
-		FollowListEvtMap:         sync.Map{}, // pubkey lower 64bit (uint64) -> *schema.Np2pEvent
-		EvtLogger:                NewEventDataLogger("./" + strconv.FormatUint(glo_val.SelfPubkey64bit, 16)),
-		reSendNeededEvtList:      sortedlist.NewTree(),
-		reSendNeededEvtListMtx:   &sync.Mutex{},
-		reSendFinishedEvtList:    sortedlist.NewTree(),
-		reSendFinishedEvtListMtx: &sync.Mutex{},
+		EvtListTimeKey:         sortedlist.NewTree(),
+		EvtListTimeKeyMtx:      &sync.Mutex{},
+		EvtMapIdKey:            sync.Map{},
+		ProfEvtMap:             sync.Map{}, // pubkey lower 64bit (uint64) -> *schema.Np2pEvent
+		FollowListEvtMap:       sync.Map{}, // pubkey lower 64bit (uint64) -> *schema.Np2pEvent
+		EvtLogger:              NewEventDataLogger("./" + strconv.FormatUint(glo_val.SelfPubkey64bit, 16)),
+		reSendNeededEvtList:    sortedlist.NewTree(),
+		reSendNeededEvtListMtx: &sync.Mutex{},
+		//reSendFinishedEvtList:    sortedlist.NewTree(),
+		//reSendFinishedEvtListMtx: &sync.Mutex{},
 	}
 }
 
@@ -66,6 +64,13 @@ func (dman *DataManager) StoreEvent(evt *schema.Np2pEvent) {
 		}
 		go dman.EvtLogger.WriteLog(dman.EvtLogger.eventLogFile, evt.Encode())
 	}
+}
+
+func (dman *DataManager) GetEventById(evtId [32]byte) (*schema.Np2pEvent, bool) {
+	if val, ok := dman.EvtMapIdKey.Load(evtId); ok {
+		return val.(*schema.Np2pEvent), true
+	}
+	return nil, false
 }
 
 func (dman *DataManager) StoreProfile(evt *schema.Np2pEvent) {
@@ -102,12 +107,14 @@ func (dman *DataManager) GetFollowListLocal(pubkey64bit uint64) *schema.Np2pEven
 	return nil
 }
 
-func (dman *DataManager) AddReSendNeededEvent(evt *schema.Np2pEvent, isLogging bool) {
+func (dman *DataManager) AddReSendNeededEvent(destIds []uint64, evt *schema.Np2pEvent, isLogging bool) {
 	dman.reSendNeededEvtListMtx.Lock()
-	dman.reSendNeededEvtList.Add(evt.Created_at, &evt.Id)
+	resendEvent := schema.NewResendEvent(destIds, evt.Id, evt.Created_at)
+	dman.reSendNeededEvtList.Add(evt.Created_at, &resendEvent)
 	dman.reSendNeededEvtListMtx.Unlock()
 	if isLogging {
-		dman.EvtLogger.WriteLog(dman.EvtLogger.reSendNeededEvtLogFile, evt.Id[:])
+		buf := resendEvent.Encode()
+		dman.EvtLogger.WriteLog(dman.EvtLogger.reSendNeededEvtLogFile, buf)
 	}
 }
 
@@ -116,10 +123,12 @@ func (dman *DataManager) RemoveReSendNeededEvent(evt *schema.Np2pEvent) {
 	dman.reSendNeededEvtListMtx.Lock()
 	dman.reSendNeededEvtList.Remove(evt.Created_at)
 	dman.reSendNeededEvtListMtx.Unlock()
-	dman.reSendFinishedEvtListMtx.Lock()
-	dman.reSendFinishedEvtList.Add(evt.Created_at, &evt.Id)
-	dman.reSendFinishedEvtListMtx.Unlock()
-	dman.EvtLogger.WriteLog(dman.EvtLogger.reSendFinishedEvtLogFile, evt.Id[:])
+	//dman.reSendFinishedEvtListMtx.Lock()
+	//dman.reSendFinishedEvtList.Add(evt.Created_at, evt.Created_at)
+	//dman.reSendFinishedEvtListMtx.Unlock()
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, uint64(evt.Created_at))
+	dman.EvtLogger.WriteLog(dman.EvtLogger.reSendFinishedEvtLogFile, buf)
 }
 
 func (dman *DataManager) GetReSendNeededEventItr() sortedlist.Iter {
@@ -128,8 +137,8 @@ func (dman *DataManager) GetReSendNeededEventItr() sortedlist.Iter {
 	return dman.reSendNeededEvtList.All()
 }
 
-func (dman *DataManager) GetReSendFinishedEventItr() sortedlist.Iter {
-	dman.reSendFinishedEvtListMtx.Lock()
-	defer dman.reSendFinishedEvtListMtx.Unlock()
-	return dman.reSendNeededEvtList.All()
-}
+//func (dman *DataManager) GetReSendFinishedEventItr() sortedlist.Iter {
+//	dman.reSendFinishedEvtListMtx.Lock()
+//	defer dman.reSendFinishedEvtListMtx.Unlock()
+//	return dman.reSendNeededEvtList.All()
+//}

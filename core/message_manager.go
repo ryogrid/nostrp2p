@@ -27,9 +27,15 @@ const (
 )
 
 type MessageManager struct {
-	DataMan *DataManager
-	//send    mesh.Gossip // set by Np2pPeer.Register
-	send Np2pTransport // set by Np2pPeer.Register
+	DataMan     *DataManager
+	send        Np2pTransport // set with Register later
+	evtReSender *EventResender
+}
+
+func NewMessageManager(dman *DataManager) *MessageManager {
+	ret := &MessageManager{DataMan: dman}
+	ret.evtReSender = NewEventResender(dman, ret)
+	return ret
 }
 
 // when recovery, src is math.MaxUint64

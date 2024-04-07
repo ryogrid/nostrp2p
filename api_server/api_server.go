@@ -228,15 +228,17 @@ func (s *ApiServer) sendPost(w rest.ResponseWriter, input *Np2pEventForREST) {
 	evt := NewNp2pEventFromREST(input)
 	if len(sendDests) > 0 {
 		// send to specified users because post is mention or reply
+		resendDests := make([]uint64, 0)
 		for _, dest := range sendDests {
 			err := s.buzzPeer.MessageMan.UnicastEventData(dest, evt)
 			if err != nil {
-				// destination server is offline
-				// so add event to retry queue
-				s.buzzPeer.MessageMan.DataMan.AddReSendNeededEvent(evt, true)
+				resendDests = append(resendDests, np2p_util.Get6ByteUint64FromHexPubKeyStr(dest))
 				fmt.Println(err)
 			}
 		}
+		// destination server is offline
+		// so add event to retry queue
+		s.buzzPeer.MessageMan.DataMan.AddReSendNeededEvent(resendDests, evt, true)
 	} else {
 		s.buzzPeer.MessageMan.BcastOwnPost(evt)
 	}
@@ -291,7 +293,7 @@ func (s *ApiServer) sendReaction(w rest.ResponseWriter, input *Np2pEventForREST)
 		// destination server is offline
 		// so add event to retry queue
 		// except destination is myself case
-		s.buzzPeer.MessageMan.DataMan.AddReSendNeededEvent(evt, true)
+		s.buzzPeer.MessageMan.DataMan.AddReSendNeededEvent([]uint64{np2p_util.Get6ByteUint64FromHexPubKeyStr(evt.Tags["p"][0].(string))}, evt, true)
 		fmt.Println(evt.Tags["p"][0].(string))
 		fmt.Println(err)
 	}

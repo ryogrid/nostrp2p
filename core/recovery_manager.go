@@ -1,8 +1,8 @@
 package core
 
 import (
+	"encoding/binary"
 	"fmt"
-	"github.com/ryogrid/nostrp2p/np2p_const"
 	"github.com/ryogrid/nostrp2p/schema"
 	"math"
 	"slices"
@@ -42,44 +42,41 @@ func (rm *RecoveryManager) Recover() {
 	}
 
 	// do recovery (resend finished events log file)
-	tmpFinishedMap := make(map[[np2p_const.EventIdSize]byte]struct{})
+	tmpFinishedMap := make(map[int64]struct{})
 	_, buf, err = rm.messageMan.DataMan.EvtLogger.ReadLog(rm.messageMan.DataMan.EvtLogger.reSendFinishedEvtLogFile)
 	for err == nil {
-		if len(buf) != np2p_const.EventIdSize {
+		if len(buf) != 8 {
 			// EOF
 			break
 		}
 
-		var evtId [np2p_const.EventIdSize]byte
-		copy(evtId[:], buf)
-		tmpFinishedMap[evtId] = struct{}{}
+		createdAtUint := binary.LittleEndian.Uint64(buf)
+		createdAt := int64(createdAtUint)
+		tmpFinishedMap[createdAt] = struct{}{}
 		_, buf, err = rm.messageMan.DataMan.EvtLogger.ReadLog(rm.messageMan.DataMan.EvtLogger.eventLogFile)
 	}
 
 	// do recovery (resend needed events log file)
-	tmpReSendNeededEvtList := make([][np2p_const.EventIdSize]byte, 0)
+	tmpReSendNeededEvtList := make([]*schema.ResendEvent, 0)
 	_, buf, err = rm.messageMan.DataMan.EvtLogger.ReadLog(rm.messageMan.DataMan.EvtLogger.reSendNeededEvtLogFile)
 	for err == nil {
-		if len(buf) != np2p_const.EventIdSize {
+		resendEvt, err_ := schema.NewResendEventFromBytes(buf)
+		if err_ != nil {
 			// EOF
 			break
 		}
 
-		var evtId [np2p_const.EventIdSize]byte
-		copy(evtId[:], buf)
-
-		if _, ok := tmpFinishedMap[evtId]; !ok {
+		if _, ok := tmpFinishedMap[resendEvt.CreatedAt]; !ok {
 			// resend needed event
-			tmpReSendNeededEvtList = append(tmpReSendNeededEvtList, evtId)
+			tmpReSendNeededEvtList = append(tmpReSendNeededEvtList, resendEvt)
 		}
 		_, buf, err = rm.messageMan.DataMan.EvtLogger.ReadLog(rm.messageMan.DataMan.EvtLogger.reSendNeededEvtLogFile)
 	}
 	// store read data reverse order
 	slices.Reverse(tmpReSendNeededEvtList)
 	for ii := 0; ii < len(tmpReSendNeededEvtList); ii++ {
-		evtId := tmpReSendNeededEvtList[ii]
-		rm.messageMan.DataMan.AddReSendNeededEvent(&schema.Np2pEvent{Id: evtId}, false)
-
+		resendEvt := tmpReSendNeededEvtList[ii]
+		rm.messageMan.DataMan.AddReSendNeededEvent(resendEvt.DestIds, &schema.Np2pEvent{Id: resendEvt.EvtId}, false)
 	}
 
 }

@@ -32,7 +32,7 @@ type Np2pPeer struct {
 func NewPeer(self uint64, logger *log.Logger) *Np2pPeer {
 	actions := make(chan func())
 	dataMan := NewDataManager()
-	msgMan := &MessageManager{DataMan: dataMan}
+	msgMan := NewMessageManager(dataMan)
 
 	p := &Np2pPeer{
 		//send:            nil, // must .Register() later
