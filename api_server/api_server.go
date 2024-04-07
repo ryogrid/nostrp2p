@@ -229,13 +229,20 @@ func (s *ApiServer) sendPost(w rest.ResponseWriter, input *Np2pEventForREST) {
 	if len(sendDests) > 0 {
 		// send to specified users because post is mention or reply
 		for _, dest := range sendDests {
-			s.buzzPeer.MessageMan.UnicastEventData(dest, evt)
+			err := s.buzzPeer.MessageMan.UnicastEventData(dest, evt)
+			if err != nil {
+				// destination server is offline
+				// so add event to retry queue
+				s.buzzPeer.MessageMan.DataMan.AddReSendNeededEvent(evt, true)
+				fmt.Println(err)
+			}
 		}
 	} else {
 		s.buzzPeer.MessageMan.BcastOwnPost(evt)
 	}
 
 	// store for myself
+	// if destination server is offline, this event will be sent again
 	s.buzzPeer.MessageMan.DataMan.StoreEvent(evt)
 
 	w.WriteJson(&EventsResp{})
@@ -281,13 +288,16 @@ func (s *ApiServer) sendReaction(w rest.ResponseWriter, input *Np2pEventForREST)
 	evt := NewNp2pEventFromREST(input)
 	err := s.buzzPeer.MessageMan.UnicastEventData(evt.Tags["p"][0].(string), evt)
 	if err != nil {
+		// destination server is offline
+		// so add event to retry queue
+		s.buzzPeer.MessageMan.DataMan.AddReSendNeededEvent(evt, true)
 		fmt.Println(evt.Tags["p"][0].(string))
 		fmt.Println(err)
-	} else {
-		// when data is sent successfully (= target server is online and received the data)
-		// reaction event is stored for myself
-		s.buzzPeer.MessageMan.DataMan.StoreEvent(evt)
 	}
+
+	// stored for myself
+	// if destination server is offline, this event will be sent again
+	s.buzzPeer.MessageMan.DataMan.StoreEvent(evt)
 
 	w.WriteJson(&EventsResp{})
 }
