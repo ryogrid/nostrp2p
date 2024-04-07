@@ -3,20 +3,18 @@ package cmd
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/ryogrid/nostrp2p/api_server"
+	"github.com/ryogrid/nostrp2p/core"
 	"github.com/ryogrid/nostrp2p/glo_val"
 	"github.com/ryogrid/nostrp2p/np2p_util"
 	"github.com/ryogrid/nostrp2p/transport"
+	"github.com/spf13/cobra"
+	"github.com/weaveworks/mesh"
 	"io/ioutil"
 	"log"
 	"net"
 	"os"
 	"strconv"
-	"time"
-
-	"github.com/ryogrid/nostrp2p/api_server"
-	"github.com/ryogrid/nostrp2p/core"
-	"github.com/spf13/cobra"
-	"github.com/weaveworks/mesh"
 )
 
 var listenAddrPort = "127.0.0.1:20000"
@@ -129,7 +127,7 @@ var serverCmd = &cobra.Command{
 
 		// if log file exist, load it
 		core.NewRecoveryManager(peer.MessageMan).Recover()
-		time.Sleep(10 * time.Second)
+		//time.Sleep(10 * time.Second)
 
 		if !glo_val.DenyWriteMode {
 			apiServ := api_server.NewApiServer(peer)

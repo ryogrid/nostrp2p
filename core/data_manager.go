@@ -20,6 +20,8 @@ type DataManager struct {
 	ProfEvtMap       sync.Map // pubkey lower 64bit (uint64) -> *schema.Np2pEvent
 	FollowListEvtMap sync.Map // pubkey lower 64bit (uint64) -> *schema.Np2pEvent
 	EvtLogger        *EventDataLogger
+	ResendEvtList    sortedlist.List // timestamp(int64) -> *schema.Np2pEvent
+	ResendEvtListMtx *sync.Mutex
 }
 
 func NewDataManager() *DataManager {
@@ -30,6 +32,8 @@ func NewDataManager() *DataManager {
 		ProfEvtMap:        sync.Map{}, // pubkey lower 64bit (uint64) -> *schema.Np2pEvent
 		FollowListEvtMap:  sync.Map{}, // pubkey lower 64bit (uint64) -> *schema.Np2pEvent
 		EvtLogger:         NewEventDataLogger("./" + strconv.FormatUint(glo_val.SelfPubkey64bit, 16) + ".evtlog"),
+		ResendEvtList:     sortedlist.NewTree(),
+		ResendEvtListMtx:  &sync.Mutex{},
 	}
 }
 

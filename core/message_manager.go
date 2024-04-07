@@ -39,7 +39,7 @@ func (mm *MessageManager) handleRecvMsgBcastEvt(src uint64, pkt *schema.Np2pPack
 	np2p_util.Np2pDbgPrintln("handleRecvMsgBcastEvt: ", pkt)
 
 	// handle with new goroutine
-	go func() {
+	handleFunc := func() {
 		if evt.Pubkey != *glo_val.SelfPubkey || src == math.MaxUint64 {
 			switch evt.Kind {
 			case KIND_EVT_PROFILE: // profile
@@ -52,24 +52,7 @@ func (mm *MessageManager) handleRecvMsgBcastEvt(src uint64, pkt *schema.Np2pPack
 					glo_val.CurrentProfileEvt = evt
 				}
 			case KIND_EVT_POST: // post
-				if val, ok := evt.Tags["u"]; ok {
-					// delete "u" tag because it is not necessary for storing
-					delete(evt.Tags, "u")
-					if len(evt.Tags) == 0 {
-						evt.Tags = nil
-					}
-
-					// profile update time is attached
-					//(periodically attached the tag for avoiding old profile is kept)
-					recvdTime := val[0].(int64)
-					shortId := np2p_util.GetLower64bitUint(evt.Pubkey)
-					if mm.DataMan.GetProfileLocal(shortId) == nil ||
-						recvdTime > mm.DataMan.GetProfileLocal(shortId).Created_at {
-						// TODO: need to implement limitation of request times (MessageManager::handleRecvMsgBcastEvt)
-						// profile is updated. request latest profile asynchronous.
-						go mm.UnicastProfileReq(shortId & 0x0000ffffffffffff)
-					}
-				}
+				// do nothing
 			case KIND_EVT_FOLLOW_LIST:
 				mm.DataMan.StoreFollowList(evt)
 				if evt.Pubkey == *glo_val.SelfPubkey && (glo_val.CurrentFollowListEvt == nil || glo_val.CurrentFollowListEvt.Created_at < evt.Created_at) {
@@ -87,7 +70,15 @@ func (mm *MessageManager) handleRecvMsgBcastEvt(src uint64, pkt *schema.Np2pPack
 			tmpEvt := *evt
 			mm.DataMan.StoreEvent(&tmpEvt)
 		}
-	}()
+	}
+
+	if src == math.MaxUint64 {
+		// when recovery, execute handleFunc() directly (sequentially)
+		handleFunc()
+	} else {
+		// when normal, execute handleFunc() asynchronously
+		go handleFunc()
+	}
 
 	return nil
 }
@@ -245,7 +236,6 @@ func (mm *MessageManager) UnicastEventData(destPubHexStr string, evt *schema.Np2
 	return mm.SendMsgUnicast(np2p_util.Get6ByteUint64FromHexPubKeyStr(destPubHexStr), pkt)
 }
 
-
 func (mm *MessageManager) SetTransport(tport Np2pTransport) {
-        mm.send = tport
+	mm.send = tport
 }
