@@ -287,9 +287,10 @@ func (s *ApiServer) setOrUpdateFollowList(w rest.ResponseWriter, input *Np2pEven
 func (s *ApiServer) sendReaction(w rest.ResponseWriter, input *Np2pEventForREST) {
 	evt := NewNp2pEventFromREST(input)
 	err := s.buzzPeer.MessageMan.UnicastEventData(evt.Tags["p"][0].(string), evt)
-	if err != nil {
+	if err != nil && evt.Tags["p"][0].(string) != glo_val.SelfPubkeyStr {
 		// destination server is offline
 		// so add event to retry queue
+		// except destination is myself case
 		s.buzzPeer.MessageMan.DataMan.AddReSendNeededEvent(evt, true)
 		fmt.Println(evt.Tags["p"][0].(string))
 		fmt.Println(err)
