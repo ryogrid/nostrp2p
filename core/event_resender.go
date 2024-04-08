@@ -2,7 +2,9 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"github.com/ryogrid/nostrp2p/np2p_const"
+	"github.com/ryogrid/nostrp2p/np2p_util"
 	"github.com/ryogrid/nostrp2p/schema"
 	"time"
 )
@@ -35,10 +37,16 @@ func (er *EventResender) ResendEvents(ctx context.Context, interval time.Duratio
 			return
 		case <-ticker.C:
 			// resend events
+			np2p_util.Np2pDbgPrintln("ResendEvents: start")
 			itr := er.dman.GetReSendNeededEventItr()
 			unixtime := time.Now().Unix()
 			for itr.Next() {
-				resendEvt := itr.Value().(*schema.ResendEvent)
+				val := itr.Value()
+				if val == nil {
+					fmt.Println("on re-send iterating, strange nil value found")
+					continue
+				}
+				resendEvt := val.(*schema.ResendEvent)
 				if evt, ok := er.dman.GetEventById(resendEvt.EvtId); ok {
 					elapsedMin := (unixtime - resendEvt.CreatedAt) / 60
 					for n := 1; n <= np2p_const.ResendMaxTimes; n++ {

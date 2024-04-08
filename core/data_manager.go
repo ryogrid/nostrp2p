@@ -110,7 +110,7 @@ func (dman *DataManager) GetFollowListLocal(pubkey64bit uint64) *schema.Np2pEven
 func (dman *DataManager) AddReSendNeededEvent(destIds []uint64, evt *schema.Np2pEvent, isLogging bool) {
 	dman.reSendNeededEvtListMtx.Lock()
 	resendEvent := schema.NewResendEvent(destIds, evt.Id, evt.Created_at)
-	dman.reSendNeededEvtList.Add(evt.Created_at, &resendEvent)
+	dman.reSendNeededEvtList.Add(evt.Created_at, resendEvent)
 	dman.reSendNeededEvtListMtx.Unlock()
 	if isLogging {
 		buf := resendEvent.Encode()

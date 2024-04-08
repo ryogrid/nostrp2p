@@ -45,6 +45,10 @@ func NewPeer(self uint64, logger *log.Logger) *Np2pPeer {
 		recvedEvtReqMap: make(map[uint64]struct{}), // make(map[uint64]struct{}),
 	}
 	go p.loop(actions)
+
+	// start event resender
+	msgMan.evtReSender.Start()
+
 	return p
 }
 

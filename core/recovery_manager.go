@@ -53,7 +53,7 @@ func (rm *RecoveryManager) Recover() {
 		createdAtUint := binary.LittleEndian.Uint64(buf)
 		createdAt := int64(createdAtUint)
 		tmpFinishedMap[createdAt] = struct{}{}
-		_, buf, err = rm.messageMan.DataMan.EvtLogger.ReadLog(rm.messageMan.DataMan.EvtLogger.eventLogFile)
+		_, buf, err = rm.messageMan.DataMan.EvtLogger.ReadLog(rm.messageMan.DataMan.EvtLogger.reSendFinishedEvtLogFile)
 	}
 
 	// do recovery (resend needed events log file)
@@ -61,17 +61,19 @@ func (rm *RecoveryManager) Recover() {
 	_, buf, err = rm.messageMan.DataMan.EvtLogger.ReadLog(rm.messageMan.DataMan.EvtLogger.reSendNeededEvtLogFile)
 	for err == nil {
 		resendEvt, err_ := schema.NewResendEventFromBytes(buf)
+		fmt.Println("err_:", err_)
 		if err_ != nil {
 			// EOF
 			break
 		}
-
+		
 		if _, ok := tmpFinishedMap[resendEvt.CreatedAt]; !ok {
 			// resend needed event
 			tmpReSendNeededEvtList = append(tmpReSendNeededEvtList, resendEvt)
 		}
 		_, buf, err = rm.messageMan.DataMan.EvtLogger.ReadLog(rm.messageMan.DataMan.EvtLogger.reSendNeededEvtLogFile)
 	}
+	fmt.Println("err:", err)
 	// store read data reverse order
 	slices.Reverse(tmpReSendNeededEvtList)
 	for ii := 0; ii < len(tmpReSendNeededEvtList); ii++ {
