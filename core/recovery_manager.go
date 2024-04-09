@@ -66,7 +66,7 @@ func (rm *RecoveryManager) Recover() {
 			// EOF
 			break
 		}
-		
+
 		if _, ok := tmpFinishedMap[resendEvt.CreatedAt]; !ok {
 			// resend needed event
 			tmpReSendNeededEvtList = append(tmpReSendNeededEvtList, resendEvt)
