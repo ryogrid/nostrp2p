@@ -61,9 +61,6 @@ var serverCmd = &cobra.Command{
 
 		fmt.Println("public key: ", publicKey)
 
-		// mesh library's peer ID is 6 bytes uint64
-		peerId := np2p_util.Get6ByteUint64FromHexPubKeyStr(publicKey)
-
 		pubKeyBytes, err := hex.DecodeString(publicKey)
 		if err != nil {
 			logger.Fatalf("public key: %s: %v", publicKey, err)
@@ -74,16 +71,20 @@ var serverCmd = &cobra.Command{
 		glo_val.SelfPubkeyStr = publicKey
 		glo_val.SelfPubkey = &tmpArr
 		glo_val.SelfPubkey64bit = np2p_util.GetUint64FromHexPubKeyStr(publicKey)
-		fmt.Println(fmt.Sprintf("%x", *glo_val.SelfPubkey), fmt.Sprintf("%x", peerId))
 
 		if isEnabledSSL {
 			glo_val.IsEnabledSSL = true
 			fmt.Println("REST I/F is offered over SSL")
 		}
-		// initializa rand generator
-		np2p_util.InitializeRandGen(-1 * int64(peerId))
 
+		// initialize rand generator
+		np2p_util.InitializeRandGen(-1 * int64(glo_val.SelfPubkey64bit))
+
+		// mesh library's peer ID is 6 bytes uint64 (MeshTransport only restriction)
+		peerId := np2p_util.Get6ByteUint64FromHexPubKeyStr(publicKey)
 		peer := core.NewPeer(peerId, logger)
+
+		fmt.Println(fmt.Sprintf("%x", *glo_val.SelfPubkey), fmt.Sprintf("%x", peerId))
 
 		setupMeshTransport := func() *mesh.Router {
 			router, err := mesh.NewRouter(mesh.Config{

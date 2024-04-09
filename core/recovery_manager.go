@@ -61,7 +61,6 @@ func (rm *RecoveryManager) Recover() {
 	_, buf, err = rm.messageMan.DataMan.EvtLogger.ReadLog(rm.messageMan.DataMan.EvtLogger.reSendNeededEvtLogFile)
 	for err == nil {
 		resendEvt, err_ := schema.NewResendEventFromBytes(buf)
-		fmt.Println("err_:", err_)
 		if err_ != nil {
 			// EOF
 			break
@@ -73,7 +72,6 @@ func (rm *RecoveryManager) Recover() {
 		}
 		_, buf, err = rm.messageMan.DataMan.EvtLogger.ReadLog(rm.messageMan.DataMan.EvtLogger.reSendNeededEvtLogFile)
 	}
-	fmt.Println("err:", err)
 	// store read data reverse order
 	slices.Reverse(tmpReSendNeededEvtList)
 	for ii := 0; ii < len(tmpReSendNeededEvtList); ii++ {
