@@ -18,6 +18,7 @@ type Np2pTransport interface {
 const (
 	KIND_EVT_PROFILE        = 0
 	KIND_EVT_POST           = 1
+	KIND_EVT_REPOST         = 6
 	KIND_EVT_FOLLOW_LIST    = 3
 	KIND_EVT_REACTION       = 7
 	KIND_REQ_PROFILE        = KIND_EVT_PROFILE
@@ -144,7 +145,15 @@ func (mm *MessageManager) handleRecvMsgUnicast(src uint64, pkt *schema.Np2pPacke
 			switch pkt.Reqs[0].Kind {
 			case KIND_REQ_PROFILE: // profile request
 				// send profile data asynchronous
-				go mm.UnicastOwnProfile(uint64(src))
+				go mm.UnicastOwnProfile(src)
+			case KIND_REQ_POST:
+				// send post data asynchronous
+				if tgtEvtId, ok := pkt.Reqs[0].Args["evtId"][0].([32]byte); ok {
+					if tgtEvt, ok2 := mm.DataMan.GetEventById(tgtEvtId); ok2 {
+						events := []*schema.Np2pEvent{tgtEvt}
+						go mm.SendMsgUnicast(src, schema.NewNp2pPacket(&events, nil))
+					}
+				}
 			default:
 				fmt.Println("received unknown kind request: " + strconv.Itoa(int(pkt.Reqs[0].Kind)))
 			}
@@ -187,13 +196,21 @@ func (mm *MessageManager) BcastProfile(evt *schema.Np2pEvent) {
 func (mm *MessageManager) UnicastProfileReq(pubkey64bit uint64) {
 	reqs := []*schema.Np2pReq{schema.NewNp2pReq(KIND_REQ_PROFILE, nil)}
 	pkt := schema.NewNp2pPacket(nil, &reqs)
-	mm.SendMsgUnicast(pubkey64bit&0x0000ffffffffffff, pkt)
+	mm.SendMsgUnicast(pubkey64bit, pkt)
+}
+
+func (mm *MessageManager) UnicastPostReq(pubkey64bit uint64, evtId [32]byte) {
+	arg := make(map[string][]interface{})
+	arg["evtId"] = []interface{}{evtId}
+	reqs := []*schema.Np2pReq{schema.NewNp2pReq(KIND_REQ_POST, arg)}
+	pkt := schema.NewNp2pPacket(nil, &reqs)
+	mm.SendMsgUnicast(pubkey64bit, pkt)
 }
 
 func (mm *MessageManager) UnicastFollowListReq(pubkey64bit uint64) {
 	reqs := []*schema.Np2pReq{schema.NewNp2pReq(KIND_REQ_FOLLOW_LIST, nil)}
 	pkt := schema.NewNp2pPacket(nil, &reqs)
-	mm.SendMsgUnicast(pubkey64bit&0x0000ffffffffffff, pkt)
+	mm.SendMsgUnicast(pubkey64bit, pkt)
 }
 
 // used for response of profile request
@@ -201,23 +218,23 @@ func (mm *MessageManager) UnicastOwnProfile(dest uint64) {
 	if glo_val.CurrentProfileEvt != nil {
 		// send latest profile data
 		events := []*schema.Np2pEvent{glo_val.CurrentProfileEvt}
-		mm.SendMsgUnicast(dest&0x0000ffffffffffff, schema.NewNp2pPacket(&events, nil))
+		mm.SendMsgUnicast(dest, schema.NewNp2pPacket(&events, nil))
 	}
 }
 
-// TODO: need to implent MessageManager::GenProfileFromEvent
-func GenProfileFromEvent(evt *schema.Np2pEvent) *schema.Np2pProfile {
-	return &schema.Np2pProfile{
-		Pubkey64bit: np2p_util.GetLower64bitUint(evt.Pubkey),
-		//Name:        evt.Tags["name"][0].(string),
-		//About:       evt.Tags["about"][0].(string),
-		//Picture:     evt.Tags["picture"][0].(string),
-		Name:      "",
-		About:     "",
-		Picture:   "",
-		UpdatedAt: evt.Created_at,
-	}
-}
+//// todo: need to implent messagemanager::genprofilefromevent
+//func genprofilefromevent(evt *schema.np2pevent) *schema.np2pprofile {
+//	return &schema.np2pprofile{
+//		pubkey64bit: np2p_util.getlower64bituint(evt.pubkey),
+//		//name:        evt.tags["name"][0].(string),
+//		//about:       evt.tags["about"][0].(string),
+//		//picture:     evt.tags["picture"][0].(string),
+//		name:      "",
+//		about:     "",
+//		picture:   "",
+//		updatedat: evt.created_at,
+//	}
+//}
 
 // TODO: TEMPORAL IMPL
 func (mm *MessageManager) BcastShareEvtDataReq() {
@@ -237,7 +254,13 @@ func (mm *MessageManager) UnicastHavingEvtData(dest uint64) {
 }
 
 func (mm *MessageManager) UnicastEventData(destPubHexStr string, evt *schema.Np2pEvent) error {
-	events := []*schema.Np2pEvent{evt}
+	var events []*schema.Np2pEvent
+	if evt != nil {
+		events = []*schema.Np2pEvent{evt}
+	} else {
+		events = []*schema.Np2pEvent{}
+	}
+
 	pkt := schema.NewNp2pPacket(&events, nil)
 	return mm.SendMsgUnicast(np2p_util.Get6ByteUint64FromHexPubKeyStr(destPubHexStr), pkt)
 }

@@ -149,3 +149,14 @@ func GetUint64FromHexPubKeyStr(pubKeyStr string) uint64 {
 
 	return binary.BigEndian.Uint64(pubKeyBytes[len(pubKeyBytes)-8:])
 }
+
+func StrTo32BytesArr(pubKeyStr string) [32]byte {
+	bytes, err := hex.DecodeString(pubKeyStr)
+	if err != nil {
+		panic(err)
+	}
+	byteArr32 := [32]byte{}
+	copy(byteArr32[:], bytes)
+
+	return byteArr32
+}

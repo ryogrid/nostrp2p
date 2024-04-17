@@ -60,7 +60,7 @@ func (mt *MeshTransport) Register(send mesh.Gossip) {
 }
 
 func (mt *MeshTransport) SendMsgUnicast(dst uint64, buf []byte) error {
-	return mt.send.GossipUnicast(mesh.PeerName(dst), buf)
+	return mt.send.GossipUnicast(mesh.PeerName(dst&0x0000ffffffffffff), buf)
 }
 
 func (mt *MeshTransport) SendMsgBroadcast(pkt schema.EncodableAndMergeable) {

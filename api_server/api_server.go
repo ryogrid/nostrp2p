@@ -194,8 +194,10 @@ func (s *ApiServer) publishHandler(w rest.ResponseWriter, req *rest.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Private-Network", "true")
 	switch input.Kind {
-	case core.KIND_EVT_POST:
+	case core.KIND_EVT_POST: // including quote repost
 		s.sendPost(w, &input)
+	case core.KIND_EVT_REPOST:
+		s.sendRePost(w, &input)
 	case core.KIND_EVT_PROFILE:
 		s.updateProfile(w, &input)
 	case core.KIND_EVT_FOLLOW_LIST:
@@ -208,25 +210,39 @@ func (s *ApiServer) publishHandler(w rest.ResponseWriter, req *rest.Request) {
 	}
 }
 
+func (s *ApiServer) sendRePost(w rest.ResponseWriter, input *Np2pEventForREST) {
+	evt := NewNp2pEventFromREST(input)
+	s.buzzPeer.MessageMan.BcastOwnPost(evt)
+
+	// store for myself
+	s.buzzPeer.MessageMan.DataMan.StoreEvent(evt)
+
+	w.WriteJson(&EventsResp{})
+}
+
 func (s *ApiServer) sendPost(w rest.ResponseWriter, input *Np2pEventForREST) {
 	if input.Content == "" {
 		rest.Error(w, "Content is required", 400)
 		return
 	}
 
-	// if mention or reply, extract related user's pubkey
+	// if mention, reply or quote repost, extract related user's pubkey
 	sendDests := make([]string, 0)
+	isQuoteRpost := false
 	if input.Tags != nil {
 		for _, tag := range input.Tags {
 			if tag[0] == "p" && tag[1] != glo_val.SelfPubkeyStr {
 				// extract short pubkey from p tags hex string value
 				sendDests = append(sendDests, tag[1])
 			}
+			if tag[0] == "q" {
+				isQuoteRpost = true
+			}
 		}
 	}
 
 	evt := NewNp2pEventFromREST(input)
-	if len(sendDests) > 0 {
+	if len(sendDests) > 0 && !isQuoteRpost {
 		// send to specified users because post is mention or reply
 		resendDests := make([]uint64, 0)
 		for _, dest := range sendDests {
@@ -240,11 +256,12 @@ func (s *ApiServer) sendPost(w rest.ResponseWriter, input *Np2pEventForREST) {
 		// so add event to retry queue
 		s.buzzPeer.MessageMan.DataMan.AddReSendNeededEvent(resendDests, evt, true)
 	} else {
+		// normal post or quote repost
 		s.buzzPeer.MessageMan.BcastOwnPost(evt)
 	}
 
 	// store for myself
-	// if destination server is offline, this event will be sent again
+	// if destination server is offline, this event will be sent again (when unicast)
 	s.buzzPeer.MessageMan.DataMan.StoreEvent(evt)
 
 	w.WriteJson(&EventsResp{})
@@ -333,8 +350,10 @@ func (s *ApiServer) reqHandler(w rest.ResponseWriter, req *rest.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Private-Network", "true")
 	// TODO: need to implement each kind and other fliter condition request handling (ApiServer::reqHandler)
-	if slices.Contains(input.Kinds, core.KIND_REQ_SHARE_EVT_DATA) || slices.Contains(input.Kinds, core.KIND_REQ_POST) {
+	if slices.Contains(input.Kinds, core.KIND_REQ_SHARE_EVT_DATA) {
 		s.getEvents(w, &input)
+	} else if slices.Contains(input.Kinds, core.KIND_REQ_POST) {
+		s.getPost(w, &input)
 	} else if slices.Contains(input.Kinds, core.KIND_REQ_PROFILE) {
 		s.getProfile(w, &input)
 	} else if slices.Contains(input.Kinds, core.KIND_REQ_FOLLOW_LIST) {
@@ -348,6 +367,28 @@ func (s *ApiServer) reqHandler(w rest.ResponseWriter, req *rest.Request) {
 	}
 }
 
+// RESTRICTION: only one ID and author is supported
+func (s *ApiServer) getPost(w rest.ResponseWriter, input *Np2pReqForREST) {
+	if input.Ids == nil || len(input.Ids) == 0 || input.Authors == nil || len(input.Authors) == 0 {
+		rest.Error(w, "Ids and Authors are needed", http.StatusBadRequest)
+		return
+	}
+
+	tgtEvtId := np2p_util.StrTo32BytesArr(input.Ids[0])
+	shortPkey := np2p_util.GetUint64FromHexPubKeyStr(input.Authors[0])
+	gotEvt, ok := s.buzzPeer.MessageMan.DataMan.GetEventById(tgtEvtId)
+
+	if ok {
+		// found at local
+		w.WriteJson(&EventsResp{Events: []Np2pEventForREST{*NewNp2pEventForREST(gotEvt)}})
+	} else {
+		// post data will be included on response of "getEvents"
+		w.WriteJson(&EventsResp{Events: []Np2pEventForREST{}})
+		// request post data for future
+		s.buzzPeer.MessageMan.UnicastPostReq(shortPkey, tgtEvtId)
+	}
+}
+
 func (s *ApiServer) getProfile(w rest.ResponseWriter, input *Np2pReqForREST) {
 	shortPkey := np2p_util.GetUint64FromHexPubKeyStr(input.Authors[0])
 	profEvt := s.buzzPeer.MessageMan.DataMan.GetProfileLocal(shortPkey)
@@ -358,7 +399,7 @@ func (s *ApiServer) getProfile(w rest.ResponseWriter, input *Np2pReqForREST) {
 		// profile data will be included on response of "getEvents"
 		w.WriteJson(&EventsResp{Events: []Np2pEventForREST{}})
 		// request profile data for future
-		s.buzzPeer.MessageMan.UnicastProfileReq(shortPkey & 0x0000ffffffffffff)
+		s.buzzPeer.MessageMan.UnicastProfileReq(shortPkey)
 	}
 }
 
@@ -372,7 +413,7 @@ func (s *ApiServer) getFollowList(w rest.ResponseWriter, input *Np2pReqForREST) 
 		// follow list data will be included on response of "getEvents"
 		w.WriteJson(&EventsResp{Events: []Np2pEventForREST{}})
 		// request profile data for future
-		s.buzzPeer.MessageMan.UnicastFollowListReq(shortPkey & 0x0000ffffffffffff)
+		s.buzzPeer.MessageMan.UnicastFollowListReq(shortPkey)
 	}
 }
 
