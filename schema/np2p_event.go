@@ -46,3 +46,8 @@ func NewNp2pEventFromBytes(b []byte) (*Np2pEvent, error) {
 	//fmt.Println(e)
 	return &e, nil
 }
+
+func Verify(evt *Np2pEvent) bool {
+	restFormEvt := NewNp2pEventForREST(evt)
+	return restFormEvt.Verify()
+}

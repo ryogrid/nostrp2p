@@ -1,8 +1,6 @@
 package api_server
 
 import (
-	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/ant0ine/go-json-rest/rest"
 	"github.com/ryogrid/nostrp2p/core"
@@ -19,148 +17,8 @@ import (
 type NoArgReq struct {
 }
 
-type Np2pEventForREST struct {
-	Id         string     `json:"id"`         // string of ID (32bytes) in hex
-	Pubkey     string     `json:"pubkey"`     // string of Pubkey(encoded 256bit uint (holiman/uint256)) in hex
-	Created_at int64      `json:"created_at"` // unix timestamp in seconds
-	Kind       uint16     `json:"kind"`       // integer between 0 and 65535
-	Tags       [][]string `json:"tags"`       // Key: tag string, Value: string
-	Content    string     `json:"content"`
-	Sig        string     `json:"sig"` // string of Sig(64-bytes integr of the signature) in hex
-}
-
-type Np2pReqForREST struct {
-	Ids     []string `json:"ids"`
-	Tag     []string `json:"tag"` // "#<single-letter (a-zA-Z)>": <a list of tag values, for #e — a list of event ids, for #p — a list of pubkeys, etc.>
-	Authors []string `json:"authors"`
-	Kinds   []int    `json:"kinds"` // list of kind numbers (ex: "1,2,3")
-	Since   int64    `json:"since"`
-	Until   int64    `json:"until"`
-	Limit   int64    `json:"limit"`
-}
-
-func (p *Np2pReqForREST) UnmarshalJSON(data []byte) error {
-	type Np2pReqForREST2 struct {
-		Ids     []string `json:"ids"`
-		Tag     []string `json:"tag"` // "#<single-letter (a-zA-Z)>": <a list of tag values, for #e — a list of event ids, for #p — a list of pubkeys, etc.>
-		Authors []string `json:"authors"`
-		Kinds   []int    `json:"kinds"`
-		Since   int64    `json:"since"`
-		Until   int64    `json:"until"`
-		Limit   int64    `json:"limit"`
-	}
-
-	var req Np2pReqForREST2
-	json.Unmarshal(data, &req)
-	*p = *(*Np2pReqForREST)(&req)
-
-	var tag map[string][]string
-	json.Unmarshal(data, &tag)
-
-	for k, v := range tag {
-		if k[0] == '#' && len(k) == 2 {
-			if v == nil {
-				continue
-			}
-			//fmt.Println(v)
-			//fmt.Println(reflect.TypeOf(v))
-			p.Tag = []string{k}
-			for _, val := range v {
-				p.Tag = append(p.Tag, val)
-			}
-		}
-	}
-
-	return nil
-}
-
-func NewNp2pEventForREST(evt *schema.Np2pEvent) *Np2pEventForREST {
-	//idStr := fmt.Sprintf("%x", evt.Id[:])
-	idStr := hex.EncodeToString(evt.Id[:])
-	pubkeyStr := hex.EncodeToString(evt.Pubkey[:])
-	sigStr := ""
-	if evt.Sig != nil {
-		sigStr = hex.EncodeToString(evt.Sig[:])
-	}
-
-	tagsArr := make([][]string, 0)
-	for k, v := range evt.Tags {
-		tmpArr := make([]string, 0)
-		r := []rune(k)
-		// remove duplicated tag suffix (ex: "p_0" -> "p")
-		tmpArr = append(tmpArr, string(r[0]))
-		for _, val := range v {
-			tmpArr = append(tmpArr, val.(string))
-		}
-		tagsArr = append(tagsArr, tmpArr)
-	}
-
-	return &Np2pEventForREST{
-		Id:         idStr,     // remove leading zeros
-		Pubkey:     pubkeyStr, //fmt.Sprintf("%x", evt.Pubkey[:]),
-		Created_at: evt.Created_at,
-		Kind:       evt.Kind,
-		Tags:       tagsArr,
-		Content:    evt.Content,
-		Sig:        sigStr,
-	}
-}
-
-func NewNp2pEventFromREST(evt *Np2pEventForREST) *schema.Np2pEvent {
-	tagsMap := make(map[string][]interface{})
-	tagCntMap := make(map[string]int)
-	for _, tag := range evt.Tags {
-		vals := make([]interface{}, 0)
-		for _, val := range tag[1:] {
-			vals = append(vals, val)
-		}
-		if _, ok := tagCntMap[tag[0]]; ok {
-			tagCntMap[tag[0]]++
-			tag[0] = fmt.Sprintf("%s_%d", tag[0], tagCntMap[tag[0]])
-			tagsMap[tag[0]] = vals
-		} else {
-			tagCntMap[tag[0]] = 0
-			tagsMap[tag[0]] = vals
-		}
-
-	}
-
-	pkey, err := hex.DecodeString(evt.Pubkey)
-	if err != nil {
-		panic(err)
-	}
-	pkey32 := [32]byte{}
-	copy(pkey32[:], pkey)
-	evtId, err := hex.DecodeString(evt.Id)
-	if err != nil {
-		panic(err)
-	}
-	evtId32 := [32]byte{}
-	copy(evtId32[:], evtId)
-
-	allBytes, err := hex.DecodeString(evt.Sig)
-	if err != nil {
-		panic(err)
-	}
-
-	var sigBytes [64]byte
-	copy(sigBytes[:], allBytes)
-
-	retEvt := &schema.Np2pEvent{
-		Pubkey:     pkey32,  //pkey.Bytes32(),
-		Id:         evtId32, //evtId.Bytes32(),
-		Created_at: evt.Created_at,
-		Kind:       evt.Kind,
-		Tags:       tagsMap,
-		Content:    evt.Content,
-		Sig:        &sigBytes,
-	}
-
-	return retEvt
-}
-
 type EventsResp struct {
-	Events []Np2pEventForREST `json:"results"`
+	Events []schema.Np2pEventForREST `json:"results"`
 }
 type GeneralResp struct {
 	Status string
@@ -175,7 +33,7 @@ func NewApiServer(peer *core.Np2pPeer) *ApiServer {
 }
 
 func (s *ApiServer) publishHandler(w rest.ResponseWriter, req *rest.Request) {
-	input := Np2pEventForREST{}
+	input := schema.Np2pEventForREST{}
 	err := req.DecodeJsonPayload(&input)
 
 	if glo_val.DenyWriteMode {
@@ -210,8 +68,8 @@ func (s *ApiServer) publishHandler(w rest.ResponseWriter, req *rest.Request) {
 	}
 }
 
-func (s *ApiServer) sendRePost(w rest.ResponseWriter, input *Np2pEventForREST) {
-	evt := NewNp2pEventFromREST(input)
+func (s *ApiServer) sendRePost(w rest.ResponseWriter, input *schema.Np2pEventForREST) {
+	evt := schema.NewNp2pEventFromREST(input)
 	s.buzzPeer.MessageMan.BcastOwnPost(evt)
 
 	// store for myself
@@ -220,7 +78,7 @@ func (s *ApiServer) sendRePost(w rest.ResponseWriter, input *Np2pEventForREST) {
 	w.WriteJson(&EventsResp{})
 }
 
-func (s *ApiServer) sendPost(w rest.ResponseWriter, input *Np2pEventForREST) {
+func (s *ApiServer) sendPost(w rest.ResponseWriter, input *schema.Np2pEventForREST) {
 	if input.Content == "" {
 		rest.Error(w, "Content is required", 400)
 		return
@@ -241,7 +99,7 @@ func (s *ApiServer) sendPost(w rest.ResponseWriter, input *Np2pEventForREST) {
 		}
 	}
 
-	evt := NewNp2pEventFromREST(input)
+	evt := schema.NewNp2pEventFromREST(input)
 	if len(sendDests) > 0 && !isQuoteRpost {
 		// send to specified users because post is mention or reply
 		resendDests := make([]uint64, 0)
@@ -267,13 +125,13 @@ func (s *ApiServer) sendPost(w rest.ResponseWriter, input *Np2pEventForREST) {
 	w.WriteJson(&EventsResp{})
 }
 
-func (s *ApiServer) updateProfile(w rest.ResponseWriter, input *Np2pEventForREST) {
+func (s *ApiServer) updateProfile(w rest.ResponseWriter, input *schema.Np2pEventForREST) {
 	if input.Tags == nil {
 		rest.Error(w, "Tags is null", http.StatusBadRequest)
 		return
 	}
 
-	evt := NewNp2pEventFromREST(input)
+	evt := schema.NewNp2pEventFromREST(input)
 	if *glo_val.SelfPubkey == evt.Pubkey {
 		s.buzzPeer.MessageMan.BcastProfile(evt)
 		// update local profile
@@ -285,13 +143,13 @@ func (s *ApiServer) updateProfile(w rest.ResponseWriter, input *Np2pEventForREST
 	})
 }
 
-func (s *ApiServer) setOrUpdateFollowList(w rest.ResponseWriter, input *Np2pEventForREST) {
+func (s *ApiServer) setOrUpdateFollowList(w rest.ResponseWriter, input *schema.Np2pEventForREST) {
 	if input.Tags == nil {
 		rest.Error(w, "Tags is null", http.StatusBadRequest)
 		return
 	}
 
-	evt := NewNp2pEventFromREST(input)
+	evt := schema.NewNp2pEventFromREST(input)
 	if *glo_val.SelfPubkey == evt.Pubkey {
 		s.buzzPeer.MessageMan.DataMan.StoreEvent(evt)
 		// update local profile
@@ -303,8 +161,8 @@ func (s *ApiServer) setOrUpdateFollowList(w rest.ResponseWriter, input *Np2pEven
 	})
 }
 
-func (s *ApiServer) sendReaction(w rest.ResponseWriter, input *Np2pEventForREST) {
-	evt := NewNp2pEventFromREST(input)
+func (s *ApiServer) sendReaction(w rest.ResponseWriter, input *schema.Np2pEventForREST) {
+	evt := schema.NewNp2pEventFromREST(input)
 	err := s.buzzPeer.MessageMan.UnicastEventData(evt.Tags["p"][0].(string), evt)
 	if err != nil && evt.Tags["p"][0].(string) != glo_val.SelfPubkeyStr {
 		// destination server is offline
@@ -323,7 +181,7 @@ func (s *ApiServer) sendReaction(w rest.ResponseWriter, input *Np2pEventForREST)
 }
 
 func (s *ApiServer) reqHandler(w rest.ResponseWriter, req *rest.Request) {
-	input := Np2pReqForREST{}
+	input := schema.Np2pReqForREST{}
 	err := req.DecodeJsonPayload(&input)
 
 	//fmt.Println("reqHandler")
@@ -339,7 +197,7 @@ func (s *ApiServer) reqHandler(w rest.ResponseWriter, req *rest.Request) {
 
 		// for supporting Nostr clients
 		w.WriteJson(&EventsResp{
-			Events: []Np2pEventForREST{},
+			Events: []schema.Np2pEventForREST{},
 		})
 		return
 	}
@@ -361,14 +219,14 @@ func (s *ApiServer) reqHandler(w rest.ResponseWriter, req *rest.Request) {
 	} else {
 
 		w.WriteJson(&EventsResp{
-			Events: []Np2pEventForREST{},
+			Events: []schema.Np2pEventForREST{},
 		})
 		return
 	}
 }
 
 // RESTRICTION: only one ID and author is supported
-func (s *ApiServer) getPost(w rest.ResponseWriter, input *Np2pReqForREST) {
+func (s *ApiServer) getPost(w rest.ResponseWriter, input *schema.Np2pReqForREST) {
 	if input.Ids == nil || len(input.Ids) == 0 || input.Authors == nil || len(input.Authors) == 0 {
 		rest.Error(w, "Ids and Authors are needed", http.StatusBadRequest)
 		return
@@ -380,44 +238,44 @@ func (s *ApiServer) getPost(w rest.ResponseWriter, input *Np2pReqForREST) {
 
 	if ok {
 		// found at local
-		w.WriteJson(&EventsResp{Events: []Np2pEventForREST{*NewNp2pEventForREST(gotEvt)}})
+		w.WriteJson(&EventsResp{Events: []schema.Np2pEventForREST{*schema.NewNp2pEventForREST(gotEvt)}})
 	} else {
 		// post data will be included on response of "getEvents"
-		w.WriteJson(&EventsResp{Events: []Np2pEventForREST{}})
+		w.WriteJson(&EventsResp{Events: []schema.Np2pEventForREST{}})
 		// request post data for future
 		s.buzzPeer.MessageMan.UnicastPostReq(shortPkey, tgtEvtId)
 	}
 }
 
-func (s *ApiServer) getProfile(w rest.ResponseWriter, input *Np2pReqForREST) {
+func (s *ApiServer) getProfile(w rest.ResponseWriter, input *schema.Np2pReqForREST) {
 	shortPkey := np2p_util.GetUint64FromHexPubKeyStr(input.Authors[0])
 	profEvt := s.buzzPeer.MessageMan.DataMan.GetProfileLocal(shortPkey)
 
 	if profEvt != nil {
-		w.WriteJson(&EventsResp{Events: []Np2pEventForREST{*NewNp2pEventForREST(profEvt)}})
+		w.WriteJson(&EventsResp{Events: []schema.Np2pEventForREST{*schema.NewNp2pEventForREST(profEvt)}})
 	} else {
 		// profile data will be included on response of "getEvents"
-		w.WriteJson(&EventsResp{Events: []Np2pEventForREST{}})
+		w.WriteJson(&EventsResp{Events: []schema.Np2pEventForREST{}})
 		// request profile data for future
 		s.buzzPeer.MessageMan.UnicastProfileReq(shortPkey)
 	}
 }
 
-func (s *ApiServer) getFollowList(w rest.ResponseWriter, input *Np2pReqForREST) {
+func (s *ApiServer) getFollowList(w rest.ResponseWriter, input *schema.Np2pReqForREST) {
 	shortPkey := np2p_util.GetUint64FromHexPubKeyStr(input.Authors[0])
 	fListEvt := s.buzzPeer.MessageMan.DataMan.GetFollowListLocal(shortPkey)
 
 	if fListEvt != nil {
-		w.WriteJson(&EventsResp{Events: []Np2pEventForREST{*NewNp2pEventForREST(fListEvt)}})
+		w.WriteJson(&EventsResp{Events: []schema.Np2pEventForREST{*schema.NewNp2pEventForREST(fListEvt)}})
 	} else {
 		// follow list data will be included on response of "getEvents"
-		w.WriteJson(&EventsResp{Events: []Np2pEventForREST{}})
+		w.WriteJson(&EventsResp{Events: []schema.Np2pEventForREST{}})
 		// request profile data for future
 		s.buzzPeer.MessageMan.UnicastFollowListReq(shortPkey)
 	}
 }
 
-func (s *ApiServer) getEvents(w rest.ResponseWriter, input *Np2pReqForREST) {
+func (s *ApiServer) getEvents(w rest.ResponseWriter, input *schema.Np2pReqForREST) {
 	// for supporting Nostr clients
 	isPeriodSpecified := true
 	if input.Since == 0 {
@@ -438,10 +296,10 @@ func (s *ApiServer) getEvents(w rest.ResponseWriter, input *Np2pReqForREST) {
 		*events = (*events)[len(*events)-50:]
 	}
 
-	retEvents := make([]Np2pEventForREST, 0)
+	retEvents := make([]schema.Np2pEventForREST, 0)
 
 	for _, evt := range *events {
-		retEvents = append(retEvents, *NewNp2pEventForREST(evt))
+		retEvents = append(retEvents, *schema.NewNp2pEventForREST(evt))
 	}
 
 	w.WriteJson(&EventsResp{

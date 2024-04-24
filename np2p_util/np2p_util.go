@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"github.com/nbd-wtf/go-nostr"
 	"github.com/ryogrid/nostrp2p/np2p_const"
 	"io"
 	"math/rand"
@@ -159,4 +160,12 @@ func StrTo32BytesArr(pubKeyStr string) [32]byte {
 	copy(byteArr32[:], bytes)
 
 	return byteArr32
+}
+
+func ConvStringArrToTagArr(tagStrArr [][]string) []nostr.Tag {
+	tagArr := make([]nostr.Tag, len(tagStrArr))
+	for idx, tagStr := range tagStrArr {
+		tagArr[idx] = nostr.Tag(tagStr)
+	}
+	return tagArr
 }
