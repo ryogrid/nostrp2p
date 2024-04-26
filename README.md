@@ -215,7 +215,7 @@ Flags:
   - REST I/F using JSON text as serialized format has been implemented (TEMPORAL)
   - Simple client has been implemented with Flutter
   - Event data persistence has been implemented (only server now)
-  - No signature validation
+  - signature validation has been implemented
 
 
 ## Current Implemented Features with Nostr Client (Not NostrP2P Client) Using a Protcol Bridge Server
