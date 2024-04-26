@@ -36,14 +36,19 @@ func (s *ApiServer) publishHandler(w rest.ResponseWriter, req *rest.Request) {
 	input := schema.Np2pEventForREST{}
 	err := req.DecodeJsonPayload(&input)
 
+	if err != nil {
+		fmt.Println(err)
+		rest.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	if glo_val.DenyWriteMode {
 		rest.Error(w, "Write is denied", http.StatusNotAcceptable)
 		return
 	}
 
-	if err != nil {
-		fmt.Println(err)
-		rest.Error(w, err.Error(), http.StatusBadRequest)
+	if input.Verify() == false {
+		rest.Error(w, "Invalid Sig", http.StatusBadRequest)
 		return
 	}
 
@@ -163,13 +168,13 @@ func (s *ApiServer) setOrUpdateFollowList(w rest.ResponseWriter, input *schema.N
 
 func (s *ApiServer) sendReaction(w rest.ResponseWriter, input *schema.Np2pEventForREST) {
 	evt := schema.NewNp2pEventFromREST(input)
-	err := s.buzzPeer.MessageMan.UnicastEventData(evt.Tags["p"][0].(string), evt)
-	if err != nil && evt.Tags["p"][0].(string) != glo_val.SelfPubkeyStr {
+	err := s.buzzPeer.MessageMan.UnicastEventData(string((*(schema.FindFirstSpecifiedTag(&evt.Tags, "p")))[1]), evt)
+	if err != nil && string((*(schema.FindFirstSpecifiedTag(&evt.Tags, "p")))[1]) != glo_val.SelfPubkeyStr {
 		// destination server is offline
 		// so add event to retry queue
 		// except destination is myself case
-		s.buzzPeer.MessageMan.DataMan.AddReSendNeededEvent([]uint64{np2p_util.Get6ByteUint64FromHexPubKeyStr(evt.Tags["p"][0].(string))}, evt, true)
-		fmt.Println(evt.Tags["p"][0].(string))
+		s.buzzPeer.MessageMan.DataMan.AddReSendNeededEvent([]uint64{np2p_util.Get6ByteUint64FromHexPubKeyStr(string((*(schema.FindFirstSpecifiedTag(&evt.Tags, "p")))[0]))}, evt, true)
+		fmt.Println(string((*(schema.FindFirstSpecifiedTag(&evt.Tags, "p")))[1]))
 		fmt.Println(err)
 	}
 

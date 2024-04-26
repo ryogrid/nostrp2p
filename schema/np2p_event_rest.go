@@ -2,7 +2,6 @@ package schema
 
 import (
 	"encoding/hex"
-	"fmt"
 	"github.com/nbd-wtf/go-nostr"
 	"github.com/ryogrid/nostrp2p/np2p_util"
 )
@@ -18,7 +17,6 @@ type Np2pEventForREST struct {
 }
 
 func NewNp2pEventForREST(evt *Np2pEvent) *Np2pEventForREST {
-	//idStr := fmt.Sprintf("%x", evt.Id[:])
 	idStr := hex.EncodeToString(evt.Id[:])
 	pubkeyStr := hex.EncodeToString(evt.Pubkey[:])
 	sigStr := ""
@@ -27,13 +25,10 @@ func NewNp2pEventForREST(evt *Np2pEvent) *Np2pEventForREST {
 	}
 
 	tagsArr := make([][]string, 0)
-	for k, v := range evt.Tags {
+	for _, v := range evt.Tags {
 		tmpArr := make([]string, 0)
-		r := []rune(k)
-		// remove duplicated tag suffix (ex: "p_0" -> "p")
-		tmpArr = append(tmpArr, string(r[0]))
-		for _, val := range v {
-			tmpArr = append(tmpArr, val.(string))
+		for _, vv := range v {
+			tmpArr = append(tmpArr, string(vv))
 		}
 		tagsArr = append(tagsArr, tmpArr)
 	}
@@ -50,22 +45,15 @@ func NewNp2pEventForREST(evt *Np2pEvent) *Np2pEventForREST {
 }
 
 func NewNp2pEventFromREST(evt *Np2pEventForREST) *Np2pEvent {
-	tagsMap := make(map[string][]interface{})
-	tagCntMap := make(map[string]int)
-	for _, tag := range evt.Tags {
-		vals := make([]interface{}, 0)
-		for _, val := range tag[1:] {
-			vals = append(vals, val)
+	tagsList := make([][]TagElem, 0)
+	if evt.Tags != nil {
+		for _, tagList := range evt.Tags {
+			elems := make([]TagElem, 0)
+			for _, elem := range tagList {
+				elems = append(elems, TagElem(elem))
+			}
+			tagsList = append(tagsList, elems)
 		}
-		if _, ok := tagCntMap[tag[0]]; ok {
-			tagCntMap[tag[0]]++
-			tag[0] = fmt.Sprintf("%s_%d", tag[0], tagCntMap[tag[0]])
-			tagsMap[tag[0]] = vals
-		} else {
-			tagCntMap[tag[0]] = 0
-			tagsMap[tag[0]] = vals
-		}
-
 	}
 
 	pkey, err := hex.DecodeString(evt.Pubkey)
@@ -94,7 +82,7 @@ func NewNp2pEventFromREST(evt *Np2pEventForREST) *Np2pEvent {
 		Id:         evtId32, //evtId.Bytes32(),
 		Created_at: evt.Created_at,
 		Kind:       evt.Kind,
-		Tags:       tagsMap,
+		Tags:       tagsList,
 		Content:    evt.Content,
 		Sig:        &sigBytes,
 	}

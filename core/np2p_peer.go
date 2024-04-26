@@ -87,6 +87,12 @@ func (p *Np2pPeer) OnRecvBroadcast(src uint64, buf []byte) (received schema.Enco
 	if pkt.Events != nil {
 		for _, evt := range pkt.Events {
 			if _, ok := p.recvedEvtReqMap[np2p_util.ExtractUint64FromBytes(evt.Id[:])]; !ok {
+				if evt.Verify() == false {
+					// invalid signiture
+					fmt.Println("invalid signiture")
+					continue
+				}
+
 				err2 := p.MessageMan.handleRecvMsgBcastEvt(src, pkt, evt)
 				if err2 != nil {
 					panic(err2)

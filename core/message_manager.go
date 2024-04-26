@@ -117,6 +117,12 @@ func (mm *MessageManager) handleRecvMsgUnicast(src uint64, pkt *schema.Np2pPacke
 			for _, evt := range pkt.Events {
 				// handle response of request
 
+				if evt.Verify() == false {
+					// invalid signiture
+					fmt.Println("invalid signiture")
+					continue
+				}
+
 				// store received event data (on memory)
 				mm.DataMan.StoreEvent(evt)
 

@@ -27,10 +27,10 @@ func (rm *RecoveryManager) Recover() {
 	for err == nil {
 		evt, err_ := schema.NewNp2pEventFromBytes(buf)
 		if evt.Tags != nil {
-			evt.Tags["recovering"] = []interface{}{true}
+			evt.Tags = append(evt.Tags, []schema.TagElem{schema.TagElem("recovering")})
 		} else {
-			evt.Tags = make(map[string][]interface{})
-			evt.Tags["recovering"] = []interface{}{true}
+			evt.Tags = make([][]schema.TagElem, 0)
+			evt.Tags = append(evt.Tags, []schema.TagElem{schema.TagElem("recovering")})
 		}
 		if err_ != nil {
 			// EOF
