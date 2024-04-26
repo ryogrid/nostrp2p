@@ -230,7 +230,7 @@ Flags:
 - [x] Reply
 - [x] Quote Repost
 - [x] Repost
-- [ ] Server Side Signature Validation  
+- [x] Server Side Signature Validation  
 - [ ] Follower Multicast Mode
   - In this mode, posted messages are not broadcasted and server of follower should register to followee's server
   - If broadcasting design reaches limit of scalability, this mode will be activated
