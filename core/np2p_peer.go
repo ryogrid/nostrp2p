@@ -1,12 +1,12 @@
 package core
 
 import (
-	"errors"
 	"fmt"
+	"log"
+
 	"github.com/ryogrid/nostrp2p/np2p_const"
 	"github.com/ryogrid/nostrp2p/np2p_util"
 	"github.com/ryogrid/nostrp2p/schema"
-	"log"
 )
 
 // Peer encapsulates state and implements mesh.Gossiper.
@@ -74,12 +74,6 @@ func (p *Np2pPeer) OnRecvBroadcast(src uint64, buf []byte) (received schema.Enco
 	if err_ != nil {
 		return nil, err_
 	}
-	if pkt.PktVer != np2p_const.PacketStructureVersion {
-		return nil, errors.New("Invalid packet version")
-	}
-	if pkt.SrvVer != np2p_const.ServerImplVersion {
-		fmt.Println("received packat from newer version of server")
-	}
 
 	tmpEvts := make([]*schema.Np2pEvent, 0)
 	tmpReqs := make([]*schema.Np2pReq, 0)
@@ -140,12 +134,6 @@ func (p *Np2pPeer) OnRecvUnicast(src uint64, buf []byte) (err error) {
 	pkt, err := schema.NewNp2pPacketFromBytes(buf)
 	if err != nil {
 		return err
-	}
-	if pkt.PktVer != np2p_const.PacketStructureVersion {
-		return errors.New("Invalid packet version")
-	}
-	if pkt.SrvVer != np2p_const.ServerImplVersion {
-		fmt.Println("received packat from newer version of server")
 	}
 
 	err_ := p.MessageMan.handleRecvMsgUnicast(src, pkt)

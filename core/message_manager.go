@@ -2,12 +2,13 @@ package core
 
 import (
 	"fmt"
-	"github.com/ryogrid/nostrp2p/glo_val"
-	"github.com/ryogrid/nostrp2p/np2p_util"
-	"github.com/ryogrid/nostrp2p/schema"
 	"math"
 	"strconv"
 	"time"
+
+	"github.com/ryogrid/nostrp2p/glo_val"
+	"github.com/ryogrid/nostrp2p/np2p_util"
+	"github.com/ryogrid/nostrp2p/schema"
 )
 
 type Np2pTransport interface {
@@ -154,8 +155,10 @@ func (mm *MessageManager) handleRecvMsgUnicast(src uint64, pkt *schema.Np2pPacke
 				go mm.UnicastOwnProfile(src)
 			case KIND_REQ_POST:
 				// send post data asynchronous
-				if tgtEvtId, ok := pkt.Reqs[0].Args["evtId"][0].([32]byte); ok {
-					if tgtEvt, ok2 := mm.DataMan.GetEventById(tgtEvtId); ok2 {
+				if tgtEvtId, ok := pkt.Reqs[0].Args["evtId"][0].([]byte); ok {
+					var tgtEvtId_ [32]byte
+					copy(tgtEvtId[:], tgtEvtId)
+					if tgtEvt, ok2 := mm.DataMan.GetEventById(tgtEvtId_); ok2 {
 						events := []*schema.Np2pEvent{tgtEvt}
 						go mm.SendMsgUnicast(src, schema.NewNp2pPacket(&events, nil))
 					}

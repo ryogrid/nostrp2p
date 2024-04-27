@@ -1,7 +1,6 @@
 package schema
 
 import (
-	"github.com/ryogrid/nostrp2p/np2p_const"
 	"github.com/vmihailenco/msgpack/v5"
 	"github.com/weaveworks/mesh"
 )
@@ -13,8 +12,6 @@ type EncodableAndMergeable interface {
 
 // Np2pPacket is an implementation of GossipData
 type Np2pPacket struct {
-	SrvVer uint16 // version of nostrp2p server implementation
-	PktVer uint16 // Np2pPacket data structure version for compatibility
 	Events []*Np2pEvent
 	Reqs   []*Np2pReq
 }
@@ -39,8 +36,6 @@ func NewNp2pPacket(events *[]*Np2pEvent, req *[]*Np2pReq) *Np2pPacket {
 	}
 
 	return &Np2pPacket{
-		SrvVer: np2p_const.ServerImplVersion,
-		PktVer: np2p_const.PacketStructureVersion,
 		Events: events_,
 		Reqs:   req_,
 	}

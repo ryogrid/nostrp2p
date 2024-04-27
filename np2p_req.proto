@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package schema;
+
+option go_package = "schema/";
+
+message Np2pReqPB{
+    uint64 id = 1;
+    uint32 kind = 2;
+    map<string, bytes> args = 3;
+
+	// Id   uint64 // for avoiding duplicated receiving at broadcast
+	// Kind uint16
+	// Args map[string]byte
+}

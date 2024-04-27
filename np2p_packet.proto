@@ -1,0 +1,19 @@
+// for generate go code
+// at repository root, execute 'protoc -I="." --go_out=. ./*.proto'
+
+syntax = "proto3";
+
+package schema;
+
+import "np2p_event.proto";
+import "np2p_req.proto";
+
+option go_package = "schema/";
+
+message Np2pPacketPB{
+    repeated Np2pEventPB events = 1;
+    repeated Np2pReqPB reqs = 2;
+
+	// Events []*Np2pEvent
+	// Reqs   []*Np2pReq
+}
