@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package schema;
+
+option go_package = "schema/";
+
+message Np2pResendRecordPB{
+    repeated uint64 destIds = 1;
+    bytes evtId = 2;
+    uint64 createdAt = 3;
+
+	// DestIds   []uint64
+	// EvtId     [np2p_const.EventIdSize]byte
+	// CreatedAt int64   
+}

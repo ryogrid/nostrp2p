@@ -3,9 +3,10 @@ package core
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/ryogrid/nostrp2p/schema"
 	"math"
 	"slices"
+
+	"github.com/ryogrid/nostrp2p/schema"
 )
 
 type RecoveryManager struct {
@@ -57,7 +58,7 @@ func (rm *RecoveryManager) Recover() {
 	}
 
 	// do recovery (resend needed events log file)
-	tmpReSendNeededEvtList := make([]*schema.ResendEvent, 0)
+	tmpReSendNeededEvtList := make([]*schema.ResendRecord, 0)
 	_, buf, err = rm.messageMan.DataMan.EvtLogger.ReadLog(rm.messageMan.DataMan.EvtLogger.reSendNeededEvtLogFile)
 	for err == nil {
 		resendEvt, err_ := schema.NewResendEventFromBytes(buf)

@@ -2,12 +2,13 @@ package core
 
 import (
 	"encoding/binary"
+	"strconv"
+	"sync"
+
 	"github.com/chenjiandongx/mandodb/pkg/sortedlist"
 	"github.com/ryogrid/nostrp2p/glo_val"
 	"github.com/ryogrid/nostrp2p/np2p_util"
 	"github.com/ryogrid/nostrp2p/schema"
-	"strconv"
-	"sync"
 )
 
 type DataManager struct {
@@ -111,7 +112,7 @@ func (dman *DataManager) GetFollowListLocal(pubkey64bit uint64) *schema.Np2pEven
 
 func (dman *DataManager) AddReSendNeededEvent(destIds []uint64, evt *schema.Np2pEvent, isLogging bool) {
 	dman.reSendNeededEvtListMtx.Lock()
-	resendEvent := schema.NewResendEvent(destIds, evt.Id, evt.Created_at)
+	resendEvent := schema.NewResendRecord(destIds, evt.Id, evt.Created_at)
 	dman.reSendNeededEvtList.Add(evt.Created_at, resendEvent)
 	dman.reSendNeededEvtListMtx.Unlock()
 	if isLogging {
