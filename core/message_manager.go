@@ -155,7 +155,7 @@ func (mm *MessageManager) handleRecvMsgUnicast(src uint64, pkt *schema.Np2pPacke
 				go mm.UnicastOwnProfile(src)
 			case KIND_REQ_POST:
 				// send post data asynchronous
-				if tgtEvtId, ok := pkt.Reqs[0].Args["evtId"][0].([]byte); ok {
+				if tgtEvtId, ok := pkt.Reqs[0].Args["evtId"]; ok {
 					var tgtEvtId_ [32]byte
 					copy(tgtEvtId[:], tgtEvtId)
 					if tgtEvt, ok2 := mm.DataMan.GetEventById(tgtEvtId_); ok2 {
@@ -209,8 +209,8 @@ func (mm *MessageManager) UnicastProfileReq(pubkey64bit uint64) {
 }
 
 func (mm *MessageManager) UnicastPostReq(pubkey64bit uint64, evtId [32]byte) {
-	arg := make(map[string][]interface{})
-	arg["evtId"] = []interface{}{evtId}
+	arg := make(map[string][]byte)
+	arg["evtId"] = evtId[:]
 	reqs := []*schema.Np2pReq{schema.NewNp2pReq(KIND_REQ_POST, arg)}
 	pkt := schema.NewNp2pPacket(nil, &reqs)
 	mm.SendMsgUnicast(pubkey64bit, pkt)

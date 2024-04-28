@@ -4,16 +4,15 @@ package schema;
 
 option go_package = "schema/";
 
+message Tag{
+    repeated bytes tag = 1;
+}
+
 message Np2pEventPB{
     bytes id = 1;
     bytes pubkey = 2;
     uint64 created_at = 3;
     uint32 kind = 4;
-
-    message Tag{
-        repeated bytes tag = 1;
-    }
-
     repeated Tag tags = 5;
     string content = 6;
     optional bytes sig = 7;
