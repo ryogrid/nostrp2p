@@ -127,13 +127,11 @@ var serverCmd = &cobra.Command{
 		}()
 
 		// if log file exist, load it
+		// note: Recovery is neededn only when DataManager implementation is OnMemoryDataManager
 		core.NewRecoveryManager(peer.MessageMan).Recover()
-		//time.Sleep(10 * time.Second)
 
-		if !glo_val.DenyWriteMode {
-			apiServ := api_server.NewApiServer(peer)
-			go apiServ.LaunchAPIServer(host + ":" + strconv.Itoa(port+1))
-		}
+		apiServ := api_server.NewApiServer(peer)
+		go apiServ.LaunchAPIServer(host + ":" + strconv.Itoa(port+1))
 
 		np2p_util.OSInterrupt()
 	},

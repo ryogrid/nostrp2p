@@ -165,7 +165,19 @@ func StrTo32BytesArr(pubKeyStr string) [32]byte {
 func ConvStringArrToTagArr(tagStrArr [][]string) []nostr.Tag {
 	tagArr := make([]nostr.Tag, len(tagStrArr))
 	for idx, tagStr := range tagStrArr {
-		tagArr[idx] = nostr.Tag(tagStr)
+		tagArr[idx] = tagStr
 	}
 	return tagArr
+}
+
+func ConvInt64ToBytes(val int64) []byte {
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, uint64(val))
+	return buf
+}
+
+func ConvUint64ToBytes(val uint64) []byte {
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, val)
+	return buf
 }
