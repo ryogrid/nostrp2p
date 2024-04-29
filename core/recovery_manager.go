@@ -8,6 +8,9 @@ import (
 	"slices"
 )
 
+// this variable is set at initialization of OnMemoryDataManager
+var _edlogger *EventDataLogger
+
 type RecoveryManager struct {
 	messageMan *MessageManager
 }
@@ -17,13 +20,13 @@ func NewRecoveryManager(messageMan *MessageManager) *RecoveryManager {
 }
 
 func (rm *RecoveryManager) Recover() {
-	if rm.messageMan.DataMan.EvtLogger.GetLogfileSize(rm.messageMan.DataMan.EvtLogger.eventLogFile) == 0 {
+	if _edlogger.GetLogfileSize(_edlogger.eventLogFile) == 0 {
 		return
 	}
 
 	fmt.Println("Recovering from log file...")
 	// do recovery (event log file)
-	_, buf, err := rm.messageMan.DataMan.EvtLogger.ReadLog(rm.messageMan.DataMan.EvtLogger.eventLogFile)
+	_, buf, err := _edlogger.ReadLog(_edlogger.eventLogFile)
 	for err == nil {
 		evt, err_ := schema.NewNp2pEventFromBytes(buf)
 		if evt.Tags != nil {
@@ -38,12 +41,12 @@ func (rm *RecoveryManager) Recover() {
 		}
 		pkt := schema.NewNp2pPacket(&[]*schema.Np2pEvent{evt}, nil)
 		rm.messageMan.handleRecvMsgBcastEvt(math.MaxUint64, pkt, evt)
-		_, buf, err = rm.messageMan.DataMan.EvtLogger.ReadLog(rm.messageMan.DataMan.EvtLogger.eventLogFile)
+		_, buf, err = _edlogger.ReadLog(_edlogger.eventLogFile)
 	}
 
 	// do recovery (resend finished events log file)
 	tmpFinishedMap := make(map[int64]struct{})
-	_, buf, err = rm.messageMan.DataMan.EvtLogger.ReadLog(rm.messageMan.DataMan.EvtLogger.reSendFinishedEvtLogFile)
+	_, buf, err = _edlogger.ReadLog(_edlogger.reSendFinishedEvtLogFile)
 	for err == nil {
 		if len(buf) != 8 {
 			// EOF
@@ -53,12 +56,12 @@ func (rm *RecoveryManager) Recover() {
 		createdAtUint := binary.LittleEndian.Uint64(buf)
 		createdAt := int64(createdAtUint)
 		tmpFinishedMap[createdAt] = struct{}{}
-		_, buf, err = rm.messageMan.DataMan.EvtLogger.ReadLog(rm.messageMan.DataMan.EvtLogger.reSendFinishedEvtLogFile)
+		_, buf, err = _edlogger.ReadLog(_edlogger.reSendFinishedEvtLogFile)
 	}
 
 	// do recovery (resend needed events log file)
 	tmpReSendNeededEvtList := make([]*schema.ResendEvent, 0)
-	_, buf, err = rm.messageMan.DataMan.EvtLogger.ReadLog(rm.messageMan.DataMan.EvtLogger.reSendNeededEvtLogFile)
+	_, buf, err = _edlogger.ReadLog(_edlogger.reSendNeededEvtLogFile)
 	for err == nil {
 		resendEvt, err_ := schema.NewResendEventFromBytes(buf)
 		if err_ != nil {
@@ -70,7 +73,7 @@ func (rm *RecoveryManager) Recover() {
 			// resend needed event
 			tmpReSendNeededEvtList = append(tmpReSendNeededEvtList, resendEvt)
 		}
-		_, buf, err = rm.messageMan.DataMan.EvtLogger.ReadLog(rm.messageMan.DataMan.EvtLogger.reSendNeededEvtLogFile)
+		_, buf, err = _edlogger.ReadLog(_edlogger.reSendNeededEvtLogFile)
 	}
 	// store read data reverse order
 	slices.Reverse(tmpReSendNeededEvtList)

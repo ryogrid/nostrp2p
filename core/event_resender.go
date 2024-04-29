@@ -10,12 +10,12 @@ import (
 )
 
 type EventResender struct {
-	dman   *DataManager
+	dman   DataManager
 	msgMan *MessageManager
 	cancel *context.CancelFunc
 }
 
-func NewEventResender(dman *DataManager, msgMan *MessageManager) *EventResender {
+func NewEventResender(dman DataManager, msgMan *MessageManager) *EventResender {
 	return &EventResender{dman: dman, msgMan: msgMan}
 }
 

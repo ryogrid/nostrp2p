@@ -28,12 +28,12 @@ const (
 )
 
 type MessageManager struct {
-	DataMan     *DataManager
+	DataMan     DataManager
 	send        Np2pTransport // set with Register later
 	evtReSender *EventResender
 }
 
-func NewMessageManager(dman *DataManager) *MessageManager {
+func NewMessageManager(dman DataManager) *MessageManager {
 	ret := &MessageManager{DataMan: dman}
 	ret.evtReSender = NewEventResender(dman, ret)
 	return ret
@@ -41,7 +41,7 @@ func NewMessageManager(dman *DataManager) *MessageManager {
 
 // when recovery, src is math.MaxUint64
 func (mm *MessageManager) handleRecvMsgBcastEvt(src uint64, pkt *schema.Np2pPacket, evt *schema.Np2pEvent) error {
-	// TODO: need to use on-disk DB (DataManager::mergeReceived)
+	// TODO: need to use on-disk DB (OnMemoryDataManager::mergeReceived)
 	np2p_util.Np2pDbgPrintln("handleRecvMsgBcastEvt: received from " + strconv.Itoa(int(src)))
 	np2p_util.Np2pDbgPrintln("handleRecvMsgBcastEvt: ", pkt)
 

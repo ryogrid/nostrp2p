@@ -18,7 +18,7 @@ type Np2pPeer struct {
 	Actions    chan<- func()
 	quit       chan struct{}
 	logger     *log.Logger
-	dataMan    *DataManager
+	dataMan    DataManager
 	MessageMan *MessageManager
 	SelfId     uint64 //mesh.PeerName
 	SelfPubkey [np2p_const.PubkeySize]byte
@@ -31,7 +31,7 @@ type Np2pPeer struct {
 // so we can make outbound communication.
 func NewPeer(self uint64, logger *log.Logger) *Np2pPeer {
 	actions := make(chan func())
-	dataMan := NewDataManager()
+	dataMan := NewOnMemoryDataManager()
 	msgMan := NewMessageManager(dataMan)
 
 	p := &Np2pPeer{
