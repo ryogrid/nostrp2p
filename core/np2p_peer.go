@@ -31,7 +31,9 @@ type Np2pPeer struct {
 // so we can make outbound communication.
 func NewPeer(self uint64, logger *log.Logger) *Np2pPeer {
 	actions := make(chan func())
-	dataMan := NewOnMemoryDataManager()
+	//dataMan := NewOnMemoryDataManager()
+	dataMan := NewNutsDBDataManager()
+
 	msgMan := NewMessageManager(dataMan)
 
 	p := &Np2pPeer{

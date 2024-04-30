@@ -126,9 +126,9 @@ var serverCmd = &cobra.Command{
 			router.Stop()
 		}()
 
-		// if log file exist, load it
-		// note: Recovery is neededn only when DataManager implementation is OnMemoryDataManager
-		core.NewRecoveryManager(peer.MessageMan).Recover()
+		//// if log file exist, load it
+		//// note: Recovery is neededn only when DataManager implementation is OnMemoryDataManager
+		//core.NewRecoveryManager(peer.MessageMan).Recover()
 
 		apiServ := api_server.NewApiServer(peer)
 		go apiServ.LaunchAPIServer(host + ":" + strconv.Itoa(port+1))
