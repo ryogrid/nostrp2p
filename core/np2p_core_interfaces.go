@@ -13,7 +13,7 @@ type DataManager interface {
 	StoreFollowList(evt *schema.Np2pEvent)
 	GetFollowListLocal(pubkey64bit uint64) *schema.Np2pEvent
 	AddReSendNeededEvent(destIds []uint64, evt *schema.Np2pEvent, isLogging bool)
-	RemoveReSendNeededEvent(evt *schema.Np2pEvent)
+	RemoveReSendNeededEvent(resendEvt *schema.ResendEvent, evt *schema.Np2pEvent)
 	GetReSendNeededEventItr() Np2pItr
 }
 

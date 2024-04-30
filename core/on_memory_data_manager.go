@@ -124,7 +124,7 @@ func (dman *OnMemoryDataManager) AddReSendNeededEvent(destIds []uint64, evt *sch
 }
 
 // NOTE: add removed event info to reSendFinishedEvtList additionally
-func (dman *OnMemoryDataManager) RemoveReSendNeededEvent(evt *schema.Np2pEvent) {
+func (dman *OnMemoryDataManager) RemoveReSendNeededEvent(_resendEvt *schema.ResendEvent, evt *schema.Np2pEvent) {
 	dman.reSendNeededEvtListMtx.Lock()
 	dman.reSendNeededEvtList.Remove(evt.Created_at)
 	dman.reSendNeededEvtListMtx.Unlock()

@@ -10,14 +10,14 @@ import (
 type TagElem []byte
 
 type Np2pEvent struct {
-	Id         [np2p_const.EventIdSize]byte // 32-bytes integer (sha256 32bytes hash)
-	Pubkey     [np2p_const.PubkeySize]byte  // encoded 256bit uint (holiman/uint256)
+	Id         [np2p_const.EventIdSize]byte // BigEndian, 32-bytes integer (sha256 32bytes hash)
+	Pubkey     [np2p_const.PubkeySize]byte  // BigEndian, encoded 256bit uint (holiman/uint256)
 	Created_at int64                        // unix timestamp in seconds
 	Kind       uint16                       // integer between 0 and 65535
 	//Tags       map[string][]interface{}     // Key: tag string, Value: any type
 	Tags    [][]TagElem // each element is byte array. when original value is string, it is converted to []byte
 	Content string
-	Sig     *[np2p_const.SignatureSize]byte // 64-bytes integr of the signature of the sha256 hash of the serialized event data
+	Sig     *[np2p_const.SignatureSize]byte // BigEndian, 64-bytes integr of the signature of the sha256 hash of the serialized event data
 }
 
 func (e *Np2pEvent) GetPubkey() *big.Int {

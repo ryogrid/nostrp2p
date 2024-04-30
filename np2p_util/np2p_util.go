@@ -130,7 +130,7 @@ func Gen256bitHash(data []byte) [32]byte {
 }
 
 func ExtractUint64FromBytes(b []byte) uint64 {
-	return binary.LittleEndian.Uint64(b)
+	return binary.BigEndian.Uint64(b[len(b)-8:])
 }
 
 func Get6ByteUint64FromHexPubKeyStr(pubKeyStr string) uint64 {

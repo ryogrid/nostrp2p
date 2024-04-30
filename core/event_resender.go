@@ -59,7 +59,7 @@ func (er *EventResender) ResendEvents(ctx context.Context, interval time.Duratio
 								err := er.msgMan.SendMsgUnicast(destId, schema.NewNp2pPacket(&evtArr, nil))
 								if err == nil {
 									// remove from resend needed list
-									er.dman.RemoveReSendNeededEvent(evt)
+									er.dman.RemoveReSendNeededEvent(resendEvt, evt)
 								}
 							}
 							break
