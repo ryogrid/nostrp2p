@@ -75,35 +75,35 @@ func NewNutsDBDataManager() DataManager {
 	// key: "timestamp"
 	// score: timestamp(float64) -> value: serialized schema.Np2pEvent
 	if err2 := db.Update(func(tx *nutsdb.Tx) error {
-		return tx.NewSortSetBucket(EventListTimeKey)
+		return tx.NewBucket(nutsdb.DataStructureSortedSet, EventListTimeKey)
 	}); err2 != nil {
 		fmt.Println(err2)
 	}
 
 	// serialized event ID [32]byte -> serialized timestamp(int64)
 	if err2 := db.Update(func(tx *nutsdb.Tx) error {
-		return tx.NewKVBucket(EventIdxMapIdKey)
+		return tx.NewBucket(nutsdb.DataStructureBTree, EventIdxMapIdKey)
 	}); err2 != nil {
 		fmt.Println(err2)
 	}
 
 	// serialized pubkey lower 64bit (uint64) -> serialized timestamp(int64)
 	if err3 := db.Update(func(tx *nutsdb.Tx) error {
-		return tx.NewKVBucket(ProfEvtIdxMap)
+		return tx.NewBucket(nutsdb.DataStructureBTree, ProfEvtIdxMap)
 	}); err3 != nil {
 		fmt.Println(err3)
 	}
 
 	// serialized pubkey lower 64bit (uint64) -> serialized timestamp(int64)
 	if err4 := db.Update(func(tx *nutsdb.Tx) error {
-		return tx.NewKVBucket(FollowListEvtIdxMap)
+		return tx.NewBucket(nutsdb.DataStructureBTree, FollowListEvtIdxMap)
 	}); err4 != nil {
 		fmt.Println(err4)
 	}
 
 	// serialized pubkey lower 64bit (uint64) -> timestamp(int64)
 	if err5 := db.Update(func(tx *nutsdb.Tx) error {
-		return tx.NewSortSetBucket(ReSendNeededEvtList)
+		return tx.NewBucket(nutsdb.DataStructureSortedSet, ReSendNeededEvtList)
 	}); err5 != nil {
 		fmt.Println(err5)
 	}
@@ -121,7 +121,7 @@ func (n *NutsDBDataManager) StoreEvent(evt *schema.Np2pEvent) {
 		fmt.Println(err)
 	}
 	if err := n.db.Update(func(tx *nutsdb.Tx) error {
-		return tx.Put(EventIdxMapIdKey, evt.Id[:], np2p_util.ConvInt64ToBytes(evt.Created_at), 0)
+		return tx.Put(EventIdxMapIdKey, evt.Id[:], np2p_util.ConvInt64ToBytes(evt.Created_at), nutsdb.Persistent)
 	}); err != nil {
 		fmt.Println(err)
 	}
@@ -169,7 +169,7 @@ func (n *NutsDBDataManager) StoreProfile(evt *schema.Np2pEvent) {
 		key := tmpPubKey[len(tmpPubKey)-8:]
 		// little endian
 		slices.Reverse(key)
-		return tx.Put(ProfEvtIdxMap, key, np2p_util.ConvInt64ToBytes(evt.Created_at), 0)
+		return tx.Put(ProfEvtIdxMap, key, np2p_util.ConvInt64ToBytes(evt.Created_at), nutsdb.Persistent)
 	}); err != nil {
 		fmt.Println(err)
 	}
@@ -197,15 +197,21 @@ func (n *NutsDBDataManager) GetLatestEvents(since int64, until int64) *[]*schema
 		if entries, err2 := tx.ZRangeByScore(EventListTimeKey, []byte("time"), float64(since), float64(until), nil); err2 != nil {
 			return err2
 		} else {
-			ret = make([]*schema.Np2pEvent, len(entries))
-			for idx, entry := range entries {
-				ret[idx], _ = schema.NewNp2pEventFromBytes(entry.Value)
+			if entries != nil {
+				ret = make([]*schema.Np2pEvent, len(entries))
+				for idx, entry := range entries {
+					ret[idx], _ = schema.NewNp2pEventFromBytes(entry.Value)
+				}
+				return nil
+			} else {
+				ret = make([]*schema.Np2pEvent, 0)
+				return nil
 			}
-			return nil
 		}
 	}); err != nil {
 		fmt.Println(err)
-		return nil
+		ret = make([]*schema.Np2pEvent, 0)
+		return &ret
 	}
 	return &ret
 }
@@ -216,7 +222,7 @@ func (n *NutsDBDataManager) StoreFollowList(evt *schema.Np2pEvent) {
 		key := tmpPubKey[len(tmpPubKey)-8:]
 		// little endian
 		slices.Reverse(key)
-		return tx.Put(FollowListEvtIdxMap, key, np2p_util.ConvInt64ToBytes(evt.Created_at), 0)
+		return tx.Put(FollowListEvtIdxMap, key, np2p_util.ConvInt64ToBytes(evt.Created_at), nutsdb.Persistent)
 	}); err != nil {
 		fmt.Println(err)
 	}

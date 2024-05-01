@@ -39,6 +39,9 @@ func (er *EventResender) ResendEvents(ctx context.Context, interval time.Duratio
 			// resend events
 			np2p_util.Np2pDbgPrintln("ResendEvents: start")
 			itr := er.dman.GetReSendNeededEventItr()
+			if itr == nil {
+				return
+			}
 			unixtime := time.Now().Unix()
 			for itr.Next() {
 				val := itr.Value()
