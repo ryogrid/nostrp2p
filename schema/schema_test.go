@@ -12,9 +12,9 @@ import (
 )
 
 func TestNp2pPacketEncodeMessagePack(t *testing.T) {
-	tagMap := make(map[string][]interface{})
-	tagMap["nickname"] = []interface{}{"ryogrid"}
-	tagMap["u"] = []interface{}{strconv.FormatInt(time.Now().Unix(), 10)}
+	tagMap := make([][]TagElem, 0)
+	tagMap = append(tagMap, []TagElem{[]byte("nickname"), []byte("ryogrid")})
+	tagMap = append(tagMap, []TagElem{[]byte("u"), []byte(strconv.FormatInt(time.Now().Unix(), 10))})
 
 	np2p_util.InitializeRandGen(int64(777))
 
