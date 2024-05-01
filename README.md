@@ -230,13 +230,15 @@ Flags:
 - [x] Reply
 - [x] Quote Repost
 - [x] Repost
-- [x] Server Side Signature Validation  
+- [x] Server Side Signature Validation
+- [x] Restriction of Memory Usage on Server
+- [x] Data persistence with embedded DB
 - [ ] Follower Multicast Mode
   - In this mode, posted messages are not broadcasted and server of follower should register to followee's server
   - If broadcasting design reaches limit of scalability, this mode will be activated
 - [ ] Optimization of Transfered Data Size between Servers
   - Changing serialization format from MessagePack to Protocol Buffers
-- [ ] Restriction of Memory Usage on Server
+
 - [ ] Optimization of Data Size between Client and Server
   - Changing serialization format from JSON Text to Protocol Buffers
     - Format conversion must be needed both side
