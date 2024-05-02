@@ -65,7 +65,7 @@ func (l *EventDataLogger) WriteLog(lfile *LogFile, data []byte) error {
 		lfile.file.Seek(lfile.curSize, 0)
 	}
 	sizeBuf := make([]byte, 0)
-	sizeBuf = binary.LittleEndian.AppendUint32(sizeBuf, uint32(len(data)))
+	sizeBuf = binary.BigEndian.AppendUint32(sizeBuf, uint32(len(data)))
 	// each log entry is prefixed with a 4-byte size
 	n, err := lfile.file.Write(sizeBuf)
 	if err != nil || n != 4 {
@@ -102,7 +102,7 @@ func (l *EventDataLogger) ReadLog(lfile *LogFile) (int, []byte, error) {
 		}
 	}
 	lfile.lastReadPos += int64(4)
-	size := int(binary.LittleEndian.Uint32(sizeBuf))
+	size := int(binary.BigEndian.Uint32(sizeBuf))
 	data := make([]byte, size)
 	n, err = lfile.file.Read(data)
 	if err != nil || n != size {

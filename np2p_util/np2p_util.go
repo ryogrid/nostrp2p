@@ -83,7 +83,7 @@ func IsHit(prob float64) bool {
 }
 
 func GetLower64bitUint(bytes [np2p_const.PubkeySize]byte) uint64 {
-	return binary.LittleEndian.Uint64(bytes[:8])
+	return binary.BigEndian.Uint64(bytes[np2p_const.PubkeySize-8:])
 }
 
 func GzipCompless(data []byte) []byte {
@@ -151,6 +151,7 @@ func GetUint64FromHexPubKeyStr(pubKeyStr string) uint64 {
 	return binary.BigEndian.Uint64(pubKeyBytes[len(pubKeyBytes)-8:])
 }
 
+// byte array is BigEndian
 func StrTo32BytesArr(pubKeyStr string) [32]byte {
 	bytes, err := hex.DecodeString(pubKeyStr)
 	if err != nil {
@@ -172,12 +173,12 @@ func ConvStringArrToTagArr(tagStrArr [][]string) []nostr.Tag {
 
 func ConvInt64ToBytes(val int64) []byte {
 	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, uint64(val))
+	binary.BigEndian.PutUint64(buf, uint64(val))
 	return buf
 }
 
 func ConvUint64ToBytes(val uint64) []byte {
 	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, val)
+	binary.BigEndian.PutUint64(buf, val)
 	return buf
 }

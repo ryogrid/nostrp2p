@@ -53,7 +53,7 @@ func (rm *RecoveryManager) Recover() {
 			break
 		}
 
-		createdAtUint := binary.LittleEndian.Uint64(buf)
+		createdAtUint := binary.BigEndian.Uint64(buf)
 		createdAt := int64(createdAtUint)
 		tmpFinishedMap[createdAt] = struct{}{}
 		_, buf, err = _edlogger.ReadLog(_edlogger.reSendFinishedEvtLogFile)

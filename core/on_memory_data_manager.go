@@ -129,7 +129,7 @@ func (dman *OnMemoryDataManager) RemoveReSendNeededEvent(_resendEvt *schema.Rese
 	dman.reSendNeededEvtList.Remove(evt.Created_at)
 	dman.reSendNeededEvtListMtx.Unlock()
 	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, uint64(evt.Created_at))
+	binary.BigEndian.PutUint64(buf, uint64(evt.Created_at))
 	dman.EvtLogger.WriteLog(dman.EvtLogger.reSendFinishedEvtLogFile, buf)
 }
 

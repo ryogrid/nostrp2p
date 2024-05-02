@@ -129,7 +129,7 @@ func (n *NutsDBDataManager) StoreEvent(evt *schema.Np2pEvent) {
 
 func (n *NutsDBDataManager) getEventByTimestampBytes(tsBytes []byte) *schema.Np2pEvent {
 	var ret *schema.Np2pEvent
-	ts := float64(binary.LittleEndian.Uint64(tsBytes))
+	ts := float64(binary.BigEndian.Uint64(tsBytes))
 	if err := n.db.View(func(tx *nutsdb.Tx) error {
 		if entries, err2 := tx.ZRangeByScore(EventListTimeKey, []byte("time"), ts, ts, nil); err2 != nil {
 			return err2
@@ -167,8 +167,6 @@ func (n *NutsDBDataManager) StoreProfile(evt *schema.Np2pEvent) {
 	if err := n.db.Update(func(tx *nutsdb.Tx) error {
 		tmpPubKey := evt.Pubkey
 		key := tmpPubKey[len(tmpPubKey)-8:]
-		// little endian
-		slices.Reverse(key)
 		return tx.Put(ProfEvtIdxMap, key, np2p_util.ConvInt64ToBytes(evt.Created_at), nutsdb.Persistent)
 	}); err != nil {
 		fmt.Println(err)
