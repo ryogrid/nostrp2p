@@ -165,7 +165,6 @@ Flags:
   -l, --listen-addr-port    string   Address and port to bind to (default: 127.0.0.1:20000)
   -b, --boot-peer-addr-port string   Address and port of a server which already joined NostrP2P network (optional)
   -p, --public-key          string   Your public key (required)
-  -n, --nickname            string   Your nickname on NostrP2P (required) [TEMPORAL]
   -d, --debug               bool     If true, debug log is output to stderr (default: false)
 ```
 # Examples
@@ -185,26 +184,26 @@ Public key (In Hex Representation):
 ## Server Launch
 ```bash
 # 4 servers network on local network (4 shells are needed...)
-./nostrp2p server  -l 0.0.0.0:20000 -p <public key in hex> -n origin
-./nostrp2p server -l 0.0.0.0:20002 -p <public key in hex> -n alice -b 127.0.0.1:20000 
-./nostrp2p server -l 0.0.0.0:20004 -p <public key in hex> -n bob -b 127.0.0.1:20002
-./nostrp2p server -l 0.0.0.0:20006 -p <public key in hex> -n tom -b 127.0.0.1:20000
+./nostrp2p server  -l 0.0.0.0:20000 -p <public key in npub format>
+./nostrp2p server -l 0.0.0.0:20002 -p <public key in npub format> -b 127.0.0.1:20000
+./nostrp2p server -l 0.0.0.0:20004 -p <public key in npub format> -b 127.0.0.1:20002
+./nostrp2p server -l 0.0.0.0:20006 -p <public key in npub format> -b 127.0.0.1:20000
 ```
 
 ```bash
 # 4 servers distributed on different networks
 
 # on network ryogrid.net (bind to address/port which is accessible from The Internet)
-./nostrp2p server  -l 0.0.0.0:20000 -p <public key in hex> -n ryo
+./nostrp2p server  -l 0.0.0.0:20000 -p <public key in npub format>
 
 # on network redsky.social (bind to address/port which accessible from The Internet)
-./nostrp2p server -l 0.0.0.0:7777 -p <public key in hex> -n alice -b ryogrid.net:9999 
+./nostrp2p server -l 0.0.0.0:7777 -p <public key in npub format> -b ryogrid.net:9999
 
 # on network A (bind to address/port which is NOT accessible from The Internet)
-./nostrp2p server -l 0.0.0.0:20000 -p <public key in hex> -n bob -b ryogrid.net:8888
+./nostrp2p server -l 0.0.0.0:20000 -p <public key in npub format> -b ryogrid.net:8888
 
 # on network B (bind to address/port which is NOT accessible from The Internet)
-./nostrp2p server -l 0.0.0.0:20000 -p <public key in hex> -n tom -b redsky.social:7777
+./nostrp2p server -l 0.0.0.0:20000 -p <public key in npub format> -b redsky.social:7777
 ```
 
 # Bootstrap Server
