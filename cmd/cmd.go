@@ -3,6 +3,8 @@ package cmd
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/nbd-wtf/go-nostr"
+	"github.com/nbd-wtf/go-nostr/nip19"
 	"github.com/ryogrid/nostrp2p/api_server"
 	"github.com/ryogrid/nostrp2p/core"
 	"github.com/ryogrid/nostrp2p/glo_val"
@@ -137,7 +139,25 @@ var serverCmd = &cobra.Command{
 	},
 }
 
-// TODO: need to implement temporal post requesting to server (cmd.go)
+var genkeyCmd = &cobra.Command{
+	Use:   "genkey",
+	Short: "Generate new key pair.",
+	Run: func(cmd *cobra.Command, args []string) {
+		sk := nostr.GeneratePrivateKey()
+		pk, _ := nostr.GetPublicKey(sk)
+		nsec, _ := nip19.EncodePrivateKey(sk)
+		npub, _ := nip19.EncodePublicKey(pk)
+
+		fmt.Println("Secret Key:")
+		fmt.Println(nsec)
+		fmt.Println("Secret Key (In Hex Representation): ")
+		fmt.Println(sk)
+		fmt.Println("Public Key:")
+		fmt.Println(npub)
+		fmt.Println("Public key (In Hex Representation): ")
+		fmt.Println(pk)
+	},
+}
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
@@ -204,4 +224,5 @@ func init() {
 	)
 
 	rootCmd.AddCommand(serverCmd)
+	rootCmd.AddCommand(genkeyCmd)
 }
