@@ -150,7 +150,7 @@ Usage:
 Available Commands:
   help        Help about any command.
   server      Startup server.
-  genkey      Generate key pair.
+  genkey      Generate new key pair.
 
 Flags:
   -h, --help   Help for NostrP2P
@@ -170,7 +170,17 @@ Flags:
 ```
 # Examples
 ## Generate Key Pair
-- Under construction
+```bash
+./nostrp2p genkey
+Secret Key:
+...
+Secret Key (In Hex Representation): 
+...
+Public Key:
+...
+Public key (In Hex Representation): 
+...
+```
 
 ## Server Launch
 ```bash
@@ -232,13 +242,12 @@ Flags:
 - [x] Repost
 - [x] Server Side Signature Validation
 - [x] Restriction of Memory Usage on Server
-- [x] Data persistence with embedded DB
+- [x] Data persistence on Server with embedded DB
 - [ ] Follower Multicast Mode
   - In this mode, posted messages are not broadcasted and server of follower should register to followee's server
   - If broadcasting design reaches limit of scalability, this mode will be activated
-- [ ] Optimization of Transfered Data Size between Servers
-  - Changing serialization format from MessagePack to Protocol Buffers
-
 - [ ] Optimization of Data Size between Client and Server
   - Changing serialization format from JSON Text to Protocol Buffers
     - Format conversion must be needed both side
+- [ ] Developing More Scalable Overlay Transport
+  - Scalability of Overlay NW with Mesh library should be around 100 nodes at most  

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/nutsdb/nutsdb"
 	"github.com/ryogrid/nostrp2p/glo_val"
+	"github.com/ryogrid/nostrp2p/np2p_const"
 	"github.com/ryogrid/nostrp2p/np2p_util"
 	"github.com/ryogrid/nostrp2p/schema"
 	"log"
@@ -63,7 +64,8 @@ func NewNutsDBDataManager() DataManager {
 	}
 	opt := nutsdb.DefaultOptions
 	opt.EntryIdxMode = nutsdb.HintKeyValAndRAMIdxMode
-	opt.HintKeyAndRAMIdxCacheSize = 300 * 1024 * 1024 // 300MB
+	// memory usage limit for caching buffer
+	opt.HintKeyAndRAMIdxCacheSize = np2p_const.MemoryUsageLimitForDBBuffer
 	db, err := nutsdb.Open(
 		opt,
 		nutsdb.WithDir(dbFilePath),

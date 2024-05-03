@@ -13,4 +13,5 @@ const EventIdSize = 32
 const SignatureSize = 64
 const ResendCcheckInterval = time.Minute * 1
 const ResendTimeBaseMin = 5
-const ResendMaxTimes = 10 // Max time is 5*2^10 = 5120 minutes = about 3.5 days
+const ResendMaxTimes = 10                            // Max time is 5*2^10 = 5120 minutes = about 3.5 days
+const MemoryUsageLimitForDBBuffer = 50 * 1024 * 1024 // 50MB

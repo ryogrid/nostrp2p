@@ -17,12 +17,12 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"strings"
 )
 
 var listenAddrPort = "127.0.0.1:20000"
 var bootPeerAddrPort = ""
 var publicKey = ""
-var nickname = ""
 var writable = true
 var debug = false
 var isEnabledSSL = false
@@ -50,7 +50,7 @@ var serverCmd = &cobra.Command{
 			peers.Set(bootPeerAddrPort)
 		}
 
-		logger := log.New(os.Stderr, nickname+"> ", log.LstdFlags)
+		logger := log.New(os.Stderr, "> ", log.LstdFlags)
 
 		host, portStr, err := net.SplitHostPort(listenAddrPort)
 		if err != nil {
@@ -63,16 +63,29 @@ var serverCmd = &cobra.Command{
 
 		fmt.Println("public key: ", publicKey)
 
-		pubKeyBytes, err := hex.DecodeString(publicKey)
-		if err != nil {
-			logger.Fatalf("public key: %s: %v", publicKey, err)
+		var hexPubKeyStr string
+		var pubKeyBytes []byte
+		var err2 error
+		if strings.HasPrefix(publicKey, "npub") {
+			_, tmpPubKeyVal, err2_ := nip19.Decode(publicKey)
+			if err2_ != nil {
+				logger.Fatalf("public key: %s: %v", publicKey, err)
+			}
+			hexPubKeyStr = tmpPubKeyVal.(string)
+			pubKeyBytes, err2 = hex.DecodeString(hexPubKeyStr)
+		} else {
+			hexPubKeyStr = publicKey
+			pubKeyBytes, err2 = hex.DecodeString(publicKey)
+			if err2 != nil {
+				logger.Fatalf("public key: %s: %v", publicKey, err)
+			}
 		}
 
 		var tmpArr [32]byte
 		copy(tmpArr[:], pubKeyBytes[:32])
-		glo_val.SelfPubkeyStr = publicKey
+		glo_val.SelfPubkeyStr = hexPubKeyStr
 		glo_val.SelfPubkey = &tmpArr
-		glo_val.SelfPubkey64bit = np2p_util.GetUint64FromHexPubKeyStr(publicKey)
+		glo_val.SelfPubkey64bit = np2p_util.GetUint64FromHexPubKeyStr(hexPubKeyStr)
 
 		if isEnabledSSL {
 			glo_val.IsEnabledSSL = true
@@ -83,7 +96,7 @@ var serverCmd = &cobra.Command{
 		np2p_util.InitializeRandGen(-1 * int64(glo_val.SelfPubkey64bit))
 
 		// mesh library's peer ID is 6 bytes uint64 (MeshTransport only restriction)
-		peerId := np2p_util.Get6ByteUint64FromHexPubKeyStr(publicKey)
+		peerId := np2p_util.Get6ByteUint64FromHexPubKeyStr(hexPubKeyStr)
 		peer := core.NewPeer(peerId, logger)
 
 		fmt.Println(fmt.Sprintf("%x", *glo_val.SelfPubkey), fmt.Sprintf("%x", peerId))
@@ -97,7 +110,7 @@ var serverCmd = &cobra.Command{
 				ConnLimit:          64,
 				PeerDiscovery:      true,
 				TrustedSubnets:     []*net.IPNet{},
-			}, mesh.PeerName(peerId), nickname, mesh.NullOverlay{}, log.New(ioutil.Discard, "", 0))
+			}, mesh.PeerName(peerId), "", mesh.NullOverlay{}, log.New(ioutil.Discard, "", 0))
 
 			if err != nil {
 				logger.Fatalf("Could not create router: %v", err)
@@ -128,10 +141,6 @@ var serverCmd = &cobra.Command{
 			router.Stop()
 		}()
 
-		//// if log file exist, load it
-		//// note: Recovery is neededn only when DataManager implementation is OnMemoryDataManager
-		//core.NewRecoveryManager(peer.MessageMan).Recover()
-
 		apiServ := api_server.NewApiServer(peer)
 		go apiServ.LaunchAPIServer(host + ":" + strconv.Itoa(port+1))
 
@@ -156,6 +165,9 @@ var genkeyCmd = &cobra.Command{
 		fmt.Println(npub)
 		fmt.Println("Public key (In Hex Representation): ")
 		fmt.Println(pk)
+		fmt.Println()
+		fmt.Println("Please keep the secret key secret.")
+		fmt.Println("The key is used only at NostrP2P client as your identity.")
 	},
 }
 
@@ -192,14 +204,14 @@ func init() {
 	)
 	serverCmd.MarkFlagRequired("public-key")
 
-	serverCmd.Flags().StringVarP(
-		&nickname,
-		"Your nickname on nostrp2p (required)",
-		"n",
-		"",
-		"Port to forward",
-	)
-	serverCmd.MarkFlagRequired("nickname")
+	//serverCmd.Flags().StringVarP(
+	//	&nickname,
+	//	"Your nickname on nostrp2p (required)",
+	//	"n",
+	//	"",
+	//	"Port to forward",
+	//)
+	//serverCmd.MarkFlagRequired("nickname")
 
 	serverCmd.Flags().BoolVarP(
 		&writable,
