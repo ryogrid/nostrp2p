@@ -10,6 +10,7 @@ import (
 	"sync"
 )
 
+// not mentainnanced in this project now
 type OnMemoryDataManager struct {
 	EvtListTimeKey    sortedlist.List // timestamp(int64) -> *schema.Np2pEvent
 	EvtListTimeKeyMtx *sync.Mutex
@@ -89,7 +90,7 @@ func (dman *OnMemoryDataManager) GetProfileLocal(pubkey64bit uint64) *schema.Np2
 	return nil
 }
 
-func (dman *OnMemoryDataManager) GetLatestEvents(since int64, until int64) *[]*schema.Np2pEvent {
+func (dman *OnMemoryDataManager) GetLatestEvents(since int64, until int64, _limit int64) *[]*schema.Np2pEvent {
 	dman.EvtListTimeKeyMtx.Lock()
 	defer dman.EvtListTimeKeyMtx.Unlock()
 	itr := dman.EvtListTimeKey.Range(since, until)

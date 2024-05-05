@@ -11,7 +11,6 @@ import (
 	"math"
 	"net/http"
 	"slices"
-	"time"
 )
 
 type NoArgReq struct {
@@ -280,20 +279,24 @@ func (s *ApiServer) getFollowList(w rest.ResponseWriter, input *schema.Np2pReqFo
 	}
 }
 
+// input.Simce == -1 && input.Until == -1 => specified only input.Limit
 func (s *ApiServer) getEvents(w rest.ResponseWriter, input *schema.Np2pReqForREST) {
 	// for supporting Nostr clients
 	isPeriodSpecified := true
 	if input.Since == 0 {
-		dt := time.Now()
-		curUnix := dt.Unix()
-		input.Since = curUnix - 60*60*24*7 // 1week
+		input.Since = -1
+		input.Until = -1
+		// limit must be specified!
 		isPeriodSpecified = false
 	}
 	if input.Until == 0 {
 		input.Until = math.MaxInt64
 	}
+	if input.Limit == 0 {
+		input.Limit = -1
+	}
 
-	events := s.buzzPeer.MessageMan.DataMan.GetLatestEvents(input.Since, input.Until)
+	events := s.buzzPeer.MessageMan.DataMan.GetLatestEvents(input.Since, input.Until, input.Limit)
 
 	// for supporting Nostr clients
 	// limit 50

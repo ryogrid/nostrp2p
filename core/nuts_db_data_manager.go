@@ -54,8 +54,7 @@ const ProfEvtIdxMap = "ProfEvtIdxMap"
 const FollowListEvtIdxMap = "FollowListEvtIdxMap"
 const ReSendNeededEvtList = "ReSendNeededEvtList"
 
-// index 0 is the key for getting latest EventNumReturnAtFirstKind40000 num entries
-// when number of stored events is larger than EventNumReturnAtFirstKind40000
+// storing keys of EventLstTimekey for limiting the number of returned events
 const EventListKeyListForLimit = "EvtListKeyListForLimit"
 
 func NewNutsDBDataManager() DataManager {
@@ -86,21 +85,21 @@ func NewNutsDBDataManager() DataManager {
 		fmt.Println(err2)
 	}
 
-	// serialized event ID [32]byte -> serialized timestamp(int64)
+	// serialized event ID [32]byte -> serialized timestamp(unt64)
 	if err2 := db.Update(func(tx *nutsdb.Tx) error {
 		return tx.NewBucket(nutsdb.DataStructureBTree, EventIdxMapIdKey)
 	}); err2 != nil {
 		fmt.Println(err2)
 	}
 
-	// serialized pubkey lower 64bit (uint64) -> serialized timestamp(int64)
+	// serialized pubkey lower 64bit (uint64) -> serialized timestamp(unt64)
 	if err3 := db.Update(func(tx *nutsdb.Tx) error {
 		return tx.NewBucket(nutsdb.DataStructureBTree, ProfEvtIdxMap)
 	}); err3 != nil {
 		fmt.Println(err3)
 	}
 
-	// serialized pubkey lower 64bit (uint64) -> serialized timestamp(int64)
+	// serialized pubkey lower 64bit (uint64) -> serialized timestamp(unt64)
 	if err4 := db.Update(func(tx *nutsdb.Tx) error {
 		return tx.NewBucket(nutsdb.DataStructureBTree, FollowListEvtIdxMap)
 	}); err4 != nil {
@@ -109,9 +108,16 @@ func NewNutsDBDataManager() DataManager {
 
 	// serialized pubkey lower 64bit (uint64) -> timestamp(int64)
 	if err5 := db.Update(func(tx *nutsdb.Tx) error {
-		return tx.NewBucket(nutsdb.DataStructureSortedSet, ReSendNeededEvtList)
+		return tx.NewBucket(nutsdb.DataStructureList, EventListKeyListForLimit)
 	}); err5 != nil {
 		fmt.Println(err5)
+	}
+
+	// list of timestamp(uint64)
+	if err6 := db.Update(func(tx *nutsdb.Tx) error {
+		return tx.NewBucket(nutsdb.DataStructureSortedSet, ReSendNeededEvtList)
+	}); err6 != nil {
+		fmt.Println(err6)
 	}
 
 	return &NutsDBDataManager{
@@ -128,6 +134,12 @@ func (n *NutsDBDataManager) StoreEvent(evt *schema.Np2pEvent) {
 	}
 	if err := n.db.Update(func(tx *nutsdb.Tx) error {
 		return tx.Put(EventIdxMapIdKey, evt.Id[:], np2p_util.ConvInt64ToBytes(evt.Created_at), nutsdb.Persistent)
+	}); err != nil {
+		fmt.Println(err)
+	}
+	// store timestamp info to the tail of list for limiting the number of returned events at GetLatestEvents
+	if err := n.db.Update(func(tx *nutsdb.Tx) error {
+		return tx.RPush(EventListKeyListForLimit, []byte("time"), np2p_util.ConvInt64ToBytes(evt.Created_at))
 	}); err != nil {
 		fmt.Println(err)
 	}
@@ -195,10 +207,48 @@ func (n *NutsDBDataManager) GetProfileLocal(pubkey64bit uint64) *schema.Np2pEven
 	return ret
 }
 
-func (n *NutsDBDataManager) GetLatestEvents(since int64, until int64) *[]*schema.Np2pEvent {
+// NOTE:
+// not support apply limit to event filtered by since and until
+// limit is used only for getting latest events with limitation
+func (n *NutsDBDataManager) GetLatestEvents(since int64, until int64, limit int64) *[]*schema.Np2pEvent {
 	var ret []*schema.Np2pEvent
+	since_ := float64(since)
+	until_ := float64(until)
+	// when limit is set, get latest events with limitation
+	if limit != -1 {
+		until_ = math.MaxFloat64
+		if err := n.db.View(func(tx *nutsdb.Tx) error {
+			// check number of events
+			if num, err2 := tx.LSize(EventListKeyListForLimit, []byte("time")); err2 != nil {
+				return err2
+			} else if num <= int(limit) {
+				// return all data
+				since_ = 0
+				return nil
+			}
+
+			// stored event data is more than limit
+			// point scan timestamp for limit
+			if entries, err3 := tx.LRange(EventListKeyListForLimit, []byte("time"), -1*int(limit), -1*int(limit)); err3 != nil {
+				return err3
+			} else if entries != nil && len(entries) > 0 {
+				since_ = float64(np2p_util.ExtractUint64FromBytes(entries[0]))
+				return nil
+			} else {
+				// returns all data...
+				fmt.Println("unexpected case")
+				since_ = 0
+				return nil
+			}
+		}); err != nil {
+			fmt.Println(err)
+			ret = make([]*schema.Np2pEvent, 0)
+			return &ret
+		}
+	}
+	// common route
 	if err := n.db.View(func(tx *nutsdb.Tx) error {
-		if entries, err2 := tx.ZRangeByScore(EventListTimeKey, []byte("time"), float64(since), float64(until), nil); err2 != nil {
+		if entries, err2 := tx.ZRangeByScore(EventListTimeKey, []byte("time"), since_, until_, nil); err2 != nil {
 			return err2
 		} else {
 			if entries != nil {

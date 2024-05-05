@@ -9,7 +9,7 @@ type DataManager interface {
 	GetEventById(evtId [32]byte) (*schema.Np2pEvent, bool)
 	StoreProfile(evt *schema.Np2pEvent)
 	GetProfileLocal(pubkey64bit uint64) *schema.Np2pEvent
-	GetLatestEvents(since int64, until int64) *[]*schema.Np2pEvent
+	GetLatestEvents(since int64, until int64, limit int64) *[]*schema.Np2pEvent
 	StoreFollowList(evt *schema.Np2pEvent)
 	GetFollowListLocal(pubkey64bit uint64) *schema.Np2pEvent
 	AddReSendNeededEvent(destIds []uint64, evt *schema.Np2pEvent, isLogging bool)
