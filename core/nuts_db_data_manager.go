@@ -54,6 +54,10 @@ const ProfEvtIdxMap = "ProfEvtIdxMap"
 const FollowListEvtIdxMap = "FollowListEvtIdxMap"
 const ReSendNeededEvtList = "ReSendNeededEvtList"
 
+// index 0 is the key for getting latest EventNumReturnAtFirstKind40000 num entries
+// when number of stored events is larger than EventNumReturnAtFirstKind40000
+const EventListKeyListForLimit = "EvtListKeyListForLimit"
+
 func NewNutsDBDataManager() DataManager {
 	dbFilePath := "./" + strconv.FormatUint(glo_val.SelfPubkey64bit, 16)
 	if _, err := os.Stat(dbFilePath); os.IsNotExist(err) {
