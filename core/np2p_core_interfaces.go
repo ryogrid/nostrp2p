@@ -15,6 +15,7 @@ type DataManager interface {
 	AddReSendNeededEvent(destIds []uint64, evt *schema.Np2pEvent, isLogging bool)
 	RemoveReSendNeededEvent(resendEvt *schema.ResendEvent, evt *schema.Np2pEvent)
 	GetReSendNeededEventItr() Np2pItr
+	RemoveStoreAmountLimitOveredEvents()
 }
 
 type Np2pItr interface {

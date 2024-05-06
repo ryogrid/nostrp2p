@@ -23,6 +23,10 @@ type OnMemoryDataManager struct {
 	reSendNeededEvtListMtx *sync.Mutex
 }
 
+func (dman *OnMemoryDataManager) RemoveStoreAmountLimitOveredEvents() {
+	panic("not use me")
+}
+
 // DataManager is an interface for data management
 var _ DataManager = &OnMemoryDataManager{}
 

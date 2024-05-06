@@ -51,10 +51,6 @@ const EventListTimeKey = "EvtListTimeKey"
 const EventIdxMapIdKey = "EvtIdxMapIdKey"
 const ProfEvtIdxMap = "ProfEvtIdxMap"
 const FollowListEvtIdxMap = "FollowListEvtIdxMap"
-
-// storing keys of EventLstTimekey for limiting the number of returned events
-const EventListKeyListForLimit = "EvtListKeyListForLimit"
-
 const ReSendNeededEvtList = "ReSendNeededEvtList"
 
 func NewNutsDBDataManager() DataManager {
@@ -106,13 +102,6 @@ func NewNutsDBDataManager() DataManager {
 		fmt.Println(err4)
 	}
 
-	// list of timestamp(uint64)
-	if err5 := db.Update(func(tx *nutsdb.Tx) error {
-		return tx.NewBucket(nutsdb.DataStructureList, EventListKeyListForLimit)
-	}); err5 != nil {
-		fmt.Println(err5)
-	}
-
 	// serialized event ID(32byte) -> timestamp(int64)
 	if err6 := db.Update(func(tx *nutsdb.Tx) error {
 		return tx.NewBucket(nutsdb.DataStructureSortedSet, ReSendNeededEvtList)
@@ -134,12 +123,6 @@ func (n *NutsDBDataManager) StoreEvent(evt *schema.Np2pEvent) {
 	}
 	if err := n.db.Update(func(tx *nutsdb.Tx) error {
 		return tx.Put(EventIdxMapIdKey, evt.Id[:], np2p_util.ConvInt64ToBytes(evt.Created_at), nutsdb.Persistent)
-	}); err != nil {
-		fmt.Println(err)
-	}
-	// store timestamp info to the tail of list for limiting the number of returned events at GetLatestEvents
-	if err := n.db.Update(func(tx *nutsdb.Tx) error {
-		return tx.RPush(EventListKeyListForLimit, []byte("time"), np2p_util.ConvInt64ToBytes(evt.Created_at))
 	}); err != nil {
 		fmt.Println(err)
 	}
@@ -212,33 +195,45 @@ func (n *NutsDBDataManager) GetProfileLocal(pubkey64bit uint64) *schema.Np2pEven
 // limit is used only for getting latest events with limitation
 func (n *NutsDBDataManager) GetLatestEvents(since int64, until int64, limit int64) *[]*schema.Np2pEvent {
 	var ret []*schema.Np2pEvent
-	since_ := float64(since)
-	until_ := float64(until)
+	//since_ := float64(since)
+	//until_ := float64(until)
 	// when limit is set, get latest events with limitation
 	if limit != -1 {
-		until_ = math.MaxFloat64
 		if err := n.db.View(func(tx *nutsdb.Tx) error {
-			// check number of events
-			if num, err2 := tx.LSize(EventListKeyListForLimit, []byte("time")); err2 != nil {
+			if entries, err2 := tx.ZRangeByRank(EventListTimeKey, []byte("time"), -1*int(limit), int(limit)); err2 != nil {
 				return err2
-			} else if num <= int(limit) {
-				// return all data
-				since_ = 0
-				return nil
-			}
-
-			// stored event data is more than limit
-			// point scan timestamp for limit
-			if entries, err3 := tx.LRange(EventListKeyListForLimit, []byte("time"), -1*int(limit), -1*int(limit)); err3 != nil {
-				return err3
-			} else if entries != nil && len(entries) > 0 {
-				since_ = float64(np2p_util.ExtractUint64FromBytes(entries[0]))
-				return nil
 			} else {
-				// returns all data...
-				fmt.Println("unexpected case")
-				since_ = 0
-				return nil
+				if entries != nil {
+					ret = make([]*schema.Np2pEvent, len(entries))
+					for idx, entry := range entries {
+						ret[idx], _ = schema.NewNp2pEventFromBytes(entry.Value)
+					}
+					return nil
+				} else {
+					ret = make([]*schema.Np2pEvent, 0)
+					return nil
+				}
+			}
+		}); err != nil {
+			fmt.Println(err)
+			ret = make([]*schema.Np2pEvent, 0)
+			return &ret
+		}
+	} else {
+		if err := n.db.View(func(tx *nutsdb.Tx) error {
+			if entries, err2 := tx.ZRangeByScore(EventListTimeKey, []byte("time"), float64(since), float64(until), nil); err2 != nil {
+				return err2
+			} else {
+				if entries != nil {
+					ret = make([]*schema.Np2pEvent, len(entries))
+					for idx, entry := range entries {
+						ret[idx], _ = schema.NewNp2pEventFromBytes(entry.Value)
+					}
+					return nil
+				} else {
+					ret = make([]*schema.Np2pEvent, 0)
+					return nil
+				}
 			}
 		}); err != nil {
 			fmt.Println(err)
@@ -246,27 +241,7 @@ func (n *NutsDBDataManager) GetLatestEvents(since int64, until int64, limit int6
 			return &ret
 		}
 	}
-	// common route
-	if err := n.db.View(func(tx *nutsdb.Tx) error {
-		if entries, err2 := tx.ZRangeByScore(EventListTimeKey, []byte("time"), since_, until_, nil); err2 != nil {
-			return err2
-		} else {
-			if entries != nil {
-				ret = make([]*schema.Np2pEvent, len(entries))
-				for idx, entry := range entries {
-					ret[idx], _ = schema.NewNp2pEventFromBytes(entry.Value)
-				}
-				return nil
-			} else {
-				ret = make([]*schema.Np2pEvent, 0)
-				return nil
-			}
-		}
-	}); err != nil {
-		fmt.Println(err)
-		ret = make([]*schema.Np2pEvent, 0)
-		return &ret
-	}
+
 	return &ret
 }
 
@@ -332,4 +307,59 @@ func (n *NutsDBDataManager) GetReSendNeededEventItr() Np2pItr {
 		ret = append(ret, decoded)
 	}
 	return NewNutsDBItr(ret)
+}
+
+func (n *NutsDBDataManager) RemoveStoreAmountLimitOveredEvents() {
+	var eventsShouldBeAlive []*schema.Np2pEvent
+	var eventsShouldBeAliveBytes [][]byte
+	if err := n.db.Update(func(tx *nutsdb.Tx) error {
+		if num, err2 := tx.ZCard(EventListTimeKey, []byte("time")); err2 != nil {
+			return err2
+		} else {
+			// +100 correnspond to increase amount of reverting events...
+			if num > np2p_const.DBStoreEventDataNumMax+100 {
+				// remove limit overd events
+
+				removeNum := num - np2p_const.DBStoreEventDataNumMax
+				if entries, err3 := tx.ZRangeByRank(EventListTimeKey, []byte("time"), 1, removeNum); err3 != nil {
+					return err3
+				} else {
+					if entries != nil && len(entries) > 0 {
+						eventsShouldBeAlive = make([]*schema.Np2pEvent, 0)
+						eventsShouldBeAliveBytes = make([][]byte, 0)
+						for _, entry := range entries {
+							evt, _ := schema.NewNp2pEventFromBytes(entry.Value)
+							if evt.Kind == KIND_EVT_PROFILE || evt.Kind == KIND_EVT_FOLLOW_LIST {
+								eventsShouldBeAlive = append(eventsShouldBeAlive, evt)
+								eventsShouldBeAliveBytes = append(eventsShouldBeAliveBytes, entry.Value)
+							}
+						}
+
+						// remove target events
+						if err4 := tx.ZRemRangeByRank(EventListTimeKey, []byte("time"), 1, removeNum); err4 != nil {
+							return err4
+						}
+					}
+				}
+			}
+			// remove is not needed
+			return nil
+		}
+	}); err != nil {
+		fmt.Println("RemoveStoreAmountLimitOveredEvents failed: ", err)
+	}
+
+	// when events which should be reverted exist, store them again
+	if eventsShouldBeAlive != nil && len(eventsShouldBeAlive) > 0 {
+		if err := n.db.Update(func(tx *nutsdb.Tx) error {
+			for idx, evt := range eventsShouldBeAlive {
+				if err2 := tx.ZAdd(EventListTimeKey, []byte("time"), float64(evt.Created_at), eventsShouldBeAliveBytes[idx]); err2 != nil {
+					return err2
+				}
+			}
+			return nil
+		}); err != nil {
+			fmt.Println("RemoveStoreAmountLimitOveredEvents failed: ", err)
+		}
+	}
 }

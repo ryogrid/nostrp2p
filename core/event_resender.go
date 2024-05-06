@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// EventResender is a struct that manages the resending of events and the removal of store amount limit overed events
 type EventResender struct {
 	dman   DataManager
 	msgMan *MessageManager
@@ -70,6 +71,9 @@ func (er *EventResender) ResendEvents(ctx context.Context, interval time.Duratio
 					}
 				}
 			}
+
+			// remove store amount limit overed events from DB
+			er.dman.RemoveStoreAmountLimitOveredEvents()
 		}
 	}
 }
