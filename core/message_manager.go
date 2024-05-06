@@ -228,20 +228,6 @@ func (mm *MessageManager) UnicastOwnProfile(dest uint64) {
 	}
 }
 
-//// todo: need to implent messagemanager::genprofilefromevent
-//func genprofilefromevent(evt *schema.np2pevent) *schema.np2pprofile {
-//	return &schema.np2pprofile{
-//		pubkey64bit: np2p_util.getlower64bituint(evt.pubkey),
-//		//name:        evt.tags["name"][0].(string),
-//		//about:       evt.tags["about"][0].(string),
-//		//picture:     evt.tags["picture"][0].(string),
-//		name:      "",
-//		about:     "",
-//		picture:   "",
-//		updatedat: evt.created_at,
-//	}
-//}
-
 // TODO: TEMPORAL IMPL
 func (mm *MessageManager) BcastShareEvtDataReq() {
 	reqs := []*schema.Np2pReq{schema.NewNp2pReq(KIND_REQ_SHARE_EVT_DATA, nil)}
@@ -253,7 +239,7 @@ func (mm *MessageManager) BcastShareEvtDataReq() {
 // TODO: TEMPORAL IMPL
 // send latest 3days events
 func (mm *MessageManager) UnicastHavingEvtData(dest uint64) {
-	events := mm.DataMan.GetLatestEvents(time.Now().Unix()-3*24*3600, math.MaxInt64)
+	events := mm.DataMan.GetLatestEvents(time.Now().Unix()-3*24*3600, math.MaxInt64, -1)
 	pkt := schema.NewNp2pPacket(events, nil)
 	mm.SendMsgUnicast(dest, pkt)
 	np2p_util.Np2pDbgPrintln("UnicastHavingEvtData: sent " + strconv.Itoa(len(*events)) + " events")

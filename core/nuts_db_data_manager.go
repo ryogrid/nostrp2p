@@ -11,7 +11,6 @@ import (
 	"log"
 	"math"
 	"os"
-	"slices"
 	"strconv"
 )
 
@@ -52,10 +51,11 @@ const EventListTimeKey = "EvtListTimeKey"
 const EventIdxMapIdKey = "EvtIdxMapIdKey"
 const ProfEvtIdxMap = "ProfEvtIdxMap"
 const FollowListEvtIdxMap = "FollowListEvtIdxMap"
-const ReSendNeededEvtList = "ReSendNeededEvtList"
 
 // storing keys of EventLstTimekey for limiting the number of returned events
 const EventListKeyListForLimit = "EvtListKeyListForLimit"
+
+const ReSendNeededEvtList = "ReSendNeededEvtList"
 
 func NewNutsDBDataManager() DataManager {
 	dbFilePath := "./" + strconv.FormatUint(glo_val.SelfPubkey64bit, 16)
@@ -106,14 +106,14 @@ func NewNutsDBDataManager() DataManager {
 		fmt.Println(err4)
 	}
 
-	// serialized pubkey lower 64bit (uint64) -> timestamp(int64)
+	// list of timestamp(uint64)
 	if err5 := db.Update(func(tx *nutsdb.Tx) error {
 		return tx.NewBucket(nutsdb.DataStructureList, EventListKeyListForLimit)
 	}); err5 != nil {
 		fmt.Println(err5)
 	}
 
-	// list of timestamp(uint64)
+	// serialized event ID(32byte) -> timestamp(int64)
 	if err6 := db.Update(func(tx *nutsdb.Tx) error {
 		return tx.NewBucket(nutsdb.DataStructureSortedSet, ReSendNeededEvtList)
 	}); err6 != nil {
@@ -274,8 +274,6 @@ func (n *NutsDBDataManager) StoreFollowList(evt *schema.Np2pEvent) {
 	if err := n.db.Update(func(tx *nutsdb.Tx) error {
 		tmpPubKey := evt.Pubkey
 		key := tmpPubKey[len(tmpPubKey)-8:]
-		// little endian
-		slices.Reverse(key)
 		return tx.Put(FollowListEvtIdxMap, key, np2p_util.ConvInt64ToBytes(evt.Created_at), nutsdb.Persistent)
 	}); err != nil {
 		fmt.Println(err)
