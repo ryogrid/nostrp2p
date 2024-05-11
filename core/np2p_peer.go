@@ -15,14 +15,13 @@ import (
 // before calling mesh.Router.Start.
 type Np2pPeer struct {
 	//send            *mesh.Gossip
-	Actions    chan<- func()
-	quit       chan struct{}
-	logger     *log.Logger
-	dataMan    DataManager
-	MessageMan *MessageManager
-	SelfId     uint64 //mesh.PeerName
-	SelfPubkey [np2p_const.PubkeySize]byte
-	//Router          *mesh.Router // TODO: need to modify
+	Actions         chan<- func()
+	quit            chan struct{}
+	logger          *log.Logger
+	dataMan         DataManager
+	MessageMan      *MessageManager
+	SelfId          uint64 //mesh.PeerName
+	SelfPubkey      [np2p_const.PubkeySize]byte
 	recvedEvtReqMap map[uint64]struct{}
 }
 
@@ -37,7 +36,6 @@ func NewPeer(self uint64, logger *log.Logger) *Np2pPeer {
 	msgMan := NewMessageManager(dataMan)
 
 	p := &Np2pPeer{
-		//send:            nil, // must .Register() later
 		Actions:         actions,
 		quit:            make(chan struct{}),
 		logger:          logger,
@@ -129,16 +127,9 @@ func (p *Np2pPeer) OnRecvBroadcast(src uint64, buf []byte) (received schema.Enco
 	} else {
 		return retPkt, nil
 	}
-
-	//return &pkt, nil
-	//return &schema.Np2pPacket{}, nil
 }
 
 func (p *Np2pPeer) OnRecvUnicast(src uint64, buf []byte) (err error) {
-	//var pkt schema.Np2pPacket
-	//if err_ := gob.NewDecoder(bytes.NewReader(buf)).Decode(&pkt); err_ != nil {
-	//	return err_
-	//}
 	pkt, err := schema.NewNp2pPacketFromBytes(buf)
 	if err != nil {
 		return err

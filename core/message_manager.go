@@ -152,6 +152,9 @@ func (mm *MessageManager) handleRecvMsgUnicast(src uint64, pkt *schema.Np2pPacke
 			case KIND_REQ_PROFILE: // profile request
 				// send profile data asynchronous
 				go mm.UnicastOwnProfile(src)
+			case KIND_REQ_FOLLOW_LIST: // follow list request
+				// send follow list data asynchronous
+				go mm.UnicastOwnFollowList(src)
 			case KIND_REQ_POST:
 				// send post data asynchronous
 				if tgtEvtId, ok := pkt.Reqs[0].Args["evtId"][0].([32]byte); ok {
@@ -217,6 +220,16 @@ func (mm *MessageManager) UnicastFollowListReq(pubkey64bit uint64) {
 	reqs := []*schema.Np2pReq{schema.NewNp2pReq(KIND_REQ_FOLLOW_LIST, nil)}
 	pkt := schema.NewNp2pPacket(nil, &reqs)
 	mm.SendMsgUnicast(pubkey64bit, pkt)
+}
+
+// used for response of follow list request
+func (mm *MessageManager) UnicastOwnFollowList(dest uint64) {
+	if flistEvt := mm.DataMan.GetFollowListLocal(glo_val.SelfPubkey64bit); flistEvt != nil {
+		// send latest follow list data
+		events := []*schema.Np2pEvent{flistEvt}
+		mm.SendMsgUnicast(dest, schema.NewNp2pPacket(&events, nil))
+	}
+	// when no follow list data, do nothing
 }
 
 // used for response of profile request

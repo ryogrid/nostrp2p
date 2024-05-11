@@ -5,6 +5,7 @@ import (
 	"github.com/ant0ine/go-json-rest/rest"
 	"github.com/ryogrid/nostrp2p/core"
 	"github.com/ryogrid/nostrp2p/glo_val"
+	"github.com/ryogrid/nostrp2p/np2p_const"
 	"github.com/ryogrid/nostrp2p/np2p_util"
 	"github.com/ryogrid/nostrp2p/schema"
 	"log"
@@ -25,10 +26,25 @@ type GeneralResp struct {
 
 type ApiServer struct {
 	buzzPeer *core.Np2pPeer
+	// for rate limit of sending request to same server at getProfile and getFollowList
+	// kind => (shortPkey => lastReqSendTime(unixtime in second))
+	lastReqSendTimeMap map[int16]map[uint64]int64
 }
 
 func NewApiServer(peer *core.Np2pPeer) *ApiServer {
-	return &ApiServer{peer}
+	return &ApiServer{peer, make(map[int16]map[uint64]int64)}
+}
+
+func (s *ApiServer) getLastReqSendTimeOrSet(kind int16, shortPkey uint64) int64 {
+	if _, ok := s.lastReqSendTimeMap[kind]; !ok {
+		s.lastReqSendTimeMap[kind] = make(map[uint64]int64)
+	}
+	if _, ok := s.lastReqSendTimeMap[kind][shortPkey]; !ok {
+		s.lastReqSendTimeMap[kind][shortPkey] = np2p_util.GetCurUnixTimeInSec()
+		return math.MaxInt64
+	} else {
+		return s.lastReqSendTimeMap[kind][shortPkey]
+	}
 }
 
 func (s *ApiServer) publishHandler(w rest.ResponseWriter, req *rest.Request) {
@@ -156,7 +172,8 @@ func (s *ApiServer) setOrUpdateFollowList(w rest.ResponseWriter, input *schema.N
 	evt := schema.NewNp2pEventFromREST(input)
 	if *glo_val.SelfPubkey == evt.Pubkey {
 		s.buzzPeer.MessageMan.DataMan.StoreEvent(evt)
-		// update local profile
+		s.buzzPeer.MessageMan.DataMan.StoreFollowList(evt)
+		// update local follow list
 		glo_val.CurrentFollowListEvt = evt
 	}
 
@@ -257,6 +274,13 @@ func (s *ApiServer) getProfile(w rest.ResponseWriter, input *schema.Np2pReqForRE
 
 	if profEvt != nil {
 		w.WriteJson(&EventsResp{Events: []schema.Np2pEventForREST{*schema.NewNp2pEventForREST(profEvt)}})
+		// local data is old and not sending request to same server in short time and not mysql
+		if np2p_util.GetCurUnixTimeInSec()-profEvt.Created_at > np2p_const.ProfileAndFollowDataUpdateCheckIntervalSec &&
+			s.getLastReqSendTimeOrSet(core.KIND_EVT_PROFILE, shortPkey)+np2p_const.NoResendReqSendIntervalSec > np2p_util.GetCurUnixTimeInSec() &&
+			shortPkey != glo_val.SelfPubkey64bit {
+			// request profile data for updating check
+			s.buzzPeer.MessageMan.UnicastProfileReq(shortPkey)
+		}
 	} else {
 		// profile data will be included on response of "getEvents"
 		w.WriteJson(&EventsResp{Events: []schema.Np2pEventForREST{}})
@@ -271,6 +295,12 @@ func (s *ApiServer) getFollowList(w rest.ResponseWriter, input *schema.Np2pReqFo
 
 	if fListEvt != nil {
 		w.WriteJson(&EventsResp{Events: []schema.Np2pEventForREST{*schema.NewNp2pEventForREST(fListEvt)}})
+		// local data is old and not sending request to same server in short time
+		if np2p_util.GetCurUnixTimeInSec()-fListEvt.Created_at > np2p_const.ProfileAndFollowDataUpdateCheckIntervalSec &&
+			s.getLastReqSendTimeOrSet(core.KIND_EVT_FOLLOW_LIST, shortPkey)+np2p_const.NoResendReqSendIntervalSec > np2p_util.GetCurUnixTimeInSec() {
+			// request follow list data for updating check
+			s.buzzPeer.MessageMan.UnicastFollowListReq(shortPkey)
+		}
 	} else {
 		// follow list data will be included on response of "getEvents"
 		w.WriteJson(&EventsResp{Events: []schema.Np2pEventForREST{}})

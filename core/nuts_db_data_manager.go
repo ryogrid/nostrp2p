@@ -195,12 +195,10 @@ func (n *NutsDBDataManager) GetProfileLocal(pubkey64bit uint64) *schema.Np2pEven
 // limit is used only for getting latest events with limitation
 func (n *NutsDBDataManager) GetLatestEvents(since int64, until int64, limit int64) *[]*schema.Np2pEvent {
 	var ret []*schema.Np2pEvent
-	//since_ := float64(since)
-	//until_ := float64(until)
 	// when limit is set, get latest events with limitation
 	if limit != -1 {
 		if err := n.db.View(func(tx *nutsdb.Tx) error {
-			if entries, err2 := tx.ZRangeByRank(EventListTimeKey, []byte("time"), -1*int(limit), int(limit)); err2 != nil {
+			if entries, err2 := tx.ZRangeByRank(EventListTimeKey, []byte("time"), -1*int(limit), -1); err2 != nil {
 				return err2
 			} else {
 				if entries != nil {
@@ -236,7 +234,7 @@ func (n *NutsDBDataManager) GetLatestEvents(since int64, until int64, limit int6
 				}
 			}
 		}); err != nil {
-			fmt.Println(err)
+			fmt.Println("GetLatestEvents failed: ", err)
 			ret = make([]*schema.Np2pEvent, 0)
 			return &ret
 		}

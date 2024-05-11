@@ -77,6 +77,10 @@ func GetRandUint64() uint64 {
 	return randGen.Uint64()
 }
 
+func GetCurUnixTimeInSec() int64 {
+	return time.Now().Unix()
+}
+
 // return true with given probability
 func IsHit(prob float64) bool {
 	return randGen.Float64() < prob
