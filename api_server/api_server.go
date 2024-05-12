@@ -189,7 +189,7 @@ func (s *ApiServer) sendReaction(w rest.ResponseWriter, input *schema.Np2pEventF
 		// destination server is offline
 		// so add event to retry queue
 		// except destination is myself case
-		s.buzzPeer.MessageMan.DataMan.AddReSendNeededEvent([]uint64{np2p_util.Get6ByteUint64FromHexPubKeyStr(string((*(schema.FindFirstSpecifiedTag(&evt.Tags, "p")))[0]))}, evt, true)
+		s.buzzPeer.MessageMan.DataMan.AddReSendNeededEvent([]uint64{np2p_util.Get6ByteUint64FromHexPubKeyStr(string((*(schema.FindFirstSpecifiedTag(&evt.Tags, "p")))[1]))}, evt, true)
 		fmt.Println(string((*(schema.FindFirstSpecifiedTag(&evt.Tags, "p")))[1]))
 		fmt.Println(err)
 	}
