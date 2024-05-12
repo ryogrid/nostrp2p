@@ -278,7 +278,7 @@ func (n *NutsDBDataManager) AddReSendNeededEvent(destIds []uint64, evt *schema.N
 	}
 }
 
-func (n *NutsDBDataManager) RemoveReSendNeededEvent(resendEvt *schema.ResendEvent, evt *schema.Np2pEvent) {
+func (n *NutsDBDataManager) RemoveReSendNeededEvent(resendEvt *schema.ResendEvent, _evt *schema.Np2pEvent) {
 	if err := n.db.Update(func(tx *nutsdb.Tx) error {
 		return tx.ZRem(ReSendNeededEvtList, []byte("time"), resendEvt.Encode())
 	}); err != nil {

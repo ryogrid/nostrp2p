@@ -9,7 +9,8 @@ import (
 	"time"
 )
 
-// EventResender is a struct that manages the resending of events and the removal of store amount limit overed events
+// EventResender is a struct that manages the resending of events
+// and the removal of store amount limit overed events
 type EventResender struct {
 	dman   DataManager
 	msgMan *MessageManager
@@ -51,8 +52,8 @@ func (er *EventResender) ResendEvents(ctx context.Context, interval time.Duratio
 					continue
 				}
 				resendEvt := val.(*schema.ResendEvent)
+				elapsedMin := (unixtime - resendEvt.CreatedAt) / 60
 				if evt, ok := er.dman.GetEventById(resendEvt.EvtId); ok {
-					elapsedMin := (unixtime - resendEvt.CreatedAt) / 60
 					for n := 1; n <= np2p_const.ResendMaxTimes; n++ {
 						diff := elapsedMin - int64(np2p_const.ResendTimeBaseMin*2^n)
 						// if elapsed min is match with resend time, resend
@@ -69,6 +70,10 @@ func (er *EventResender) ResendEvents(ctx context.Context, interval time.Duratio
 							break
 						}
 					}
+				}
+				// if elapsed min is over resend max time, remove from resend needed list
+				if elapsedMin > int64(np2p_const.ResendTimeBaseMin*(2^np2p_const.ResendMaxTimes)) {
+					er.dman.RemoveReSendNeededEvent(resendEvt, nil)
 				}
 			}
 
