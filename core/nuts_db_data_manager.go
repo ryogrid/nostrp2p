@@ -2,6 +2,7 @@ package core
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"github.com/nutsdb/nutsdb"
 	"github.com/ryogrid/nostrp2p/glo_val"
@@ -128,24 +129,36 @@ func (n *NutsDBDataManager) StoreEvent(evt *schema.Np2pEvent) {
 	}
 }
 
-func (n *NutsDBDataManager) getEventByTimestampBytes(tsBytes []byte) *schema.Np2pEvent {
+func (n *NutsDBDataManager) getEventByTimestampBytes(tx *nutsdb.Tx, tsBytes []byte) (*schema.Np2pEvent, error) {
 	var ret *schema.Np2pEvent
 	ts := float64(binary.BigEndian.Uint64(tsBytes))
-	if err := n.db.View(func(tx *nutsdb.Tx) error {
-		if entries, err2 := tx.ZRangeByScore(EventListTimeKey, []byte("time"), ts, ts, nil); err2 != nil {
-			return err2
-		} else {
-			if len(entries) == 0 {
-				return nil
-			}
-			ret, _ = schema.NewNp2pEventFromBytes(entries[0].Value)
-			return nil
+	if entries, err := tx.ZRangeByScore(EventListTimeKey, []byte("time"), ts, ts, nil); err != nil {
+		return nil, err
+	} else {
+		if len(entries) == 0 {
+			return nil, errors.New("getEventByTimestampBytes: no target event")
 		}
-	}); err != nil {
-		fmt.Println(err)
+		ret, _ = schema.NewNp2pEventFromBytes(entries[0].Value)
+		return ret, nil
+	}
+}
+
+func (n *NutsDBDataManager) removeEventByTimestampBytes(tx *nutsdb.Tx, tsBytes []byte) error {
+	ts := float64(binary.BigEndian.Uint64(tsBytes))
+	if entries, err := tx.ZRangeByScore(EventListTimeKey, []byte("time"), ts, ts, nil); err != nil {
+		return err
+	} else {
+		if len(entries) == 0 {
+			fmt.Println("removeEventByTimestampBytes: no target event")
+			return errors.New("removeEventByTimestampBytes: no target event")
+		}
+		// remove target event
+		err2 := tx.ZRem(EventListTimeKey, []byte("time"), entries[0].Value)
+		if err2 != nil {
+			return err2
+		}
 		return nil
 	}
-	return ret
 }
 
 func (n *NutsDBDataManager) GetEventById(evtId [32]byte) (*schema.Np2pEvent, bool) {
@@ -154,8 +167,9 @@ func (n *NutsDBDataManager) GetEventById(evtId [32]byte) (*schema.Np2pEvent, boo
 		if val, err2 := tx.Get(EventIdxMapIdKey, evtId[:]); err2 != nil {
 			return err2
 		} else {
-			ret = n.getEventByTimestampBytes(val)
-			return nil
+			var err3 error
+			ret, err3 = n.getEventByTimestampBytes(tx, val)
+			return err3
 		}
 	}); err != nil {
 		fmt.Println(err)
@@ -168,9 +182,17 @@ func (n *NutsDBDataManager) StoreProfile(evt *schema.Np2pEvent) {
 	if err := n.db.Update(func(tx *nutsdb.Tx) error {
 		tmpPubKey := evt.Pubkey
 		key := tmpPubKey[len(tmpPubKey)-8:]
+		if val, err2 := tx.Get(ProfEvtIdxMap, key); err2 != nil {
+			return err2
+		} else {
+			if val != nil {
+				// remove old profile event data
+				return n.removeEventByTimestampBytes(tx, val)
+			}
+		}
 		return tx.Put(ProfEvtIdxMap, key, np2p_util.ConvInt64ToBytes(evt.Created_at), nutsdb.Persistent)
 	}); err != nil {
-		fmt.Println(err)
+		fmt.Println("StoreProfile failed: ", err)
 	}
 }
 
@@ -180,8 +202,9 @@ func (n *NutsDBDataManager) GetProfileLocal(pubkey64bit uint64) *schema.Np2pEven
 		if val, err2 := tx.Get(ProfEvtIdxMap, np2p_util.ConvUint64ToBytes(pubkey64bit)); err2 != nil {
 			return err2
 		} else {
-			ret = n.getEventByTimestampBytes(val)
-			return nil
+			var err3 error
+			ret, err3 = n.getEventByTimestampBytes(tx, val)
+			return err3
 		}
 	}); err != nil {
 		fmt.Println(err)
@@ -247,9 +270,17 @@ func (n *NutsDBDataManager) StoreFollowList(evt *schema.Np2pEvent) {
 	if err := n.db.Update(func(tx *nutsdb.Tx) error {
 		tmpPubKey := evt.Pubkey
 		key := tmpPubKey[len(tmpPubKey)-8:]
+		if val, err2 := tx.Get(FollowListEvtIdxMap, key); err2 != nil {
+			return err2
+		} else {
+			if val != nil {
+				// remove old follow event data
+				n.removeEventByTimestampBytes(tx, val)
+			}
+		}
 		return tx.Put(FollowListEvtIdxMap, key, np2p_util.ConvInt64ToBytes(evt.Created_at), nutsdb.Persistent)
 	}); err != nil {
-		fmt.Println(err)
+		fmt.Println("StoreFollowList failed: ", err)
 	}
 }
 
@@ -259,8 +290,9 @@ func (n *NutsDBDataManager) GetFollowListLocal(pubkey64bit uint64) *schema.Np2pE
 		if val, err2 := tx.Get(FollowListEvtIdxMap, np2p_util.ConvUint64ToBytes(pubkey64bit)); err2 != nil {
 			return err2
 		} else {
-			ret = n.getEventByTimestampBytes(val)
-			return nil
+			var err3 error
+			ret, err3 = n.getEventByTimestampBytes(tx, val)
+			return err3
 		}
 	}); err != nil {
 		fmt.Println(err)

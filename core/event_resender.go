@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/ryogrid/nostrp2p/np2p_const"
-	"github.com/ryogrid/nostrp2p/np2p_util"
 	"github.com/ryogrid/nostrp2p/schema"
 	"time"
 )
@@ -39,7 +38,7 @@ func (er *EventResender) ResendEvents(ctx context.Context, interval time.Duratio
 			return
 		case <-ticker.C:
 			// resend events
-			np2p_util.Np2pDbgPrintln("ResendEvents: start")
+			fmt.Println("ResendEvents: start")
 			itr := er.dman.GetReSendNeededEventItr()
 			if itr == nil {
 				return
