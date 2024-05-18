@@ -245,8 +245,9 @@ Public key (In Hex Representation):
 - [ ] Follower Multicast Mode
   - In this mode, posted messages are not broadcasted and server of follower should register to followee's server
   - If broadcasting design reaches limit of scalability, this mode will be activated
-- [ ] Optimization of Data Size between Client and Server
-  - Changing serialization format from JSON Text to Protocol Buffers
+- [ ] Optimization of Communication Data Amount between Client and Server
+  - Changing serialization format from JSON Text to MessagePack
     - Format conversion must be needed both side
+  - Activate data compression on HTTP layer (gzip, deflate ... etc) 
 - [ ] Developing More Scalable Overlay Transport
-  - Scalability of Overlay NW with Mesh library should be around 100 nodes at most  
+  - Overlay NW with Mesh library may not scale over 100 nodes roughly according to a description at [here](https://github.com/weaveworks/mesh?tab=readme-ov-file#mesh--)   
