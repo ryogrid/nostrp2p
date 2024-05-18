@@ -28,7 +28,7 @@ func NewNutsDBItr(elems []interface{}) *NutsDBItr {
 }
 
 func (n *NutsDBItr) Next() bool {
-	if n.curIdx+1 < len(n.elems) {
+	if n.curIdx+1 < len(n.elems) && len(n.elems) > 0 {
 		n.curIdx++
 		return true
 	}

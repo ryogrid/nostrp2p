@@ -41,7 +41,8 @@ func (er *EventResender) ResendEvents(ctx context.Context, interval time.Duratio
 			fmt.Println("ResendEvents: start")
 			itr := er.dman.GetReSendNeededEventItr()
 			if itr == nil {
-				return
+				fmt.Println("on re-send iterating, skip this time because of no entries")
+				continue
 			}
 			unixtime := time.Now().Unix()
 			for itr.Next() {
