@@ -378,6 +378,7 @@ func (s *ApiServer) LaunchAPIServer(addrStr string) {
 		},
 		&rest.JsonIndentMiddleware{},
 		&rest.ContentTypeCheckerMiddleware{},
+		&rest.GzipMiddleware{},
 	)
 	api.Use(&rest.JsonpMiddleware{
 		CallbackNameKey: "cb",
@@ -388,7 +389,7 @@ func (s *ApiServer) LaunchAPIServer(addrStr string) {
 			return true
 		},
 		AllowedMethods:                []string{"POST", "OPTIONS"},
-		AllowedHeaders:                []string{"Accept", "content-type", "Access-Control-Request-Headers", "Access-Control-Request-Method", "Origin", "Referer", "User-Agent"},
+		AllowedHeaders:                []string{"Accept", "Accept-Encoding", "content-type", "Access-Control-Request-Headers", "Access-Control-Request-Method", "Origin", "Referer", "User-Agent"},
 		AccessControlAllowCredentials: true,
 		AccessControlMaxAge:           3600,
 	})
