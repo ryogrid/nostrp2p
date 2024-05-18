@@ -183,7 +183,7 @@ func (n *NutsDBDataManager) StoreProfile(evt *schema.Np2pEvent) {
 		tmpPubKey := evt.Pubkey
 		key := tmpPubKey[len(tmpPubKey)-8:]
 		if val, err2 := tx.Get(ProfEvtIdxMap, key); err2 != nil {
-			return err2
+			return nil // no target event
 		} else {
 			if val != nil {
 				// remove old profile event data
@@ -271,7 +271,7 @@ func (n *NutsDBDataManager) StoreFollowList(evt *schema.Np2pEvent) {
 		tmpPubKey := evt.Pubkey
 		key := tmpPubKey[len(tmpPubKey)-8:]
 		if val, err2 := tx.Get(FollowListEvtIdxMap, key); err2 != nil {
-			return err2
+			return nil // no target event
 		} else {
 			if val != nil {
 				// remove old follow event data
