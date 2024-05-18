@@ -58,7 +58,9 @@ func (mm *MessageManager) handleRecvMsgBcastEvt(src uint64, pkt *schema.Np2pPack
 					//glo_val.ProfileMyOwn = prof
 					glo_val.CurrentProfileEvt = evt
 				}
-			case KIND_EVT_POST: // post
+			case KIND_EVT_POST:
+				// do nothing
+			case KIND_EVT_REPOST:
 				// do nothing
 			case KIND_EVT_FOLLOW_LIST:
 				mm.DataMan.StoreFollowList(evt)
