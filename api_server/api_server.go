@@ -9,6 +9,8 @@ import (
 	"github.com/ryogrid/nostrp2p/np2p_util"
 	"github.com/ryogrid/nostrp2p/schema"
 	"github.com/vmihailenco/msgpack/v5"
+	//"golang.org/x/net/http2"
+	//"golang.org/x/net/http2/h2c"
 	"log"
 	"math"
 	"net/http"
@@ -418,6 +420,7 @@ func (s *ApiServer) LaunchAPIServer(addrStr string) {
 	}
 	api.SetApp(router)
 
+	//serv := &http2.Server{}
 	log.Printf("Server started")
 	if glo_val.IsEnabledSSL {
 		log.Fatal(http.ListenAndServeTLS(
@@ -425,11 +428,13 @@ func (s *ApiServer) LaunchAPIServer(addrStr string) {
 			"cert.pem",
 			"privkey.pem",
 			api.MakeHandler(),
+			//h2c.NewHandler(api.MakeHandler(), serv),
 		))
 	} else {
 		log.Fatal(http.ListenAndServe(
 			addrStr,
 			api.MakeHandler(),
+			//h2c.NewHandler(api.MakeHandler(), serv),
 		))
 	}
 }
