@@ -36,7 +36,7 @@ func NewNp2pEventForREST(evt *Np2pEvent) *Np2pEventForREST {
 	return &Np2pEventForREST{
 		Id:         idStr,     // remove leading zeros
 		Pubkey:     pubkeyStr, //fmt.Sprintf("%x", evt.Pubkey[:]),
-		Created_at: evt.Created_at,
+		Created_at: int64(evt.Created_at),
 		Kind:       evt.Kind,
 		Tags:       tagsArr,
 		Content:    evt.Content,
@@ -80,7 +80,7 @@ func NewNp2pEventFromREST(evt *Np2pEventForREST) *Np2pEvent {
 	retEvt := &Np2pEvent{
 		Pubkey:     pkey32,  //pkey.Bytes32(),
 		Id:         evtId32, //evtId.Bytes32(),
-		Created_at: evt.Created_at,
+		Created_at: float64(evt.Created_at),
 		Kind:       evt.Kind,
 		Tags:       tagsList,
 		Content:    evt.Content,

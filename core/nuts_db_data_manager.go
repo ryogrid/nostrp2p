@@ -123,7 +123,7 @@ func (n *NutsDBDataManager) StoreEvent(evt *schema.Np2pEvent) {
 		fmt.Println(err)
 	}
 	if err := n.db.Update(func(tx *nutsdb.Tx) error {
-		return tx.Put(EventIdxMapIdKey, evt.Id[:], np2p_util.ConvInt64ToBytes(evt.Created_at), nutsdb.Persistent)
+		return tx.Put(EventIdxMapIdKey, evt.Id[:], np2p_util.ConvUint64ToBytes(uint64(evt.Created_at)), nutsdb.Persistent)
 	}); err != nil {
 		fmt.Println(err)
 	}
@@ -190,7 +190,7 @@ func (n *NutsDBDataManager) StoreProfile(evt *schema.Np2pEvent) {
 				return n.removeEventByTimestampBytes(tx, val)
 			}
 		}
-		return tx.Put(ProfEvtIdxMap, key, np2p_util.ConvInt64ToBytes(evt.Created_at), nutsdb.Persistent)
+		return tx.Put(ProfEvtIdxMap, key, np2p_util.ConvUint64ToBytes(uint64(evt.Created_at)), nutsdb.Persistent)
 	}); err != nil {
 		fmt.Println("StoreProfile failed: ", err)
 	}
@@ -278,7 +278,7 @@ func (n *NutsDBDataManager) StoreFollowList(evt *schema.Np2pEvent) {
 				n.removeEventByTimestampBytes(tx, val)
 			}
 		}
-		return tx.Put(FollowListEvtIdxMap, key, np2p_util.ConvInt64ToBytes(evt.Created_at), nutsdb.Persistent)
+		return tx.Put(FollowListEvtIdxMap, key, np2p_util.ConvUint64ToBytes(uint64(evt.Created_at)), nutsdb.Persistent)
 	}); err != nil {
 		fmt.Println("StoreFollowList failed: ", err)
 	}
@@ -302,7 +302,7 @@ func (n *NutsDBDataManager) GetFollowListLocal(pubkey64bit uint64) *schema.Np2pE
 }
 
 func (n *NutsDBDataManager) AddReSendNeededEvent(destIds []uint64, evt *schema.Np2pEvent, _isLogging bool) {
-	resendEvent := schema.NewResendEvent(destIds, evt.Id, evt.Created_at)
+	resendEvent := schema.NewResendEvent(destIds, evt.Id, int64(evt.Created_at))
 	if err := n.db.Update(func(tx *nutsdb.Tx) error {
 		return tx.ZAdd(ReSendNeededEvtList, []byte("time"), float64(evt.Created_at), resendEvent.Encode())
 	}); err != nil {

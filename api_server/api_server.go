@@ -285,7 +285,7 @@ func (s *ApiServer) getProfile(w rest.ResponseWriter, input *schema.Np2pReqForRE
 		profEvt.Sig = nil
 		s.WriteEventsInBinaryFormat(w, &EventsResp{Evts: []schema.Np2pEvent{*profEvt}})
 		// local data is old and not sending request to same server in short time and not mysql
-		if np2p_util.GetCurUnixTimeInSec()-profEvt.Created_at > np2p_const.ProfileAndFollowDataUpdateCheckIntervalSec &&
+		if np2p_util.GetCurUnixTimeInSec()-int64(profEvt.Created_at) > np2p_const.ProfileAndFollowDataUpdateCheckIntervalSec &&
 			s.getLastReqSendTimeOrSet(core.KIND_EVT_PROFILE, shortPkey)+np2p_const.NoResendReqSendIntervalSec > np2p_util.GetCurUnixTimeInSec() &&
 			shortPkey != glo_val.SelfPubkey64bit {
 			// request profile data for updating check
@@ -307,7 +307,7 @@ func (s *ApiServer) getFollowList(w rest.ResponseWriter, input *schema.Np2pReqFo
 		fListEvt.Sig = nil
 		s.WriteEventsInBinaryFormat(w, &EventsResp{Evts: []schema.Np2pEvent{*fListEvt}})
 		// local data is old and not sending request to same server in short time
-		if np2p_util.GetCurUnixTimeInSec()-fListEvt.Created_at > np2p_const.ProfileAndFollowDataUpdateCheckIntervalSec &&
+		if np2p_util.GetCurUnixTimeInSec()-int64(fListEvt.Created_at) > np2p_const.ProfileAndFollowDataUpdateCheckIntervalSec &&
 			s.getLastReqSendTimeOrSet(core.KIND_EVT_FOLLOW_LIST, shortPkey)+np2p_const.NoResendReqSendIntervalSec > np2p_util.GetCurUnixTimeInSec() {
 			// request follow list data for updating check
 			s.buzzPeer.MessageMan.UnicastFollowListReq(shortPkey)
