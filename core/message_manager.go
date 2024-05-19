@@ -172,7 +172,7 @@ func (mm *MessageManager) handleRecvMsgUnicast(src uint64, pkt *schema.Np2pPacke
 		return nil
 	}
 
-	fmt.Println("MessageManager::handleRecvMsgUnicast: received package which does not include both Events and Reqs")
+	fmt.Println("MessageManager::handleRecvMsgUnicast: received package which does not include both Evts and Reqs")
 	return nil
 }
 

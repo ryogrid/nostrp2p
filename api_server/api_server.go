@@ -8,6 +8,7 @@ import (
 	"github.com/ryogrid/nostrp2p/np2p_const"
 	"github.com/ryogrid/nostrp2p/np2p_util"
 	"github.com/ryogrid/nostrp2p/schema"
+	"github.com/vmihailenco/msgpack/v5"
 	"log"
 	"math"
 	"net/http"
@@ -18,8 +19,17 @@ type NoArgReq struct {
 }
 
 type EventsResp struct {
-	Events []schema.Np2pEventForREST `json:"results"`
+	Evts []schema.Np2pEvent
 }
+
+func (e *EventsResp) Encode() []byte {
+	b, err := msgpack.Marshal(e)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
 type GeneralResp struct {
 	Status string
 }
@@ -95,7 +105,9 @@ func (s *ApiServer) sendRePost(w rest.ResponseWriter, input *schema.Np2pEventFor
 	// store for myself
 	s.buzzPeer.MessageMan.DataMan.StoreEvent(evt)
 
-	w.WriteJson(&EventsResp{})
+	w.WriteJson(&GeneralResp{
+		"SUCCESS",
+	})
 }
 
 func (s *ApiServer) sendPost(w rest.ResponseWriter, input *schema.Np2pEventForREST) {
@@ -142,7 +154,9 @@ func (s *ApiServer) sendPost(w rest.ResponseWriter, input *schema.Np2pEventForRE
 	// if destination server is offline, this event will be sent again (when unicast)
 	s.buzzPeer.MessageMan.DataMan.StoreEvent(evt)
 
-	w.WriteJson(&EventsResp{})
+	w.WriteJson(&GeneralResp{
+		"SUCCESS",
+	})
 }
 
 func (s *ApiServer) updateProfile(w rest.ResponseWriter, input *schema.Np2pEventForREST) {
@@ -198,7 +212,9 @@ func (s *ApiServer) sendReaction(w rest.ResponseWriter, input *schema.Np2pEventF
 	// if destination server is offline, this event will be sent again
 	s.buzzPeer.MessageMan.DataMan.StoreEvent(evt)
 
-	w.WriteJson(&EventsResp{})
+	w.WriteJson(&GeneralResp{
+		"SUCCESS",
+	})
 }
 
 func (s *ApiServer) reqHandler(w rest.ResponseWriter, req *rest.Request) {
@@ -210,16 +226,6 @@ func (s *ApiServer) reqHandler(w rest.ResponseWriter, req *rest.Request) {
 	if err != nil {
 		fmt.Println(err)
 		rest.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if input.Kinds == nil || len(input.Kinds) == 0 {
-		//rest.Error(w, "Kinds is needed", http.StatusBadRequest)
-		//return
-
-		// for supporting Nostr clients
-		w.WriteJson(&EventsResp{
-			Events: []schema.Np2pEventForREST{},
-		})
 		return
 	}
 
@@ -239,8 +245,8 @@ func (s *ApiServer) reqHandler(w rest.ResponseWriter, req *rest.Request) {
 		s.getFollowList(w, &input)
 	} else {
 
-		w.WriteJson(&EventsResp{
-			Events: []schema.Np2pEventForREST{},
+		s.WriteEventsInBinaryFormat(w, &EventsResp{
+			Evts: []schema.Np2pEvent{},
 		})
 		return
 	}
@@ -258,11 +264,12 @@ func (s *ApiServer) getPost(w rest.ResponseWriter, input *schema.Np2pReqForREST)
 	gotEvt, ok := s.buzzPeer.MessageMan.DataMan.GetEventById(tgtEvtId)
 
 	if ok {
+		gotEvt.Sig = nil
 		// found at local
-		w.WriteJson(&EventsResp{Events: []schema.Np2pEventForREST{*schema.NewNp2pEventForREST(gotEvt)}})
+		s.WriteEventsInBinaryFormat(w, &EventsResp{Evts: []schema.Np2pEvent{*gotEvt}})
 	} else {
 		// post data will be included on response of "getEvents"
-		w.WriteJson(&EventsResp{Events: []schema.Np2pEventForREST{}})
+		s.WriteEventsInBinaryFormat(w, &EventsResp{Evts: []schema.Np2pEvent{}})
 		// request post data for future
 		s.buzzPeer.MessageMan.UnicastPostReq(shortPkey, tgtEvtId)
 	}
@@ -273,7 +280,8 @@ func (s *ApiServer) getProfile(w rest.ResponseWriter, input *schema.Np2pReqForRE
 	profEvt := s.buzzPeer.MessageMan.DataMan.GetProfileLocal(shortPkey)
 
 	if profEvt != nil {
-		w.WriteJson(&EventsResp{Events: []schema.Np2pEventForREST{*schema.NewNp2pEventForREST(profEvt)}})
+		profEvt.Sig = nil
+		s.WriteEventsInBinaryFormat(w, &EventsResp{Evts: []schema.Np2pEvent{*profEvt}})
 		// local data is old and not sending request to same server in short time and not mysql
 		if np2p_util.GetCurUnixTimeInSec()-profEvt.Created_at > np2p_const.ProfileAndFollowDataUpdateCheckIntervalSec &&
 			s.getLastReqSendTimeOrSet(core.KIND_EVT_PROFILE, shortPkey)+np2p_const.NoResendReqSendIntervalSec > np2p_util.GetCurUnixTimeInSec() &&
@@ -283,7 +291,7 @@ func (s *ApiServer) getProfile(w rest.ResponseWriter, input *schema.Np2pReqForRE
 		}
 	} else {
 		// profile data will be included on response of "getEvents"
-		w.WriteJson(&EventsResp{Events: []schema.Np2pEventForREST{}})
+		s.WriteEventsInBinaryFormat(w, &EventsResp{Evts: []schema.Np2pEvent{}})
 		// request profile data for future
 		s.buzzPeer.MessageMan.UnicastProfileReq(shortPkey)
 	}
@@ -294,7 +302,8 @@ func (s *ApiServer) getFollowList(w rest.ResponseWriter, input *schema.Np2pReqFo
 	fListEvt := s.buzzPeer.MessageMan.DataMan.GetFollowListLocal(shortPkey)
 
 	if fListEvt != nil {
-		w.WriteJson(&EventsResp{Events: []schema.Np2pEventForREST{*schema.NewNp2pEventForREST(fListEvt)}})
+		fListEvt.Sig = nil
+		s.WriteEventsInBinaryFormat(w, &EventsResp{Evts: []schema.Np2pEvent{*fListEvt}})
 		// local data is old and not sending request to same server in short time
 		if np2p_util.GetCurUnixTimeInSec()-fListEvt.Created_at > np2p_const.ProfileAndFollowDataUpdateCheckIntervalSec &&
 			s.getLastReqSendTimeOrSet(core.KIND_EVT_FOLLOW_LIST, shortPkey)+np2p_const.NoResendReqSendIntervalSec > np2p_util.GetCurUnixTimeInSec() {
@@ -303,7 +312,7 @@ func (s *ApiServer) getFollowList(w rest.ResponseWriter, input *schema.Np2pReqFo
 		}
 	} else {
 		// follow list data will be included on response of "getEvents"
-		w.WriteJson(&EventsResp{Events: []schema.Np2pEventForREST{}})
+		s.WriteEventsInBinaryFormat(w, &EventsResp{Evts: []schema.Np2pEvent{}})
 		// request profile data for future
 		s.buzzPeer.MessageMan.UnicastFollowListReq(shortPkey)
 	}
@@ -334,14 +343,14 @@ func (s *ApiServer) getEvents(w rest.ResponseWriter, input *schema.Np2pReqForRES
 		*events = (*events)[len(*events)-50:]
 	}
 
-	retEvents := make([]schema.Np2pEventForREST, 0)
+	retEvents := make([]schema.Np2pEvent, 0)
 
 	for _, evt := range *events {
-		retEvents = append(retEvents, *schema.NewNp2pEventForREST(evt))
+		retEvents = append(retEvents, *evt)
 	}
 
-	w.WriteJson(&EventsResp{
-		Events: retEvents,
+	s.WriteEventsInBinaryFormat(w, &EventsResp{
+		Evts: retEvents,
 	})
 }
 
@@ -361,6 +370,12 @@ func (s *ApiServer) gatherData(w rest.ResponseWriter, req *rest.Request) {
 	w.WriteJson(&GeneralResp{
 		"SUCCESS",
 	})
+}
+
+func (s *ApiServer) WriteEventsInBinaryFormat(w rest.ResponseWriter, resp *EventsResp) {
+	w.Header().Set("Content-Type", "application/octet-stream")
+
+	w.(http.ResponseWriter).Write(resp.Encode())
 }
 
 func (s *ApiServer) LaunchAPIServer(addrStr string) {
