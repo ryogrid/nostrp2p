@@ -245,7 +245,7 @@ Public key (In Hex Representation):
 - [ ] Follower Multicast Mode
   - In this mode, posted messages are not broadcasted and server of follower should register to followee's server
   - If broadcasting design reaches limit of scalability, this mode will be activated
-- [ ] Optimization of Communication Data Amount between Client and Server
+- [x] Optimization of Communication Data Amount between Client and Server
   - Changing serialization format from JSON Text to MessagePack
     - Format conversion must be needed both side
   - Activate data compression on HTTP layer (gzip, deflate ... etc) 
