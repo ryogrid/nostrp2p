@@ -63,6 +63,7 @@ func (s *ApiServer) publishHandler(w rest.ResponseWriter, req *rest.Request) {
 	input := schema.Np2pEventForREST{}
 	err := req.DecodeJsonPayload(&input)
 
+	fmt.Println(req.Header)
 	if err != nil {
 		fmt.Println(err)
 		rest.Error(w, err.Error(), http.StatusBadRequest)
@@ -83,6 +84,8 @@ func (s *ApiServer) publishHandler(w rest.ResponseWriter, req *rest.Request) {
 
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Private-Network", "true")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Keep-Alive", "timeout=600, max=1000")
 	switch input.Kind {
 	case core.KIND_EVT_POST: // including quote repost
 		s.sendPost(w, &input)
@@ -223,6 +226,7 @@ func (s *ApiServer) reqHandler(w rest.ResponseWriter, req *rest.Request) {
 	input := schema.Np2pReqForREST{}
 	err := req.DecodeJsonPayload(&input)
 
+	fmt.Println(req.Header)
 	//fmt.Println("reqHandler")
 	//fmt.Println(input.Tag)
 	if err != nil {
@@ -236,6 +240,8 @@ func (s *ApiServer) reqHandler(w rest.ResponseWriter, req *rest.Request) {
 
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Private-Network", "true")
+	w.Header().Set("Connection", "Keep-Alive")
+	w.Header().Set("Keep-Alive", "timeout=600, max=1000")
 	// TODO: need to implement each kind and other fliter condition request handling (ApiServer::reqHandler)
 	if slices.Contains(input.Kinds, core.KIND_REQ_SHARE_EVT_DATA) {
 		s.getEvents(w, &input)
@@ -376,6 +382,7 @@ func (s *ApiServer) gatherData(w rest.ResponseWriter, req *rest.Request) {
 
 func (s *ApiServer) WriteEventsInBinaryFormat(w rest.ResponseWriter, resp *EventsResp) {
 	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Content-Encoding", "gzip")
 
 	w.(http.ResponseWriter).Write(resp.Encode())
 }
