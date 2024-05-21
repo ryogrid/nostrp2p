@@ -425,7 +425,7 @@ func (s *ApiServer) LaunchAPIServer(addrStr string) {
 	if glo_val.IsEnabledSSL {
 		log.Fatal(http.ListenAndServeTLS(
 			addrStr,
-			"cert.pem",
+			"fullchain.pem",
 			"privkey.pem",
 			api.MakeHandler(),
 			//h2c.NewHandler(api.MakeHandler(), serv),
