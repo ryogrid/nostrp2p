@@ -219,13 +219,6 @@ Public key (In Hex Representation):
 # Trial
 ## Current Implemented Featues on Dedicated NW
 - Please read [this](https://gist.github.com/ryogrid/5080ff36b6786902d40bb4b91de0766e)
-  - NAT transparent overlay has been implented
-  - Posting to overlay NW has been implemented
-  - REST I/F using JSON text as serialized format has been implemented (TEMPORAL)
-  - Simple client has been implemented with Flutter
-  - Event data persistence has been implemented (only server now)
-  - signature validation has been implemented
-
 
 ## <del>Current Implemented Features with Nostr Client (Not NostrP2P Client) Using a Protcol Bridge Server</del>
 - <del>Please read [this](https://gist.github.com/ryogrid/5080ff36b6786902d40bb4b91de0766e#file-nostrp2p_demo_v3_procedure-md)</del>
@@ -245,7 +238,7 @@ Public key (In Hex Representation):
 - [ ] Follower Multicast Mode
   - In this mode, posted messages are not broadcasted and server of follower should register to followee's server
   - If broadcasting design reaches limit of scalability, this mode will be activated
-- [ ] Optimization of Communication Data Amount between Client and Server
+- [x] Optimization of Communication Data Amount between Client and Server
   - Changing serialization format from JSON Text to MessagePack
     - Format conversion must be needed both side
   - Activate data compression on HTTP layer (gzip, deflate ... etc) 
