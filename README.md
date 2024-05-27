@@ -207,7 +207,7 @@ Public key (In Hex Representation):
 ```
 
 # Bootstrap Server
-- currently, running server which is accessible from The Internet is below
+- Currently, running server which is accessible from The Internet is below
   - ryogrid.net:8888
     - this address including port number shoud be specified at launching of your server with -b option
 - **These servers don't response to write kind REST API requests from clients. A server for yourself is also needed to use NostrP2P!** 
