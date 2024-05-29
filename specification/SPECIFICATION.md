@@ -12,11 +12,11 @@
   - [NP-18](https://github.com/nostr-protocol/nips/blob/5c796c19fd6330628a0b328bfcf5270cb2bc3aff/18.md)
 - Reaction (favorite, like)
   - [NIP-25](https://github.com/nostr-protocol/nips/blob/5c796c19fd6330628a0b328bfcf5270cb2bc3aff/25.md)
-    - emoji is not supported
+    - Emoji is not supported
 
  ## NostrP2P specific kind
  - 40000
-   - Used when request event data from clien to server
+   - Used when request event data from client to server
    - Any kind of event data are retured according to specified filtering paramaters below
      - since
      - until
