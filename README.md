@@ -218,7 +218,7 @@ Public key (In Hex Representation):
 
 # Client
 - [here](https://github.com/ryogrid/flustr-for-nosp2p)
-<img src="https://i.gyazo.com/fbed4277dcada30d22fb0c7be7401e7c.png" height="50%" width="50%" />
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/12325/9fce752c-3d73-fa48-10ea-0770330a3b38.png" height="65%" width="65%" />
 
 # Trial
 ## Current Implemented Featues on Dedicated NW
