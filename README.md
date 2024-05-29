@@ -167,6 +167,10 @@ Flags:
   -p, --public-key          string   Your public key (required)
   -d, --debug               bool     If true, debug log is output to stderr (default: false)
 ```
+
+# Specification
+- [here](/specification/SPECIFICATION.md)
+
 # Examples
 ## Generate Key Pair
 ```bash
