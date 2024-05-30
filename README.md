@@ -20,7 +20,7 @@
 - Pure Peer-to-Peer Distributed Microblogging System on NAT Transparent Overlay Network Based on Idea of [Nostr](https://en.wikipedia.org/wiki/Nostr)
 - Distributed Microblogging System by All User's Contribution
 
-# Design Note
+# Concept and Design
 - [here (English)](https://gist.github.com/ryogrid/fa2bfa284784c866ad88e3c38445752a)
   - English version is latest :)
 - [Japanese version](https://gist.github.com/ryogrid/0ba0d825c3bb840dffa519c5ab91d4ff)
