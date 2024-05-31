@@ -20,6 +20,8 @@
 # What is NostrP2P?
 - Pure Peer-to-Peer Distributed Microblogging System on NAT Transparent Overlay Network Based on Idea of [Nostr](https://en.wikipedia.org/wiki/Nostr)
 - Distributed Microblogging System by All User's Contribution
+- I wrote an article about NostrP2p :)
+  - ["NostrP2P: Pure P2P Distributed Microblogging System - ryo_grid's tech articles"](https://ryogrid.github.io/tech-entry/about-nostrp2p.html)
 
 # Concept and Design
 - [here (English)](https://gist.github.com/ryogrid/fa2bfa284784c866ad88e3c38445752a)
