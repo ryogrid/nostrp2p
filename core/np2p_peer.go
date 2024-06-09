@@ -68,11 +68,16 @@ func (p *Np2pPeer) stop() {
 }
 
 func (p *Np2pPeer) OnRecvBroadcast(src uint64, buf []byte) (received schema.EncodableAndMergeable, err error) {
-	//var pkt schema.Np2pPacket
-	///if err_ := gob.NewDecoder(bytes.NewReader(buf)).Decode(&pkt); err_ != nil {
+	tmpEvts := make([]*schema.Np2pEvent, 0)
+	tmpReqs := make([]*schema.Np2pReq, 0)
+	retPkt := schema.NewNp2pPacket(&tmpEvts, &tmpReqs)
+
 	pkt, err_ := schema.NewNp2pPacketFromBytes(buf)
 	if err_ != nil {
-		return nil, err_
+		// returns NP2pPacket having zero length fields
+		// this means received data is already known to mesh library...
+		fmt.Println("received strange packet. decoding failed. err = ", err_)
+		return retPkt, nil
 	}
 	if pkt.PktVer != np2p_const.PacketStructureVersion {
 		return nil, errors.New("Invalid packet version")
@@ -81,9 +86,6 @@ func (p *Np2pPeer) OnRecvBroadcast(src uint64, buf []byte) (received schema.Enco
 		fmt.Println("received packat from newer version of server")
 	}
 
-	tmpEvts := make([]*schema.Np2pEvent, 0)
-	tmpReqs := make([]*schema.Np2pReq, 0)
-	retPkt := schema.NewNp2pPacket(&tmpEvts, &tmpReqs)
 	if pkt.Events != nil {
 		for _, evt := range pkt.Events {
 			if _, ok := p.recvedEvtReqMap[np2p_util.ExtractUint64FromBytes(evt.Id[:])]; !ok {
@@ -119,11 +121,15 @@ func (p *Np2pPeer) OnRecvBroadcast(src uint64, buf []byte) (received schema.Enco
 			}
 		}
 	} else {
+		fmt.Println("received empty packet")
 		return pkt, nil
 	}
 
 	if len(retPkt.Events) == 0 && len(retPkt.Reqs) == 0 {
-		return nil, nil
+		fmt.Println("received strange packet")
+		// returns NP2pPacket having zero length fields
+		// this means received data is already known to mesh library...
+		return pkt, nil
 	} else {
 		return retPkt, nil
 	}

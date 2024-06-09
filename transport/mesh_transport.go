@@ -46,8 +46,10 @@ func (mt *MeshTransport) OnGossipUnicast(src mesh.PeerName, buf []byte) error {
 // Return the state information that was modified.
 func (mt *MeshTransport) OnGossipBroadcast(src mesh.PeerName, buf []byte) (received mesh.GossipData, err error) {
 	np2p_util.Np2pDbgPrintln("OnGossipBroadcast called")
-	recved, err_ := mt.peer.OnRecvBroadcast(uint64(src), buf)
-	return recved.(mesh.GossipData), err_
+	recved, _ := mt.peer.OnRecvBroadcast(uint64(src), buf)
+	// this method does not return error
+	// for avoiding mesh library's TCP disconnection
+	return recved.(mesh.GossipData), nil
 }
 
 // Register the result of a mesh.Router.NewGossip.
