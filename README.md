@@ -227,7 +227,7 @@ Public key (In Hex Representation):
 
 # Trial
 ## Current Implemented Featues on Dedicated NW
-- Please read [this](https://gist.github.com/ryogrid/5080ff36b6786902d40bb4b91de0766e)
+- Please refer [this article's Demo section :)](https://ryogrid.github.io/tech-entry/about-nostrp2p.html)
 
 ## <del>Current Implemented Features with Nostr Client (Not NostrP2P Client) Using a Protcol Bridge Server</del>
 - <del>Please read [this](https://gist.github.com/ryogrid/5080ff36b6786902d40bb4b91de0766e#file-nostrp2p_demo_v3_procedure-md)</del>
