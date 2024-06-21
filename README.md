@@ -45,7 +45,7 @@
   - Client
     - Almost same role with one of Nostr but its communication protocol between server is little bit different
       - In current plan, transport is REST and data is encoded to binary. Not websocket and Not JSON text
-    - Client which is used by User-A only accesses to a server which is managed by the user only
+    - Client which is used by User-A only accesses to a server which is managed by the user
   - In all of design
     - Microbrogging application specific
       - This means architecture and protcorl of NostrP2P is not for general purpose unlike Nostr
