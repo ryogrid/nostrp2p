@@ -17,11 +17,11 @@
  ## NostrP2P specific kind
  - 40000
    - Used when request event data from client to server
-   - Any kind of event data are retured according to specified filtering paramaters below
+   - Any kind of event data are returned according to specified filtering paramaters below
      - since
      - until
      - limit
 
 ## REST I/F for client
 - Basically body is JSON text and content-type is "application/json"
-- Response of "/req" endpoint only returns MessagePack serialized binary and content-type is "application/octet-stream"
+- Response of "/req" endpoint only is MessagePack serialized binary and content-type is "application/octet-stream"
