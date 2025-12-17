@@ -252,4 +252,8 @@ Public key (In Hex Representation):
     - Format conversion must be needed both side
   - Activate data compression on HTTP layer (gzip, deflate ... etc) 
 - [ ] Developing More Scalable Overlay Transport
-  - Overlay NW with Mesh library may not scale over 100 nodes roughly according to a description at [here](https://github.com/weaveworks/mesh?tab=readme-ov-file#mesh--)   
+  - Overlay NW with Mesh library may not scale over 100 nodes roughly according to a description at [here](https://github.com/weaveworks/mesh?tab=readme-ov-file#mesh--)
+
+# Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=ryogrid/NostrP2P&type=Date)](https://star-history.com/#ryogrid/NostrP2P&Date)
